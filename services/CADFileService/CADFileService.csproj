@@ -46,7 +46,7 @@
 
   <Import Project="..\..\submodules\BDotNetFramework\Services\BServiceUtilities-MemoryService-Redis\BServiceUtilities-MemoryService-Redis.projitems" Label="Shared" />
 
-  <Import Project="..\..\submodules\BFilesdk-Dotnet\common\BFileSDK-Dotnet\BFileSDK-Dotnet.projitems" Label="Shared" />
+  <Import Project="..\..\submodules\bfilesdk-dotnet\common\BFileSDK-Dotnet\BFileSDK-Dotnet.projitems" Label="Shared" />
 
   <Import Project="..\..\submodules\BDotNetFramework\Utilities\ServiceUtilities_All\ServiceUtilities_All.projitems" Label="Shared" />
 
