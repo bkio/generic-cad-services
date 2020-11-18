@@ -13,8 +13,8 @@ namespace CADFileService.Endpoints.Structures
         public const string REVISION_INDEX_PROPERTY = "revisionIndex";
         public const string REVISION_NAME_PROPERTY = "revisionName";
         public const string REVISION_COMMENTS_PROPERTY = "revisionComments";
-        public const string REVISION_VERSIONS_PROPERTY = "revisionVersions";
         public const string REVISION_CREATION_TIME_PROPERTY = "revisionCreationTime";
+        public const string REVISION_FILE_ENTRY_PROPERTY = "revisionFileEntry";
 
         //Update info call can change these fields.
         public static readonly string[] UpdatableProperties =
@@ -44,10 +44,7 @@ namespace CADFileService.Endpoints.Structures
 
         public void Prune_NonGettableProperties()
         {
-            foreach (var Ver in RevisionVersions)
-            {
-                Ver.Prune_NonGettableProperties();
-            }
+            FileEntry.Prune_NonGettableProperties();
         }
 
         [JsonProperty(REVISION_INDEX_PROPERTY)]
@@ -62,8 +59,8 @@ namespace CADFileService.Endpoints.Structures
         [JsonProperty(REVISION_CREATION_TIME_PROPERTY)]
         public string CreationTime = CommonMethods.GetTimeAsCreationTime();
 
-        [JsonProperty(REVISION_VERSIONS_PROPERTY)]
-        public List<RevisionVersion> RevisionVersions = new List<RevisionVersion>();
+        [JsonProperty(REVISION_FILE_ENTRY_PROPERTY)]
+        public FileEntry FileEntry = new FileEntry();
 
         public void Merge(JObject _Content)
         {
@@ -75,8 +72,8 @@ namespace CADFileService.Endpoints.Structures
                 RevisionName = ContentObject.RevisionName;
             if (_Content.ContainsKey(REVISION_COMMENTS_PROPERTY))
                 RevisionComments = ContentObject.RevisionComments;
-            if (_Content.ContainsKey(REVISION_CREATION_TIME_PROPERTY))
-                RevisionVersions = ContentObject.RevisionVersions;
+            if (_Content.ContainsKey(REVISION_FILE_ENTRY_PROPERTY))
+                FileEntry = ContentObject.FileEntry;
         }
     }
 }

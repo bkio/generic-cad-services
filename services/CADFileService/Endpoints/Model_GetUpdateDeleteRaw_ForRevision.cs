@@ -17,7 +17,7 @@ using ServiceUtilities.PubSubUsers.PubSubRelated;
 
 namespace CADFileService
 {
-    internal class Model_GetUpdateDeleteRaw_ForRevisionVersion : WebServiceBaseTimeoutableDeliveryEnsurerUser
+    internal class Model_GetUpdateDeleteRaw_ForRevision : WebServiceBaseTimeoutableDeliveryEnsurerUser
     {
         private readonly IBFileServiceInterface FileService;
         private readonly IBDatabaseServiceInterface DatabaseService;
@@ -25,24 +25,21 @@ namespace CADFileService
 
         private readonly string RestfulUrlParameter_ModelsKey;
         private readonly string RestfulUrlParameter_RevisionsKey;
-        private readonly string RestfulUrlParameter_VersionsKey;
 
         private string RequestedModelID;
         private int RequestedRevisionIndex;
-        private int RequestedVersionIndex;
 
         private ServiceUtilities.Common.AuthorizedRequester AuthorizedUser;
 
         private readonly string CadProcessServiceEndpoint;
 
-        public Model_GetUpdateDeleteRaw_ForRevisionVersion(IBFileServiceInterface _FileService, IBDatabaseServiceInterface _DatabaseService, string _RestfulUrlParameter_ModelsKey, string _RestfulUrlParameter_RevisionsKey, string _RestfulUrlParameter_VersionsKey, string _CadFileStorageBucketName, string _CadProcessServiceEndpoint)
+        public Model_GetUpdateDeleteRaw_ForRevision(IBFileServiceInterface _FileService, IBDatabaseServiceInterface _DatabaseService, string _RestfulUrlParameter_ModelsKey, string _RestfulUrlParameter_RevisionsKey, string _CadFileStorageBucketName, string _CadProcessServiceEndpoint)
         {
             FileService = _FileService;
             DatabaseService = _DatabaseService;
             CadFileStorageBucketName = _CadFileStorageBucketName;
             RestfulUrlParameter_ModelsKey = _RestfulUrlParameter_ModelsKey;
             RestfulUrlParameter_RevisionsKey = _RestfulUrlParameter_RevisionsKey;
-            RestfulUrlParameter_VersionsKey = _RestfulUrlParameter_VersionsKey;
             CadProcessServiceEndpoint = _CadProcessServiceEndpoint;
         }
 
@@ -64,7 +61,7 @@ namespace CADFileService
 
             if (_Context.Request.HttpMethod != "GET" && _Context.Request.HttpMethod != "POST" && _Context.Request.HttpMethod != "DELETE")
             {
-                _ErrorMessageAction?.Invoke("Model_GetUpdateDeleteRaw_ForRevisionVersion: GET, POST and DELETE methods are accepted. But received request method:  " + _Context.Request.HttpMethod);
+                _ErrorMessageAction?.Invoke("Model_GetUpdateDeleteRaw_ForRevision: GET, POST and DELETE methods are accepted. But received request method:  " + _Context.Request.HttpMethod);
                 return BWebResponse.MethodNotAllowed("GET, POST and DELETE methods are accepted. But received request method: " + _Context.Request.HttpMethod);
             }
 
@@ -72,10 +69,6 @@ namespace CADFileService
             if (!int.TryParse(RestfulUrlParameters[RestfulUrlParameter_RevisionsKey], out RequestedRevisionIndex))
             {
                 return BWebResponse.BadRequest("Revision index must be an integer.");
-            }
-            if (!int.TryParse(RestfulUrlParameters[RestfulUrlParameter_VersionsKey], out RequestedVersionIndex))
-            {
-                return BWebResponse.BadRequest("Version index must be an integer.");
             }
 
             if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, ModelDBEntry.DBSERVICE_MODELS_TABLE(), RequestedModelID, _ErrorMessageAction))
@@ -136,10 +129,8 @@ namespace CADFileService
                 DatabaseService,
                 RequestedModelID,
                 RequestedRevisionIndex,
-                RequestedVersionIndex,
                 out ModelDBEntry ModelObject,
                 out Revision RevisionObject,
-                out RevisionVersion VersionObject,
                 out int _,
                 out FailureResponse,
                 _ErrorMessageAction))
@@ -147,7 +138,7 @@ namespace CADFileService
                 return FailureResponse;
             }
 
-            if (VersionObject.FileEntry.FileEntryName != null && VersionObject.FileEntry.FileEntryName.Length > 0)
+            if (RevisionObject.FileEntry.FileEntryName != null && RevisionObject.FileEntry.FileEntryName.Length > 0)
             {
                 if (UpdatedFileEntryJson.ContainsKey(FileEntry.FILE_ENTRY_NAME_PROPERTY)
                     || UpdatedFileEntryJson.ContainsKey(FileEntry.FILE_ENTRY_FILE_TYPE_PROPERTY)
@@ -158,12 +149,12 @@ namespace CADFileService
                 }
             }
 
-            VersionObject.FileEntry.Merge(UpdatedFileEntryJson);
+            RevisionObject.FileEntry.Merge(UpdatedFileEntryJson);
 
-            VersionObject.FileEntry.FileEntryFileType = VersionObject.FileEntry.FileEntryFileType.ToLower().TrimStart('.');
-            VersionObject.FileEntry.SetRelativeUrls_GetCommonUrlPart_FileEntryFileTypePreSet(RequestedModelID, RequestedRevisionIndex, RequestedVersionIndex);
-            VersionObject.FileEntry.FileEntryCreationTime = CommonMethods.GetTimeAsCreationTime();
-            ModelObject.MRVLastUpdateTime = VersionObject.FileEntry.FileEntryCreationTime;
+            RevisionObject.FileEntry.FileEntryFileType = RevisionObject.FileEntry.FileEntryFileType.ToLower().TrimStart('.');
+            RevisionObject.FileEntry.SetRelativeUrls_GetCommonUrlPart_FileEntryFileTypePreSet(RequestedModelID, RequestedRevisionIndex);
+            RevisionObject.FileEntry.FileEntryCreationTime = CommonMethods.GetTimeAsCreationTime();
+            ModelObject.MRVLastUpdateTime = RevisionObject.FileEntry.FileEntryCreationTime;
 
             string UploadUrl_IfRequested = null;
 
@@ -172,7 +163,7 @@ namespace CADFileService
                 !FileService.CreateSignedURLForUpload(
                     out UploadUrl_IfRequested,
                     CadFileStorageBucketName,
-                    VersionObject.FileEntry.RawFileRelativeUrl,
+                    RevisionObject.FileEntry.RawFileRelativeUrl,
                     FileEntry.RAW_FILE_UPLOAD_CONTENT_TYPE,
                     FileEntry.EXPIRY_MINUTES,
                     _ErrorMessageAction))
@@ -187,11 +178,10 @@ namespace CADFileService
                 new BPrimitiveType(RequestedModelID),
                 JObject.Parse(JsonConvert.SerializeObject(ModelObject)));
 
-            Controller_ModelActions.Get().BroadcastModelAction(new Action_ModelRevisionVersionFileEntryUpdated
+            Controller_ModelActions.Get().BroadcastModelAction(new Action_ModelRevisionFileEntryUpdated
             (
                 RequestedModelID,
                 RequestedRevisionIndex,
-                RequestedVersionIndex,
                 ModelObject.ModelOwnerUserID,
                 ModelObject.ModelSharedWithUserIDs,
                 AuthorizedUser.UserID,
@@ -215,23 +205,21 @@ namespace CADFileService
                    DatabaseService,
                    RequestedModelID,
                    RequestedRevisionIndex,
-                   RequestedVersionIndex,
                    out ModelDBEntry ModelObject,
-                   out Revision _,
-                   out RevisionVersion VersionObject,
-                   out int ModelRevisionVersionListIx,
+                   out Revision RevisionObject,
+                   out int ModelRevisionListIx,
                    out BWebServiceResponse _FailureResponse,
                    _ErrorMessageAction))
             {
                 return _FailureResponse;
             }
 
-            //if (VersionObject.FileEntry.FileProcessStage == (int)Constants.EProcessStage.Uploaded_Processing)
+            //if (RevisionObject.FileEntry.FileProcessStage == (int)Constants.EProcessStage.Uploaded_Processing)
             //{
             //    var RequestObject = new JObject()
             //    {
             //        ["bucketName"] = CadFileStorageBucketName,
-            //        ["rawFileRelativeUrl"] = VersionObject.FileEntry.RawFileRelativeUrl
+            //        ["rawFileRelativeUrl"] = RevisionObject.FileEntry.RawFileRelativeUrl
             //    };
 
             //    GetTracingService()?.On_FromServiceToService_Sent(_Context, _ErrorMessageAction);
@@ -257,28 +245,27 @@ namespace CADFileService
             //    }
             //}
 
-            var PreviousProcessStage = VersionObject.FileEntry.FileProcessStage;
+            var PreviousProcessStage = RevisionObject.FileEntry.FileProcessStage;
             if (PreviousProcessStage != (int)Constants.EProcessStage.NotUploaded)
             {
-                Controller_ModelActions.Get().BroadcastModelAction(new Action_ModelRevisionVersionFileEntryDeleteAll
+                Controller_ModelActions.Get().BroadcastModelAction(new Action_ModelRevisionFileEntryDeleteAll
                 (
                     RequestedModelID,
                     RequestedRevisionIndex,
-                    RequestedVersionIndex,
                     ModelObject.ModelOwnerUserID,
                     ModelObject.ModelSharedWithUserIDs,
                     AuthorizedUser.UserID,
-                    JObject.Parse(JsonConvert.SerializeObject(VersionObject.FileEntry))
+                    JObject.Parse(JsonConvert.SerializeObject(RevisionObject.FileEntry))
                 ),
                 _ErrorMessageAction);
             }
 
-            var FileType = VersionObject.FileEntry.FileEntryFileType;
-            VersionObject.FileEntry = new FileEntry()
+            var FileType = RevisionObject.FileEntry.FileEntryFileType;
+            RevisionObject.FileEntry = new FileEntry()
             {
                 FileEntryFileType = FileType
             };
-            VersionObject.FileEntry.SetRelativeUrls_GetCommonUrlPart_FileEntryFileTypePreSet(RequestedModelID, RequestedRevisionIndex, RequestedVersionIndex);
+            RevisionObject.FileEntry.SetRelativeUrls_GetCommonUrlPart_FileEntryFileTypePreSet(RequestedModelID, RequestedRevisionIndex);
 
             ModelObject.MRVLastUpdateTime = CommonMethods.GetTimeAsCreationTime();
 
@@ -289,11 +276,10 @@ namespace CADFileService
                 new BPrimitiveType(RequestedModelID),
                 JObject.Parse(JsonConvert.SerializeObject(ModelObject)));
 
-            Controller_ModelActions.Get().BroadcastModelAction(new Action_ModelRevisionVersionFileEntryDeleted
+            Controller_ModelActions.Get().BroadcastModelAction(new Action_ModelRevisionFileEntryDeleted
             (
                 RequestedModelID,
                 RequestedRevisionIndex,
-                RequestedVersionIndex,
                 ModelObject.ModelOwnerUserID,
                 ModelObject.ModelSharedWithUserIDs,
                 AuthorizedUser.UserID
@@ -311,10 +297,8 @@ namespace CADFileService
                     DatabaseService,
                     RequestedModelID,
                     RequestedRevisionIndex,
-                    RequestedVersionIndex,
                     out ModelDBEntry _,
-                    out Revision _,
-                    out RevisionVersion VersionObject,
+                    out Revision RevisionObject,
                     out int _,
                     out BWebServiceResponse _FailureResponse,
                     _ErrorMessageAction))
@@ -322,15 +306,15 @@ namespace CADFileService
                 return _FailureResponse;
             }
 
-            if (VersionObject.FileEntry.FileProcessStage == (int)Constants.EProcessStage.NotUploaded)
+            if (RevisionObject.FileEntry.FileProcessStage == (int)Constants.EProcessStage.NotUploaded)
             {
                 return BWebResponse.NotFound("Raw file has not been uploaded yet.");
             }
 
             if (!FileService.CreateSignedURLForDownload(
                 out string DownloadUrl, 
-                CadFileStorageBucketName, 
-                VersionObject.FileEntry.RawFileRelativeUrl,
+                CadFileStorageBucketName,
+                RevisionObject.FileEntry.RawFileRelativeUrl,
                 FileEntry.EXPIRY_MINUTES, 
                 _ErrorMessageAction))
             {

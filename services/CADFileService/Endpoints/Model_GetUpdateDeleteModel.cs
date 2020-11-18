@@ -277,20 +277,16 @@ namespace CADFileService
 
             foreach (var Rev in Model.ModelRevisions)
             {
-                foreach (var RevVer in Rev.RevisionVersions)
-                {
-                    Controller_ModelActions.Get().BroadcastModelAction(new Action_ModelRevisionVersionFileEntryDeleteAll
-                    (
-                        RequestedModelID,
-                        Rev.RevisionIndex,
-                        RevVer.VersionIndex,
-                        Model.ModelOwnerUserID,
-                        Model.ModelSharedWithUserIDs,
-                        AuthorizedUser.UserID,
-                        JObject.Parse(JsonConvert.SerializeObject(RevVer.FileEntry))
-                    ),
-                    _ErrorMessageAction);
-                }
+                Controller_ModelActions.Get().BroadcastModelAction(new Action_ModelRevisionFileEntryDeleteAll
+                (
+                    RequestedModelID,
+                    Rev.RevisionIndex,
+                    Model.ModelOwnerUserID,
+                    Model.ModelSharedWithUserIDs,
+                    AuthorizedUser.UserID,
+                    JObject.Parse(JsonConvert.SerializeObject(Rev.FileEntry))
+                ),
+                _ErrorMessageAction);
             }
 
             Controller_DeliveryEnsurer.Get().DB_DeleteItem_FireAndForget(
