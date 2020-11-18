@@ -119,19 +119,13 @@ namespace CADFileService.Endpoints.Common
                 UpdatableProperties = Revision.UpdatableProperties;
                 UpdatablePropertiesValidityCheck = Revision.UpdatablePropertiesValidityCheck;
             }
-            else if (typeof(T) == typeof(RevisionVersion))
-            {
-                MustHaveProperties = RevisionVersion.MustHaveProperties;
-                UpdatableProperties = RevisionVersion.UpdatableProperties;
-                UpdatablePropertiesValidityCheck = RevisionVersion.UpdatablePropertiesValidityCheck;
-            }
             else if (typeof(T) == typeof(FileEntry))
             {
                 MustHaveProperties = null;
                 UpdatableProperties = FileEntry.UpdatableProperties;
                 UpdatablePropertiesValidityCheck = FileEntry.UpdatablePropertiesValidityCheck;
             }
-            else throw new ArgumentException("Only ModelDBEntry, Revision and RevisionVersion are supported.");
+            else throw new ArgumentException("Only ModelDBEntry and Revision are supported.");
 
             using (var InputStream = _Context.Request.InputStream)
             {
@@ -254,25 +248,6 @@ namespace CADFileService.Endpoints.Common
             return false;
         }
 
-        public static bool DoesRevisionVersionExist(Revision _Revision, int _RevisionVersionIndex, out RevisionVersion _SuccessFound, out int _SuccessFoundListIx)
-        {
-            _SuccessFoundListIx = -1;
-            int i = 0;
-
-            foreach (var CurrentVersion in _Revision.RevisionVersions)
-            {
-                if (CurrentVersion.VersionIndex == _RevisionVersionIndex)
-                {
-                    _SuccessFound = CurrentVersion;
-                    _SuccessFoundListIx = i;
-                    return true;
-                }
-                i++;
-            }
-            _SuccessFound = null;
-            return false;
-        }
-
         public static bool GetProcessedFile(
             WebServiceBaseTimeoutable _Request,
             ENodeType _FileType,
@@ -281,7 +256,6 @@ namespace CADFileService.Endpoints.Common
             string _CadFileStorageBucketName,
             string _ModelID,
             int _RevisionIndex,
-            int _VersionIndex,
             out BWebServiceResponse _SuccessResponse,
             out BWebServiceResponse _FailureResponse,
             Action<string> _ErrorMessageAction = null)
@@ -301,7 +275,6 @@ namespace CADFileService.Endpoints.Common
                 _CadFileStorageBucketName,
                 _ModelID,
                 _RevisionIndex,
-                _VersionIndex,
                 out _SuccessResponse,
                 out _FailureResponse,
                 _ErrorMessageAction);
@@ -319,7 +292,6 @@ namespace CADFileService.Endpoints.Common
             string _CadFileStorageBucketName,
             string _ModelID,
             int _RevisionIndex,
-            int _VersionIndex,
             out BWebServiceResponse _SuccessResponse,
             out BWebServiceResponse _FailureResponse,
             string _GeometryId = null,
@@ -340,7 +312,6 @@ namespace CADFileService.Endpoints.Common
                 _CadFileStorageBucketName,
                 _ModelID,
                 _RevisionIndex,
-                _VersionIndex,
                 out _SuccessResponse,
                 out _FailureResponse,
                 _GeometryId,
@@ -354,17 +325,14 @@ namespace CADFileService.Endpoints.Common
             IBDatabaseServiceInterface _DatabaseService,
             string _ModelID,
             int _RevisionIndex,
-            int _VersionIndex,
             out ModelDBEntry _ModelObject,
             out Revision _RevisionObject,
-            out RevisionVersion _VersionObject,
-            out int _VersionRevisionListIx,
+            out int _RevisionListIx,
             out BWebServiceResponse _FailureResponse,
             Action<string> _ErrorMessageAction = null)
         {
             _RevisionObject = null;
-            _VersionObject = null;
-            _VersionRevisionListIx = -1;
+            _RevisionListIx = -1;
             _FailureResponse = BWebResponse.InternalError("");
 
             if (!TryGettingModelInfo(
@@ -383,21 +351,12 @@ namespace CADFileService.Endpoints.Common
                 _ModelObject,
                 _RevisionIndex,
                 out _RevisionObject,
-                out int _))
+                out _RevisionListIx))
             {
                 _FailureResponse = BWebResponse.NotFound("Revision does not exist.");
                 return false;
             }
 
-            if (!DoesRevisionVersionExist(
-                _RevisionObject,
-                _VersionIndex,
-                out _VersionObject,
-                out _VersionRevisionListIx))
-            {
-                _FailureResponse = BWebResponse.NotFound("Version does not exist.");
-                return false;
-            }
             return true;
         }
 
@@ -408,7 +367,6 @@ namespace CADFileService.Endpoints.Common
             string _CadFileStorageBucketName,
             string _ModelID,
             int _RevisionIndex,
-            int _VersionIndex,
             out BWebServiceResponse _SuccessResponse,
             out BWebServiceResponse _FailureResponse,
             string _GeometryId = null,
@@ -420,10 +378,8 @@ namespace CADFileService.Endpoints.Common
                 _DatabaseService,
                 _ModelID,
                 _RevisionIndex,
-                _VersionIndex,
                 out ModelDBEntry _,
-                out Revision _,
-                out RevisionVersion VersionObject,
+                out Revision RevisionObject,
                 out int _,
                 out _FailureResponse,
                 _ErrorMessageAction))
@@ -431,7 +387,7 @@ namespace CADFileService.Endpoints.Common
                 return false;
             }
 
-            if (VersionObject.FileEntry.FileProcessStage != (int)Constants.EProcessStage.Uploaded_Processed)
+            if (RevisionObject.FileEntry.FileProcessStage != (int)Constants.EProcessStage.Uploaded_Processed)
             {
                 _FailureResponse = BWebResponse.NotFound("Raw file has not been processed yet.");
                 return false;
@@ -441,31 +397,31 @@ namespace CADFileService.Endpoints.Common
             switch (_FileType)
             {
                 case EProcessedFileType.HIERARCHY_CF:
-                    RelativeFileUrl = VersionObject.FileEntry.HierarchyCFRelativeUrl;
+                    RelativeFileUrl = RevisionObject.FileEntry.HierarchyCFRelativeUrl;
                     break;
                 case EProcessedFileType.HIERARCHY_RAF:
-                    RelativeFileUrl = VersionObject.FileEntry.HierarchyRAFRelativeUrl;
+                    RelativeFileUrl = RevisionObject.FileEntry.HierarchyRAFRelativeUrl;
                     break;
                 case EProcessedFileType.METADATA_CF:
-                    RelativeFileUrl = VersionObject.FileEntry.MetadataCFRelativeUrl;
+                    RelativeFileUrl = RevisionObject.FileEntry.MetadataCFRelativeUrl;
                     break;
                 case EProcessedFileType.METADATA_RAF:
-                    RelativeFileUrl = VersionObject.FileEntry.MetadataRAFRelativeUrl;
+                    RelativeFileUrl = RevisionObject.FileEntry.MetadataRAFRelativeUrl;
                     break;
                 case EProcessedFileType.GEOMETRY_CF:
-                    RelativeFileUrl = VersionObject.FileEntry.GeometryCFRelativeUrl;
+                    RelativeFileUrl = RevisionObject.FileEntry.GeometryCFRelativeUrl;
                     break;
                 case EProcessedFileType.GEOMETRY_RAF:
-                    RelativeFileUrl = VersionObject.FileEntry.GeometryRAFRelativeUrl;
+                    RelativeFileUrl = RevisionObject.FileEntry.GeometryRAFRelativeUrl;
                     break;
                 case EProcessedFileType.UNREAL_HGM:
-                    RelativeFileUrl = VersionObject.FileEntry.UnrealHGMRelativeUrl;
+                    RelativeFileUrl = RevisionObject.FileEntry.UnrealHGMRelativeUrl;
                     break;
                 case EProcessedFileType.UNREAL_HG:
-                    RelativeFileUrl = VersionObject.FileEntry.UnrealHGRelativeUrl;
+                    RelativeFileUrl = RevisionObject.FileEntry.UnrealHGRelativeUrl;
                     break;
                 case EProcessedFileType.UNREAL_H:
-                    RelativeFileUrl = VersionObject.FileEntry.UnrealHRelativeUrl;
+                    RelativeFileUrl = RevisionObject.FileEntry.UnrealHRelativeUrl;
                     break;
                 case EProcessedFileType.UNREAL_G:
                     if(_GeometryId == null)
@@ -474,7 +430,7 @@ namespace CADFileService.Endpoints.Common
                         _FailureResponse = BWebResponse.InternalError("GeometryId was not provided.");
                     }
 
-                    RelativeFileUrl = $"{VersionObject.FileEntry.UnrealGRelativeUrlBasePath}{_GeometryId}.{Constants.ProcessedFileType_Extension_Map[EProcessedFileType.UNREAL_G]}";
+                    RelativeFileUrl = $"{RevisionObject.FileEntry.UnrealGRelativeUrlBasePath}{_GeometryId}.{Constants.ProcessedFileType_Extension_Map[EProcessedFileType.UNREAL_G]}";
                     break;
             }
 
@@ -505,7 +461,6 @@ namespace CADFileService.Endpoints.Common
             string _CadFileStorageBucketName,
             string _ModelID,
             int _RevisionIndex,
-            int _VersionIndex,
             out BWebServiceResponse _SuccessResponse,
             out BWebServiceResponse _FailureResponse,
             Action<string> _ErrorMessageAction = null)
@@ -516,10 +471,8 @@ namespace CADFileService.Endpoints.Common
                 _DatabaseService,
                 _ModelID,
                 _RevisionIndex,
-                _VersionIndex,
                 out ModelDBEntry _,
-                out Revision _,
-                out RevisionVersion VersionObject,
+                out Revision RevisionObject,
                 out int _,
                 out _FailureResponse,
                 _ErrorMessageAction))
@@ -527,7 +480,7 @@ namespace CADFileService.Endpoints.Common
                 return false;
             }
 
-            if (VersionObject.FileEntry.FileProcessStage != (int)Constants.EProcessStage.Uploaded_Processed)
+            if (RevisionObject.FileEntry.FileProcessStage != (int)Constants.EProcessStage.Uploaded_Processed)
             {
                 _FailureResponse = BWebResponse.NotFound("Raw file has not been processed yet.");
                 return false;
@@ -537,13 +490,13 @@ namespace CADFileService.Endpoints.Common
             switch (_FileType)
             {
                 case ENodeType.Hierarchy:
-                    RelativeFileUrl = VersionObject.FileEntry.HierarchyCFRelativeUrl;
+                    RelativeFileUrl = RevisionObject.FileEntry.HierarchyCFRelativeUrl;
                     break;
                 case ENodeType.Geometry:
-                    RelativeFileUrl = VersionObject.FileEntry.GeometryCFRelativeUrl;
+                    RelativeFileUrl = RevisionObject.FileEntry.GeometryCFRelativeUrl;
                     break;
                 case ENodeType.Metadata:
-                    RelativeFileUrl = VersionObject.FileEntry.MetadataCFRelativeUrl;
+                    RelativeFileUrl = RevisionObject.FileEntry.MetadataCFRelativeUrl;
                     break;
             }
 
@@ -575,7 +528,6 @@ namespace CADFileService.Endpoints.Common
             string _CadFileStorageBucketName,
             string _ModelID,
             int _RevisionIndex,
-            int _VersionIndex,
             bool _bRootNodeRequested, ulong _NodeID,
             out BWebServiceResponse _SuccessResponse,
             out BWebServiceResponse _FailureResponse,
@@ -607,7 +559,6 @@ namespace CADFileService.Endpoints.Common
                 _CadFileStorageBucketName,
                 _ModelID,
                 _RevisionIndex,
-                _VersionIndex,
                 _bRootNodeRequested,
                 StartIndex,
                 Size,
@@ -627,7 +578,6 @@ namespace CADFileService.Endpoints.Common
             string _CadFileStorageBucketName,
             string _ModelID,
             int _RevisionIndex,
-            int _VersionIndex,
             bool _bRootNodeRequested, uint _NodeStartIndex, uint _NodeSize,
             out BWebServiceResponse _SuccessResponse,
             out BWebServiceResponse _FailureResponse,
@@ -639,10 +589,8 @@ namespace CADFileService.Endpoints.Common
                 _DatabaseService,
                 _ModelID,
                 _RevisionIndex,
-                _VersionIndex,
                 out ModelDBEntry ModelObject,
                 out Revision RevisionObject,
-                out RevisionVersion VersionObject,
                 out int _,
                 out _FailureResponse,
                 _ErrorMessageAction))
@@ -650,7 +598,7 @@ namespace CADFileService.Endpoints.Common
                 return false;
             }
             
-            if (VersionObject.FileEntry.FileProcessStage != (int)Constants.EProcessStage.Uploaded_Processed)
+            if (RevisionObject.FileEntry.FileProcessStage != (int)Constants.EProcessStage.Uploaded_Processed)
             {
                 _FailureResponse = BWebResponse.NotFound("Raw file has not been processed yet.");
                 return false;
@@ -658,7 +606,7 @@ namespace CADFileService.Endpoints.Common
 
             if (_bRootNodeRequested)
             {
-                Convert.UniqueIDToStartIndexAndSize(VersionObject.FileEntry.ProcessedFilesRootNodeID, out _NodeStartIndex, out _NodeSize);
+                Convert.UniqueIDToStartIndexAndSize(RevisionObject.FileEntry.ProcessedFilesRootNodeID, out _NodeStartIndex, out _NodeSize);
                 if (_NodeStartIndex == 0 || _NodeSize == 0)
                 {
                     _FailureResponse = BWebResponse.InternalError("Invalid Root Node ID.");
@@ -670,13 +618,13 @@ namespace CADFileService.Endpoints.Common
             switch (_FileType)
             {
                 case ENodeType.Hierarchy:
-                    RelativeFileUrl = VersionObject.FileEntry.HierarchyRAFRelativeUrl;
+                    RelativeFileUrl = RevisionObject.FileEntry.HierarchyRAFRelativeUrl;
                     break;
                 case ENodeType.Geometry:
-                    RelativeFileUrl = VersionObject.FileEntry.GeometryRAFRelativeUrl;
+                    RelativeFileUrl = RevisionObject.FileEntry.GeometryRAFRelativeUrl;
                     break;
                 case ENodeType.Metadata:
-                    RelativeFileUrl = VersionObject.FileEntry.MetadataRAFRelativeUrl;
+                    RelativeFileUrl = RevisionObject.FileEntry.MetadataRAFRelativeUrl;
                     break;
             }
 

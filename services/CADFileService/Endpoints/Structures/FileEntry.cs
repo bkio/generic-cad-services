@@ -315,11 +315,16 @@ namespace CADFileService.Endpoints.Structures
 
         public const string RAW_FILE_FOLDER_PREFIX = "raw/";
 
-        public static bool SplitRelativeUrl(string _RelativeUrl, out string _OwnerModelID, out int _OwnerRevisionIndex, out int _OwnerVersionIndex, out bool _bIsProcessed, out EProcessedFileType _ProcessedFileType_IfProcessed, out string _RawExtension_IfRaw)
+        public static bool SplitRelativeUrl(
+            string _RelativeUrl, 
+            out string _OwnerModelID, 
+            out int _OwnerRevisionIndex, 
+            out bool _bIsProcessed, 
+            out EProcessedFileType _ProcessedFileType_IfProcessed, 
+            out string _RawExtension_IfRaw)
         {
             _OwnerModelID = null;
             _OwnerRevisionIndex = -1;
-            _OwnerVersionIndex = -1;
             _ProcessedFileType_IfProcessed = EProcessedFileType.NONE_OR_RAW;
             _RawExtension_IfRaw = null;
 
@@ -341,26 +346,23 @@ namespace CADFileService.Endpoints.Structures
 
             if (_RelativeUrl == null || _RelativeUrl.Length == 0) return false;
             var Splitted = _RelativeUrl.Split('/');
-            if (Splitted.Length < 4) return false;
+            if (Splitted.Length < 3) return false;
 
             _OwnerModelID = Splitted[0];
             if (!int.TryParse(Splitted[1], out _OwnerRevisionIndex)) return false;
-            if (!int.TryParse(Splitted[2], out _OwnerVersionIndex)) return false;
             
             if (!_bIsProcessed)
             {
-                var ExtensionSplit = Splitted[3].Split('.');
+                var ExtensionSplit = Splitted[2].Split('.');
                 if (ExtensionSplit.Length < 2) return false;
                 _RawExtension_IfRaw = ExtensionSplit[ExtensionSplit.Length - 1];
             }
 
             return true;
         }
-        public string SetRelativeUrls_GetCommonUrlPart_FileEntryFileTypePreSet(string _OwnerModelID, int _OwnerRevisionIndex, int _OwnerVersionIndex)
+        public string SetRelativeUrls_GetCommonUrlPart_FileEntryFileTypePreSet(string _OwnerModelID, int _OwnerRevisionIndex)
         {
-
-            var CommonUrlPart = $"{_OwnerModelID}/{_OwnerRevisionIndex}/{_OwnerVersionIndex}/file.";
-
+            var CommonUrlPart = $"{_OwnerModelID}/{_OwnerRevisionIndex}/file.";
 
             RawFileRelativeUrl = Make_RawFileRelativeUrl_FromCommonUrlPart(CommonUrlPart, FileEntryFileType);
 
@@ -374,7 +376,7 @@ namespace CADFileService.Endpoints.Structures
             UnrealHGMRelativeUrl = Make_UnrealHGMRelativeUrl_FromCommonUrlPart(CommonUrlPart);
             UnrealHGRelativeUrl = Make_UnrealHGRelativeUrl_FromCommonUrlPart(CommonUrlPart);
             UnrealHRelativeUrl = Make_UnrealHRelativeUrl_FromCommonUrlPart(CommonUrlPart);
-            UnrealGRelativeUrlBasePath = Make_UnrealGCFRelativeUrl_FromCommonUrlPart($"{_OwnerModelID}/{_OwnerRevisionIndex}/{_OwnerVersionIndex}/");
+            UnrealGRelativeUrlBasePath = Make_UnrealGCFRelativeUrl_FromCommonUrlPart($"{_OwnerModelID}/{_OwnerRevisionIndex}/");
 
             return CommonUrlPart;
         }

@@ -183,21 +183,17 @@ namespace CADFileService
                 return BWebResponse.NotFound("Revision does not exist.");
             }
 
-            foreach (var RevVer in RevisionObject.RevisionVersions)
-            {
-                Controller_ModelActions.Get().BroadcastModelAction(new Action_ModelRevisionVersionFileEntryDeleteAll
+            Controller_ModelActions.Get().BroadcastModelAction(new Action_ModelRevisionFileEntryDeleteAll
                 (
                     RequestedModelID,
                     RequestedRevisionIndex,
-                    RevVer.VersionIndex,
                     Model.ModelOwnerUserID,
                     Model.ModelSharedWithUserIDs,
                     AuthorizedUser.UserID,
-                    JObject.Parse(JsonConvert.SerializeObject(RevVer.FileEntry))
+                    JObject.Parse(JsonConvert.SerializeObject(RevisionObject.FileEntry))
                 ),
                 _ErrorMessageAction);
-            }
-            
+
             Model.ModelRevisions.RemoveAt(ModelRevisionListIx);
             Model.MRVLastUpdateTime = CommonMethods.GetTimeAsCreationTime();
 

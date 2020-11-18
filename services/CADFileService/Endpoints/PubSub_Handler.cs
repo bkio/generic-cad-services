@@ -47,9 +47,9 @@ namespace CADFileService.Endpoints
                 {
                     return DeleteUserModelsUpdateSharings(_Context, (Action_UserDeleted)_Action, _ErrorMessageAction);
                 }
-                else if (_Action.GetActionType() == Actions.EAction.ACTION_MODEL_REVISION_VERSION_FILE_ENTRY_DELETE_ALL)
+                else if (_Action.GetActionType() == Actions.EAction.ACTION_MODEL_REVISION_FILE_ENTRY_DELETE_ALL)
                 {
-                    return DeleteFiles(_Context, (Action_ModelRevisionVersionFileEntryDeleteAll)_Action, _ErrorMessageAction);
+                    return DeleteFiles(_Context, (Action_ModelRevisionFileEntryDeleteAll)_Action, _ErrorMessageAction);
                 }
                 else if (_Action.GetActionType() == Actions.EAction.ACTION_STORAGE_FILE_UPLOADED)
                 {
@@ -92,7 +92,6 @@ namespace CADFileService.Endpoints
 
             private bool UpdateModelBatchProcessFailed(HttpListenerContext _Context, Action_BatchProcessFailed _Action, Action<string> _ErrorMessageAction = null)
             {
-
                 if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, ModelDBEntry.DBSERVICE_MODELS_TABLE(), _Action.ModelID, _ErrorMessageAction))
                 {
                     return false; //Retry
@@ -103,23 +102,21 @@ namespace CADFileService.Endpoints
                         DatabaseService,
                         _Action.ModelID,
                         _Action.RevisionIndex,
-                        _Action.VersionIndex,
                         out ModelDBEntry ModelObject,
                         out Revision RevisionObject,
-                        out RevisionVersion VersionObject,
                         out int _,
                         out BWebServiceResponse _FailureResponse,
                         _ErrorMessageAction))
                     {
                         if (_FailureResponse.StatusCode == BWebResponse.Error_NotFound_Code)
                         {
-                            _ErrorMessageAction?.Invoke($"Error: PubSub_Handler->UpdateModelBatchProcessFailed: Model/revision/version does not exist: {_Action.ModelID}->{_Action.RevisionIndex}->{_Action.VersionIndex}");
+                            _ErrorMessageAction?.Invoke($"Error: PubSub_Handler->UpdateModelBatchProcessFailed: Model/revision does not exist: {_Action.ModelID}->{_Action.RevisionIndex}");
                             return true; //Should return 200
                         }
                         return false; //DB Error - Retry
                     }
 
-                    VersionObject.FileEntry.FileProcessStage = (int)Constants.EProcessStage.Uploaded_ProcessFailed;
+                    RevisionObject.FileEntry.FileProcessStage = (int)Constants.EProcessStage.Uploaded_ProcessFailed;
                     ModelObject.MRVLastUpdateTime = CommonMethods.GetTimeAsCreationTime();
 
                     Controller_DeliveryEnsurer.Get().DB_UpdateItem_FireAndForget(
@@ -269,20 +266,16 @@ namespace CADFileService.Endpoints
 
                 foreach (var Rev in ModelData.ModelRevisions)
                 {
-                    foreach (var RevVer in Rev.RevisionVersions)
-                    {
-                        Controller_ModelActions.Get().BroadcastModelAction(new Action_ModelRevisionVersionFileEntryDeleteAll
+                    Controller_ModelActions.Get().BroadcastModelAction(new Action_ModelRevisionFileEntryDeleteAll
                         (
                             _ModelID,
                             Rev.RevisionIndex,
-                            RevVer.VersionIndex,
                             ModelData.ModelOwnerUserID,
                             ModelData.ModelSharedWithUserIDs,
                             _DeletedUserID,
-                            JObject.Parse(JsonConvert.SerializeObject(RevVer.FileEntry))
+                            JObject.Parse(JsonConvert.SerializeObject(Rev.FileEntry))
                         ),
                         _ErrorMessageAction);
-                    }
                 }
 
                 Controller_DeliveryEnsurer.Get().DB_DeleteItem_FireAndForget(
@@ -451,12 +444,11 @@ namespace CADFileService.Endpoints
                 Action_StorageFileUploaded _Action,
                 EProcessedFileType _ContinueIfRelativeUrlIsA,
                 Action<string> _ErrorMessageAction,
-                Func<string, int, int, ModelDBEntry, RevisionVersion, bool> _SuccessCallback)
+                Func<string, int, ModelDBEntry, Revision, bool> _SuccessCallback)
             {
                 if (!FileEntry.SplitRelativeUrl(_Action.RelativeUrl,
                     out string OwnerModelID,
                     out int OwnerRevisionIndex,
-                    out int OwnerVersionIndex,
                     out bool bIsAProcessedFile,
                     out EProcessedFileType ProcessedFileType_IfProcessed,
                     out string RawExtension_IfRaw))
@@ -478,23 +470,21 @@ namespace CADFileService.Endpoints
                             DatabaseService,
                             OwnerModelID,
                             OwnerRevisionIndex,
-                            OwnerVersionIndex,
                             out ModelDBEntry ModelObject,
                             out Revision RevisionObject,
-                            out RevisionVersion VersionObject,
                             out int _,
                             out BWebServiceResponse _FailureResponse,
                             _ErrorMessageAction))
                         {
                             if (_FailureResponse.StatusCode == BWebResponse.Error_NotFound_Code)
                             {
-                                _ErrorMessageAction?.Invoke("Error: PubSub_Handler->" + _CallerMethod + ": Model/revision/version does not exist: " + OwnerModelID + "->" + OwnerRevisionIndex + "->" + OwnerVersionIndex);
+                                _ErrorMessageAction?.Invoke("Error: PubSub_Handler->" + _CallerMethod + ": Model/revision does not exist: " + OwnerModelID + "->" + OwnerRevisionIndex);
                                 return true; //Should return 200
                             }
                             return false; //DB Error - Retry
                         }
 
-                        var bCallbackResult = _SuccessCallback?.Invoke(OwnerModelID, OwnerRevisionIndex, OwnerVersionIndex, ModelObject, VersionObject);
+                        var bCallbackResult = _SuccessCallback?.Invoke(OwnerModelID, OwnerRevisionIndex, ModelObject, RevisionObject);
                         if (!bCallbackResult.HasValue) return false;
                         return bCallbackResult.Value;
                     }
@@ -510,51 +500,51 @@ namespace CADFileService.Endpoints
 
                 return true;
             }
-            private bool CheckIfAllProcessedFilesUploaded(out bool _bAllUploaded, RevisionVersion _VersionObject, Action<string> _ErrorMessageAction)
+            private bool CheckIfAllProcessedFilesUploaded(out bool _bAllUploaded, Revision _RevisionObject, Action<string> _ErrorMessageAction)
             {
                 _bAllUploaded = false;
 
-                if (!FileService.CheckFileExistence(CadFileStorageBucketName, _VersionObject.FileEntry.HierarchyRAFRelativeUrl, out bool bExist, _ErrorMessageAction))
+                if (!FileService.CheckFileExistence(CadFileStorageBucketName, _RevisionObject.FileEntry.HierarchyRAFRelativeUrl, out bool bExist, _ErrorMessageAction))
                     return false; //Retry
                 if (!bExist)
                     return true;
 
-                if (!FileService.CheckFileExistence(CadFileStorageBucketName, _VersionObject.FileEntry.HierarchyCFRelativeUrl, out bExist, _ErrorMessageAction))
+                if (!FileService.CheckFileExistence(CadFileStorageBucketName, _RevisionObject.FileEntry.HierarchyCFRelativeUrl, out bExist, _ErrorMessageAction))
                     return false; //Retry
                 if (!bExist)
                     return true;
 
-                if (!FileService.CheckFileExistence(CadFileStorageBucketName, _VersionObject.FileEntry.GeometryRAFRelativeUrl, out bExist, _ErrorMessageAction))
+                if (!FileService.CheckFileExistence(CadFileStorageBucketName, _RevisionObject.FileEntry.GeometryRAFRelativeUrl, out bExist, _ErrorMessageAction))
                     return false; //Retry
                 if (!bExist)
                     return true;
 
-                if (!FileService.CheckFileExistence(CadFileStorageBucketName, _VersionObject.FileEntry.GeometryCFRelativeUrl, out bExist, _ErrorMessageAction))
+                if (!FileService.CheckFileExistence(CadFileStorageBucketName, _RevisionObject.FileEntry.GeometryCFRelativeUrl, out bExist, _ErrorMessageAction))
                     return false; //Retry
                 if (!bExist)
                     return true;
 
-                if (!FileService.CheckFileExistence(CadFileStorageBucketName, _VersionObject.FileEntry.MetadataRAFRelativeUrl, out bExist, _ErrorMessageAction))
+                if (!FileService.CheckFileExistence(CadFileStorageBucketName, _RevisionObject.FileEntry.MetadataRAFRelativeUrl, out bExist, _ErrorMessageAction))
                     return false; //Retry
                 if (!bExist)
                     return true;
 
-                if (!FileService.CheckFileExistence(CadFileStorageBucketName, _VersionObject.FileEntry.MetadataCFRelativeUrl, out bExist, _ErrorMessageAction))
+                if (!FileService.CheckFileExistence(CadFileStorageBucketName, _RevisionObject.FileEntry.MetadataCFRelativeUrl, out bExist, _ErrorMessageAction))
                     return false; //Retry
                 if (!bExist)
                     return true;
 
-                if (!FileService.CheckFileExistence(CadFileStorageBucketName, _VersionObject.FileEntry.UnrealHGMRelativeUrl, out bExist, _ErrorMessageAction))
+                if (!FileService.CheckFileExistence(CadFileStorageBucketName, _RevisionObject.FileEntry.UnrealHGMRelativeUrl, out bExist, _ErrorMessageAction))
                     return false; //Retry
                 if (!bExist)
                     return true;
 
-                if (!FileService.CheckFileExistence(CadFileStorageBucketName, _VersionObject.FileEntry.UnrealHGRelativeUrl, out bExist, _ErrorMessageAction))
+                if (!FileService.CheckFileExistence(CadFileStorageBucketName, _RevisionObject.FileEntry.UnrealHGRelativeUrl, out bExist, _ErrorMessageAction))
                     return false; //Retry
                 if (!bExist)
                     return true;
 
-                if (!FileService.CheckFileExistence(CadFileStorageBucketName, _VersionObject.FileEntry.UnrealHRelativeUrl, out bExist, _ErrorMessageAction))
+                if (!FileService.CheckFileExistence(CadFileStorageBucketName, _RevisionObject.FileEntry.UnrealHRelativeUrl, out bExist, _ErrorMessageAction))
                     return false; //Retry
                 if (!bExist)
                     return true;
@@ -562,9 +552,9 @@ namespace CADFileService.Endpoints
                 _bAllUploaded = true;
                 return true;
             }
-            private void UpdateDatabaseEntry_AllProcessedFilesUploaded(HttpListenerContext _Context, string _ModelID, ModelDBEntry _ModelObject, RevisionVersion _VersionObject, Action<string> _ErrorMessageAction)
+            private void UpdateDatabaseEntry_AllProcessedFilesUploaded(HttpListenerContext _Context, string _ModelID, ModelDBEntry _ModelObject, Revision _RevisionObject, Action<string> _ErrorMessageAction)
             {
-                _VersionObject.FileEntry.FileProcessStage = (int)Constants.EProcessStage.Uploaded_Processed;
+                _RevisionObject.FileEntry.FileProcessStage = (int)Constants.EProcessStage.Uploaded_Processed;
                 _ModelObject.MRVLastUpdateTime = CommonMethods.GetTimeAsCreationTime();
 
                 Controller_DeliveryEnsurer.Get().DB_UpdateItem_FireAndForget(
@@ -579,13 +569,13 @@ namespace CADFileService.Endpoints
             private bool RawFileUploaded(HttpListenerContext _Context, Action_StorageFileUploaded _Action, Action<string> _ErrorMessageAction)
             {
                 if (!OnFileUploaded_Internal("RawFileUploaded", _Action, EProcessedFileType.NONE_OR_RAW, _ErrorMessageAction,
-                    (string ModelID, int RevisionIndex, int VersionIndex, ModelDBEntry ModelObject, RevisionVersion VersionObject) =>
+                    (string ModelID, int RevisionIndex, ModelDBEntry ModelObject, Revision RevisionObject) =>
                     {
                         string ZipMainAssembly = "";
 
-                        if (VersionObject.FileEntry.ZipTypeMainAssemblyFileNameIfAny != null)
+                        if (RevisionObject.FileEntry.ZipTypeMainAssemblyFileNameIfAny != null)
                         {
-                            ZipMainAssembly = VersionObject.FileEntry.ZipTypeMainAssemblyFileNameIfAny;
+                            ZipMainAssembly = RevisionObject.FileEntry.ZipTypeMainAssemblyFileNameIfAny;
                         }
 
                         var RequestObject = new JObject()
@@ -625,9 +615,9 @@ namespace CADFileService.Endpoints
                             return false; //Retry
                         }
 
-                        VersionObject.FileEntry.FileProcessStage = (int)Constants.EProcessStage.Uploaded_Processing;
-                        VersionObject.FileEntry.FileProcessedAtTime = CommonMethods.GetTimeAsCreationTime();
-                        ModelObject.MRVLastUpdateTime = VersionObject.FileEntry.FileProcessedAtTime;
+                        RevisionObject.FileEntry.FileProcessStage = (int)Constants.EProcessStage.Uploaded_Processing;
+                        RevisionObject.FileEntry.FileProcessedAtTime = CommonMethods.GetTimeAsCreationTime();
+                        ModelObject.MRVLastUpdateTime = RevisionObject.FileEntry.FileProcessedAtTime;
 
                         var FinalSerializedModelObject = JObject.Parse(JsonConvert.SerializeObject(ModelObject));
 
@@ -638,11 +628,10 @@ namespace CADFileService.Endpoints
                             new BPrimitiveType(ModelID),
                             FinalSerializedModelObject);
 
-                        Controller_ModelActions.Get().BroadcastModelAction(new Action_ModelRevisionVersionRawFileUploaded
+                        Controller_ModelActions.Get().BroadcastModelAction(new Action_ModelRevisionRawFileUploaded
                         (
                             ModelID,
                             RevisionIndex,
-                            VersionIndex,
                             ModelObject.ModelOwnerUserID,
                             ModelObject.ModelSharedWithUserIDs,
                             ModelObject.ModelOwnerUserID,
@@ -663,20 +652,18 @@ namespace CADFileService.Endpoints
 
                 string ModelID = null;
                 int RevisionIndex = -1;
-                int VersionIndex = -1;
                 if (!OnFileUploaded_Internal("HierarchyRAFUploaded", _Action, EProcessedFileType.HIERARCHY_RAF, _ErrorMessageAction,
-                    (string _ModelID, int _RevisionIndex, int _VersionIndex, ModelDBEntry _ModelObject, RevisionVersion _VersionObject) =>
+                    (string _ModelID, int _RevisionIndex, ModelDBEntry _ModelObject, Revision _RevisionObject) =>
                 {
-                    if (!CheckIfAllProcessedFilesUploaded(out bool bAllUploaded, _VersionObject, _ErrorMessageAction))
+                    if (!CheckIfAllProcessedFilesUploaded(out bool bAllUploaded, _RevisionObject, _ErrorMessageAction))
                         return false; //Retry
                     if (bAllUploaded)
-                        UpdateDatabaseEntry_AllProcessedFilesUploaded(_Context, _ModelID, _ModelObject, _VersionObject, _ErrorMessageAction);
+                        UpdateDatabaseEntry_AllProcessedFilesUploaded(_Context, _ModelID, _ModelObject, _RevisionObject, _ErrorMessageAction);
 
                     bProceedToFindRoot = true;
 
                     ModelID = _ModelID;
                     RevisionIndex = _RevisionIndex;
-                    VersionIndex = _VersionIndex;
                     return true;
 
                 })) { return false; /* Retry */ }
@@ -771,23 +758,21 @@ namespace CADFileService.Endpoints
                         DatabaseService,
                         ModelID,
                         RevisionIndex,
-                        VersionIndex,
                         out ModelDBEntry ModelObject,
                         out Revision RevisionObject,
-                        out RevisionVersion VersionObject,
                         out int _,
                         out BWebServiceResponse _FailureResponse,
                         _ErrorMessageAction))
                     {
                         if (_FailureResponse.StatusCode == BWebResponse.Error_NotFound_Code)
                         {
-                            _ErrorMessageAction?.Invoke("Error: PubSub_Handler->HierarchyRAFUploaded: Model/revision/version does not exist: " + ModelID + "->" + RevisionIndex + "->" + VersionIndex);
+                            _ErrorMessageAction?.Invoke("Error: PubSub_Handler->HierarchyRAFUploaded: Model/revision does not exist: " + ModelID + "->" + RevisionIndex);
                             return true; //Should return 200
                         }
                         return false; //DB Error - Retry
                     }
 
-                    VersionObject.FileEntry.ProcessedFilesRootNodeID = RootNodeID.Get();
+                    RevisionObject.FileEntry.ProcessedFilesRootNodeID = RootNodeID.Get();
                     ModelObject.MRVLastUpdateTime = CommonMethods.GetTimeAsCreationTime();
 
                     Controller_DeliveryEnsurer.Get().DB_UpdateItem_FireAndForget(
@@ -805,12 +790,12 @@ namespace CADFileService.Endpoints
             private bool HierarchyCFUploaded(HttpListenerContext _Context, Action_StorageFileUploaded _Action, Action<string> _ErrorMessageAction)
             {
                 if (!OnFileUploaded_Internal("HierarchyCFUploaded", _Action, EProcessedFileType.HIERARCHY_CF, _ErrorMessageAction,
-                    (string ModelID, int RevisionIndex, int VersionIndex, ModelDBEntry ModelObject, RevisionVersion VersionObject) =>
+                    (string ModelID, int RevisionIndex, ModelDBEntry ModelObject, Revision RevisionObject) =>
                 {
-                    if (!CheckIfAllProcessedFilesUploaded(out bool bAllUploaded, VersionObject, _ErrorMessageAction))
+                    if (!CheckIfAllProcessedFilesUploaded(out bool bAllUploaded, RevisionObject, _ErrorMessageAction))
                         return false; //Retry
                     if (bAllUploaded)
-                        UpdateDatabaseEntry_AllProcessedFilesUploaded(_Context, ModelID, ModelObject, VersionObject, _ErrorMessageAction);
+                        UpdateDatabaseEntry_AllProcessedFilesUploaded(_Context, ModelID, ModelObject, RevisionObject, _ErrorMessageAction);
                     return true;
 
                 })) { return false; /* Retry */ }
@@ -821,12 +806,12 @@ namespace CADFileService.Endpoints
             private bool GeometryRAFUploaded(HttpListenerContext _Context, Action_StorageFileUploaded _Action, Action<string> _ErrorMessageAction)
             {
                 if (!OnFileUploaded_Internal("GeometryRAFUploaded", _Action, EProcessedFileType.GEOMETRY_RAF, _ErrorMessageAction,
-                    (string ModelID, int RevisionIndex, int VersionIndex, ModelDBEntry ModelObject, RevisionVersion VersionObject) =>
+                    (string ModelID, int RevisionIndex, ModelDBEntry ModelObject, Revision RevisionObject) =>
                 {
-                    if (!CheckIfAllProcessedFilesUploaded(out bool bAllUploaded, VersionObject, _ErrorMessageAction))
+                    if (!CheckIfAllProcessedFilesUploaded(out bool bAllUploaded, RevisionObject, _ErrorMessageAction))
                         return false; //Retry
                     if (bAllUploaded)
-                        UpdateDatabaseEntry_AllProcessedFilesUploaded(_Context, ModelID, ModelObject, VersionObject, _ErrorMessageAction);
+                        UpdateDatabaseEntry_AllProcessedFilesUploaded(_Context, ModelID, ModelObject, RevisionObject, _ErrorMessageAction);
                     return true;
 
                 })) { return false; /* Retry */ }
@@ -836,12 +821,12 @@ namespace CADFileService.Endpoints
             private bool GeometryCFUploaded(HttpListenerContext _Context, Action_StorageFileUploaded _Action, Action<string> _ErrorMessageAction)
             {
                 if (!OnFileUploaded_Internal("GeometryCFUploaded", _Action, EProcessedFileType.GEOMETRY_CF, _ErrorMessageAction,
-                (string ModelID, int RevisionIndex, int VersionIndex, ModelDBEntry ModelObject, RevisionVersion VersionObject) =>
+                (string ModelID, int RevisionIndex, ModelDBEntry ModelObject, Revision RevisionObject) =>
                 {
-                    if (!CheckIfAllProcessedFilesUploaded(out bool bAllUploaded, VersionObject, _ErrorMessageAction))
+                    if (!CheckIfAllProcessedFilesUploaded(out bool bAllUploaded, RevisionObject, _ErrorMessageAction))
                         return false; //Retry
                     if (bAllUploaded)
-                        UpdateDatabaseEntry_AllProcessedFilesUploaded(_Context, ModelID, ModelObject, VersionObject, _ErrorMessageAction);
+                        UpdateDatabaseEntry_AllProcessedFilesUploaded(_Context, ModelID, ModelObject, RevisionObject, _ErrorMessageAction);
                     return true;
 
                 })) { return false; /* Retry */ }
@@ -855,12 +840,12 @@ namespace CADFileService.Endpoints
                 string OwnerUserID = null;
 
                 if (!OnFileUploaded_Internal("MetadataRAFUploaded", _Action, EProcessedFileType.METADATA_RAF, _ErrorMessageAction,
-                (string ModelID, int RevisionIndex, int VersionIndex, ModelDBEntry ModelObject, RevisionVersion VersionObject) =>
+                (string ModelID, int RevisionIndex, ModelDBEntry ModelObject, Revision RevisionObject) =>
                 {
-                    if (!CheckIfAllProcessedFilesUploaded(out bool bAllUploaded, VersionObject, _ErrorMessageAction))
+                    if (!CheckIfAllProcessedFilesUploaded(out bool bAllUploaded, RevisionObject, _ErrorMessageAction))
                         return false; //Retry
                     if (bAllUploaded)
-                        UpdateDatabaseEntry_AllProcessedFilesUploaded(_Context, ModelID, ModelObject, VersionObject, _ErrorMessageAction);
+                        UpdateDatabaseEntry_AllProcessedFilesUploaded(_Context, ModelID, ModelObject, RevisionObject, _ErrorMessageAction);
 
                     OwnerUserID = ModelObject.ModelOwnerUserID;
                     bProceedToParseMetadata = true;
@@ -880,12 +865,12 @@ namespace CADFileService.Endpoints
             private bool MetadataCFUploaded(HttpListenerContext _Context, Action_StorageFileUploaded _Action, Action<string> _ErrorMessageAction)
             {
                 if (!OnFileUploaded_Internal("MetadataCFUploaded", _Action, EProcessedFileType.METADATA_CF, _ErrorMessageAction,
-                (string ModelID, int RevisionIndex, int VersionIndex, ModelDBEntry ModelObject, RevisionVersion VersionObject) =>
+                (string ModelID, int RevisionIndex, ModelDBEntry ModelObject, Revision RevisionObject) =>
                 {
-                    if (!CheckIfAllProcessedFilesUploaded(out bool bAllUploaded, VersionObject, _ErrorMessageAction))
+                    if (!CheckIfAllProcessedFilesUploaded(out bool bAllUploaded, RevisionObject, _ErrorMessageAction))
                         return false; //Retry
                     if (bAllUploaded)
-                        UpdateDatabaseEntry_AllProcessedFilesUploaded(_Context, ModelID, ModelObject, VersionObject, _ErrorMessageAction);
+                        UpdateDatabaseEntry_AllProcessedFilesUploaded(_Context, ModelID, ModelObject, RevisionObject, _ErrorMessageAction);
                     return true;
 
                 })) { return false; /* Retry */ }
@@ -896,12 +881,12 @@ namespace CADFileService.Endpoints
             private bool UnrealHGMUploaded(HttpListenerContext _Context, Action_StorageFileUploaded _Action, Action<string> _ErrorMessageAction)
             {
                 if (!OnFileUploaded_Internal("UnrealHGMUploaded", _Action, EProcessedFileType.UNREAL_HGM, _ErrorMessageAction,
-                (string ModelID, int RevisionIndex, int VersionIndex, ModelDBEntry ModelObject, RevisionVersion VersionObject) =>
+                (string ModelID, int RevisionIndex, ModelDBEntry ModelObject, Revision RevisionObject) =>
                 {
-                    if (!CheckIfAllProcessedFilesUploaded(out bool bAllUploaded, VersionObject, _ErrorMessageAction))
+                    if (!CheckIfAllProcessedFilesUploaded(out bool bAllUploaded, RevisionObject, _ErrorMessageAction))
                         return false; //Retry
                     if (bAllUploaded)
-                        UpdateDatabaseEntry_AllProcessedFilesUploaded(_Context, ModelID, ModelObject, VersionObject, _ErrorMessageAction);
+                        UpdateDatabaseEntry_AllProcessedFilesUploaded(_Context, ModelID, ModelObject, RevisionObject, _ErrorMessageAction);
                     return true;
 
                 })) { return false; /* Retry */ }
@@ -911,12 +896,12 @@ namespace CADFileService.Endpoints
             private bool UnrealHGUploaded(HttpListenerContext _Context, Action_StorageFileUploaded _Action, Action<string> _ErrorMessageAction)
             {
                 if (!OnFileUploaded_Internal("UnrealHGUploaded", _Action, EProcessedFileType.UNREAL_HG, _ErrorMessageAction,
-                (string ModelID, int RevisionIndex, int VersionIndex, ModelDBEntry ModelObject, RevisionVersion VersionObject) =>
+                (string ModelID, int RevisionIndex, ModelDBEntry ModelObject, Revision RevisionObject) =>
                 {
-                    if (!CheckIfAllProcessedFilesUploaded(out bool bAllUploaded, VersionObject, _ErrorMessageAction))
+                    if (!CheckIfAllProcessedFilesUploaded(out bool bAllUploaded, RevisionObject, _ErrorMessageAction))
                         return false; //Retry
                     if (bAllUploaded)
-                        UpdateDatabaseEntry_AllProcessedFilesUploaded(_Context, ModelID, ModelObject, VersionObject, _ErrorMessageAction);
+                        UpdateDatabaseEntry_AllProcessedFilesUploaded(_Context, ModelID, ModelObject, RevisionObject, _ErrorMessageAction);
                     return true;
 
                 })) { return false; /* Retry */ }
@@ -927,12 +912,12 @@ namespace CADFileService.Endpoints
             private bool UnrealHUploaded(HttpListenerContext _Context, Action_StorageFileUploaded _Action, Action<string> _ErrorMessageAction)
             {
                 if (!OnFileUploaded_Internal("UnrealHUploaded", _Action, EProcessedFileType.UNREAL_H, _ErrorMessageAction,
-                (string ModelID, int RevisionIndex, int VersionIndex, ModelDBEntry ModelObject, RevisionVersion VersionObject) =>
+                (string ModelID, int RevisionIndex, ModelDBEntry ModelObject, Revision RevisionObject) =>
                 {
-                    if (!CheckIfAllProcessedFilesUploaded(out bool bAllUploaded, VersionObject, _ErrorMessageAction))
+                    if (!CheckIfAllProcessedFilesUploaded(out bool bAllUploaded, RevisionObject, _ErrorMessageAction))
                         return false; //Retry
                     if (bAllUploaded)
-                        UpdateDatabaseEntry_AllProcessedFilesUploaded(_Context, ModelID, ModelObject, VersionObject, _ErrorMessageAction);
+                        UpdateDatabaseEntry_AllProcessedFilesUploaded(_Context, ModelID, ModelObject, RevisionObject, _ErrorMessageAction);
                     return true;
 
                 })) { return false; /* Retry */ }
@@ -940,8 +925,7 @@ namespace CADFileService.Endpoints
                 return true;
             }
 
-
-            private bool DeleteFiles(HttpListenerContext _Context, Action_ModelRevisionVersionFileEntryDeleteAll _Action, Action<string> _ErrorMessageAction)
+            private bool DeleteFiles(HttpListenerContext _Context, Action_ModelRevisionFileEntryDeleteAll _Action, Action<string> _ErrorMessageAction)
             {
                 //Note: User/Model entry might be deleted by this time.
 
@@ -957,7 +941,7 @@ namespace CADFileService.Endpoints
 
             private bool Add_Remove_AttributesFromMetadataRAF(Controller_AttributeTables.EAddRemove _AddOrRemove, string _MetadataRAFRelativeUrl, string _UserID, Action<string> _ErrorMessageAction)
             {
-                FileEntry.SplitRelativeUrl(_MetadataRAFRelativeUrl, out string ModelID, out int RevisionIndex, out int VersionIndex, out bool _, out EProcessedFileType _, out string _);
+                FileEntry.SplitRelativeUrl(_MetadataRAFRelativeUrl, out string ModelID, out int RevisionIndex, out bool _, out EProcessedFileType _, out string _);
 
                 //TODO: Refactor for XStreamReader changes. Its no longer a stream and processes a given stream. Also check compensate for file that could be compressed or not
                 MemoryStream MemStream = new MemoryStream();
@@ -1016,7 +1000,7 @@ namespace CADFileService.Endpoints
                             //This gets clearance internally
                             Controller_AttributeTables.Get().AddRemoveMetadataSets_AttributesTables(
                                 InnerDeliveryEnsurerUserProcessor, _UserID,
-                                Controller_AttributeTables.MetadataLocator.ItIsVersionMetadata(ModelID, RevisionIndex, VersionIndex, MetadataID),
+                                Controller_AttributeTables.MetadataLocator.ItIsRevisionMetadata(ModelID, RevisionIndex, MetadataID),
                                 new List<Metadata>() { CompiledMetadataNode },
                                 _AddOrRemove,
                                 Controller_AttributeTables.EKillProcedureIfGetClearanceFails.No,

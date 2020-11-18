@@ -424,7 +424,11 @@ namespace CADProcessService.K8S
             BatchProcessingStateService.GetPodBucketAndFile(_PodName, out _Bucket, out _Filename, out string _);
         }
 
-        private static bool GetModelDetailsFromFilePath(string _Filename, out string _ModelId, out int _RevisionIndex, out int _VersionIndex, Action<string> _ErrorMessageAction = null)
+        private static bool GetModelDetailsFromFilePath(
+            string _Filename, 
+            out string _ModelId, 
+            out int _RevisionIndex, 
+            Action<string> _ErrorMessageAction = null)
         {
             try
             {
@@ -432,7 +436,6 @@ namespace CADProcessService.K8S
                 string[] Parts = _Filename.Split('/');
                 _ModelId = Parts[1];
                 _RevisionIndex = int.Parse(Parts[2]);
-                _VersionIndex = int.Parse(Parts[3]);
                 return true;
             }
             catch (Exception ex)
@@ -440,7 +443,6 @@ namespace CADProcessService.K8S
                 _ErrorMessageAction?.Invoke($"Failed to extract model info from [{_Filename}] - {ex.Message}\n{ex.StackTrace}");
                 _ModelId = null;
                 _RevisionIndex = -1;
-                _VersionIndex = -1;
                 return false;
             }
         }
@@ -476,14 +478,13 @@ namespace CADProcessService.K8S
                     }
                 }
 
-                if (GetModelDetailsFromFilePath(Filename, out string _ModelId, out int _RevisionIndex, out int _VersionIndex, _ErrorMessageAction))
+                if (GetModelDetailsFromFilePath(Filename, out string _ModelId, out int _RevisionIndex, _ErrorMessageAction))
                 {
                     //if we fail then you have a broken model on a broken path
                     Controller_BatchProcess.Get().BroadcastBatchProcessAction(new Action_BatchProcessFailed()
                     {
                         ModelID = _ModelId,
-                        RevisionIndex = _RevisionIndex,
-                        VersionIndex = _VersionIndex
+                        RevisionIndex = _RevisionIndex
                     },
                     _ErrorMessageAction);
                 }
