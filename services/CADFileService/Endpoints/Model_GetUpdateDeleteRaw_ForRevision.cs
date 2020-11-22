@@ -194,6 +194,7 @@ namespace CADFileService
             {
                 ResultObject[FileEntry.FILE_UPLOAD_URL_PROPERTY] = UploadUrl_IfRequested;
                 ResultObject[FileEntry.FILE_UPLOAD_CONTENT_TYPE_PROPERTY] = FileEntry.RAW_FILE_UPLOAD_CONTENT_TYPE;
+                ResultObject[FileEntry.FILE_DOWNLOAD_UPLOAD_EXPIRY_MINUTES_PROPERTY] = FileEntry.EXPIRY_MINUTES;
             }
 
             return BWebResponse.StatusAccepted("Update raw file request has been accepted.", ResultObject);
@@ -212,6 +213,12 @@ namespace CADFileService
                    _ErrorMessageAction))
             {
                 return _FailureResponse;
+            }
+
+            var PreviousProcessStage = RevisionObject.FileEntry.FileProcessStage;
+            if (PreviousProcessStage == (int)Constants.EProcessStage.NotUploaded)
+            {
+                return BWebResponse.NotFound("Raw files have not been uploaded.");
             }
 
             //if (RevisionObject.FileEntry.FileProcessStage == (int)Constants.EProcessStage.Uploaded_Processing)
@@ -245,20 +252,16 @@ namespace CADFileService
             //    }
             //}
 
-            var PreviousProcessStage = RevisionObject.FileEntry.FileProcessStage;
-            if (PreviousProcessStage != (int)Constants.EProcessStage.NotUploaded)
-            {
-                Controller_ModelActions.Get().BroadcastModelAction(new Action_ModelRevisionFileEntryDeleteAll
-                (
-                    RequestedModelID,
-                    RequestedRevisionIndex,
-                    ModelObject.ModelOwnerUserID,
-                    ModelObject.ModelSharedWithUserIDs,
-                    AuthorizedUser.UserID,
-                    JObject.Parse(JsonConvert.SerializeObject(RevisionObject.FileEntry))
-                ),
-                _ErrorMessageAction);
-            }
+            Controller_ModelActions.Get().BroadcastModelAction(new Action_ModelRevisionFileEntryDeleteAll
+            (
+                RequestedModelID,
+                RequestedRevisionIndex,
+                ModelObject.ModelOwnerUserID,
+                ModelObject.ModelSharedWithUserIDs,
+                AuthorizedUser.UserID,
+                JObject.Parse(JsonConvert.SerializeObject(RevisionObject.FileEntry))
+            ),
+            _ErrorMessageAction);
 
             var FileType = RevisionObject.FileEntry.FileEntryFileType;
             RevisionObject.FileEntry = new FileEntry()
