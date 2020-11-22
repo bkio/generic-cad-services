@@ -109,11 +109,11 @@ namespace CADProcessService
             */
             var WebServiceEndpoints = new List<BWebPrefixStructure>()
             {
-                new BWebPrefixStructure(new string[] { "/process/start" }, () => new StartProcessRequest(ServInit.DatabaseService)),
-                new BWebPrefixStructure(new string[] { "/process/stop" }, () => new StopProcessRequest(ServInit.DatabaseService, ServInit.FileService)),
-                new BWebPrefixStructure(new string[] { "/process/internal/job-complete/*" }, () => new BatchJobCompleteRequest(ServInit.DatabaseService, ServInit.FileService, ServInit.MemoryService)),
-                new BWebPrefixStructure(new string[] { "/process/internal/get_signed_upload_url_for_unreal_file/*" }, () => new GetSignedUploadUrlRequest(ServInit.FileService)),
-                new BWebPrefixStructure(new string[] { "/process/internal/get_file_optimizer_parameters/*" }, () => new GetOptimizerParametersRequest(ServInit.DatabaseService))
+                new BWebPrefixStructure(new string[] { "/3d/process/start" }, () => new StartProcessRequest(ServInit.DatabaseService)),
+                new BWebPrefixStructure(new string[] { "/3d/process/stop" }, () => new StopProcessRequest(ServInit.DatabaseService, ServInit.FileService)),
+                new BWebPrefixStructure(new string[] { "/3d/process/internal/job-complete/*" }, () => new BatchJobCompleteRequest(ServInit.DatabaseService, ServInit.FileService, ServInit.MemoryService)),
+                new BWebPrefixStructure(new string[] { "/3d/process/internal/get_signed_upload_url_for_unreal_file/*" }, () => new GetSignedUploadUrlRequest(ServInit.FileService)),
+                new BWebPrefixStructure(new string[] { "/3d/process/internal/get_file_optimizer_parameters/*" }, () => new GetOptimizerParametersRequest(ServInit.DatabaseService))
             };
             var BWebService = new BWebService(WebServiceEndpoints.ToArray(), ServInit.ServerPort, ServInit.TracingService);
             BWebService.Run((string Message) =>

@@ -115,8 +115,7 @@ namespace CADProcessService.K8S
 
                 Dictionary<string, string> OptimizerEnvVars = new Dictionary<string, string>();
 
-
-                OptimizerEnvVars.Add("CAD_PROCESS_PARAMETER_REQUEST_URL", $"{CadProcessUrl}process/internal/get_file_optimizer_parameters/{PodName}");
+                OptimizerEnvVars.Add("CAD_PROCESS_PARAMETER_REQUEST_URL", $"{CadProcessUrl}3d/process/internal/get_file_optimizer_parameters/{PodName}");
 
                 Dictionary<string, List<string>> Command = new Dictionary<string, List<string>>();
                 List<string> Args = new List<string>();
@@ -158,7 +157,7 @@ namespace CADProcessService.K8S
 
                 string RelativeBucketFile = _Filename.TrimStart("raw/").TrimEnd(".zip");
 
-                EnvVars.Add("CAD_PROCESS_UPLOAD_REQUEST_URL", $"{CadProcessUrl}process/internal/get_signed_upload_url_for_unreal_file/{PodName}");
+                EnvVars.Add("CAD_PROCESS_UPLOAD_REQUEST_URL", $"{CadProcessUrl}3d/process/internal/get_signed_upload_url_for_unreal_file/{PodName}");
 
                 if (!CreateSignedDownloadUrlEnvVars(_BucketName, RelativeBucketFile, EnvVars, _ErrorMessageAction))
                 {
@@ -392,7 +391,7 @@ namespace CADProcessService.K8S
             FileWorkerVars.Add("REDIS_PORT", "6379");
             FileWorkerVars.Add("REDIS_PASSWORD", "N/A");
 
-            FileWorkerVars.Add("CAD_PROCESS_NOTIFY_URL", $"{CadProcessUrl}process/internal/job-complete/{PodName}");
+            FileWorkerVars.Add("CAD_PROCESS_NOTIFY_URL", $"{CadProcessUrl}3d/process/internal/job-complete/{PodName}");
         }
 
         public bool StopBatchProcess(string BucketName, string FileName, Action<string> _ErrorMessageAction = null)
