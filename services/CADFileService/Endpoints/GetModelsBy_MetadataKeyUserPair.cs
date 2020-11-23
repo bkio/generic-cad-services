@@ -49,7 +49,7 @@ namespace CADFileService
             }
 
             var UserID = RestfulUrlParameters[RestfulUrlParameter_UserID];
-            var MetadataKey = RestfulUrlParameters[RestfulUrlParameter_MetadataKey];
+            var MetadataKey = WebUtility.UrlDecode(RestfulUrlParameters[RestfulUrlParameter_MetadataKey]);
 
             if (!DatabaseService.GetItem(
                 AttributeKUPairToOwnerDBEntry.TABLE(),

@@ -56,10 +56,10 @@ namespace CADFileService
             var UserID = RestfulUrlParameters[RestfulUrlParameter_UserID];
             var MetadataKey = WebUtility.UrlDecode(RestfulUrlParameters[RestfulUrlParameter_MetadataKey]);
             var MetadataValues = WebUtility.UrlDecode(RestfulUrlParameters[RestfulUrlParameter_MetadataValues]);
-            var SplittedValues = MetadataValues.Split("[[DELIM]]", StringSplitOptions.RemoveEmptyEntries);
+            var SplittedValues = MetadataValues.Split("__DELIM__", StringSplitOptions.RemoveEmptyEntries);
             if (SplittedValues == null || SplittedValues.Length == 0)
             {
-                return BWebResponse.BadRequest("Metadata values parameter is invalid. Metadata values must be separated by [[DELIM]] delimiter.");
+                return BWebResponse.BadRequest("Metadata values parameter is invalid. Metadata values must be separated by __DELIM__ delimiter.");
             }
 
             if (!DatabaseService.GetItem(

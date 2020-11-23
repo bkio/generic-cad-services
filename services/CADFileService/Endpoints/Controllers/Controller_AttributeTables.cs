@@ -32,7 +32,7 @@ namespace CADFileService.Controllers
         private const string METADATA_U_DELIMITER = "[(:::)]";
 
         public const string MODEL_METADATA_PREFIX = "MM_";
-        public const string REVISION_METADATA_PREFIX = "VM_";
+        public const string REVISION_METADATA_PREFIX = "RM_";
         public const string REVISION_METADATA_MRV_DELIMITER = "_";
 
         private static readonly string[] AttributeTables = new string[]
