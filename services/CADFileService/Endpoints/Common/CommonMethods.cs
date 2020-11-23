@@ -636,9 +636,11 @@ namespace CADFileService.Endpoints.Common
                 using (var MemStream = new MemoryStream((int)_NodeStartIndex))
                 {
                     var Destination = new BStringOrStream(MemStream, _NodeSize);
+                    
                     if (!_FileService.DownloadFile(_CadFileStorageBucketName, RelativeFileUrl, Destination, _ErrorMessageAction, _NodeStartIndex, _NodeSize))
                     {
-                        _FailureResponse = BWebResponse.InternalError("File read operation has failed.");
+                        _ErrorMessageAction?.Invoke("DownloadFile has failed in GetProcessedFileNode_Internal. ModelID: " + _ModelID + ", RevisionIndex: " + _RevisionIndex + ", NodeStartIndex: " + _NodeStartIndex + ", NodeSize: " + _NodeSize);
+                        _FailureResponse = BWebResponse.NotFound("Given Node ID does not exist.");
                         return false;
                     }
 
@@ -654,8 +656,8 @@ namespace CADFileService.Endpoints.Common
             }
             catch (Exception e)
             {
-                _ErrorMessageAction?.Invoke("File random access/stream operations have failed. Message: " + e.Message + ", Trace: " + e.StackTrace);
-                _FailureResponse = BWebResponse.InternalError("File read/stream operations have failed.");
+                _ErrorMessageAction?.Invoke("File random access/stream operations have failed. ModelID: " + _ModelID + ", RevisionIndex: " + _RevisionIndex + ", NodeStartIndex: " + _NodeStartIndex + ", NodeSize: " + _NodeSize + ", Message: " + e.Message + ", Trace: " + e.StackTrace);
+                _FailureResponse = BWebResponse.NotFound("Given Node ID does not exist.");
                 return false;
             }
 

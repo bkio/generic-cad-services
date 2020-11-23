@@ -65,12 +65,9 @@ namespace CADFileService
             {
                 return BWebResponse.BadRequest("Revision index must be an integer.");
             }
-            if (!(bRootNodeRequested = RestfulUrlParameters[RestfulUrlParameter_NodesKey].ToLower() == "root"))
+            if (!ulong.TryParse(RestfulUrlParameters[RestfulUrlParameter_NodesKey], out RequestedNodeID))
             {
-                if (!ulong.TryParse(RestfulUrlParameters[RestfulUrlParameter_NodesKey], out RequestedNodeID))
-                {
-                    return BWebResponse.BadRequest("Node ID must be either 'root' or an unsigned long.");
-                }
+                return BWebResponse.BadRequest("Node ID must be an unsigned long.");
             }
 
             return GetProcessedGeometryFileNode(_ErrorMessageAction);
