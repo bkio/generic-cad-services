@@ -123,6 +123,17 @@ namespace CADFileService
                 }
             }
 
+            if (!CommonMethods.TryGettingModelInfo(
+                DatabaseService,
+                RequestedModelID,
+                out JObject _,
+                true, out ModelDBEntry Model,
+                out BWebServiceResponse FailureResponse,
+                _ErrorMessageAction))
+            {
+                return FailureResponse;
+            }
+
             if (!bShareWithAll)
             {
                 var EmailAddresses = new List<string>();
@@ -234,17 +245,6 @@ namespace CADFileService
                         }
                     }
                 }
-            }
-
-            if (!CommonMethods.TryGettingModelInfo(
-                DatabaseService,
-                RequestedModelID,
-                out JObject _,
-                true, out ModelDBEntry Model,
-                out BWebServiceResponse FailureResponse,
-                _ErrorMessageAction))
-            {
-                return FailureResponse;
             }
 
             if (Model.ModelSharedWithUserIDs.OrderBy(t => t).SequenceEqual(FinalUserIds.OrderBy(t => t)))
