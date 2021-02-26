@@ -1,9 +1,9 @@
-﻿using BCloudServiceUtilities;
-using BCommonUtilities;
+﻿/// MIT License, Copyright Burak Kara, burak@burak.io, https://en.wikipedia.org/wiki/MIT_License
+
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
+using BCloudServiceUtilities;
+using BCommonUtilities;
 
 namespace CADProcessService.K8S
 {

@@ -75,7 +75,20 @@ namespace CADFileService
 
         private BWebServiceResponse ProcessRequestLocked(HttpListenerContext _Context, Action<string> _ErrorMessageAction)
         {
-            RequestedModelID = RestfulUrlParameters[RestfulUrlParameter_ModelsKey];
+            string RequestedModelName_UrlEncoded = WebUtility.UrlEncode(RestfulUrlParameters[RestfulUrlParameter_ModelsKey]);
+
+            if (!DatabaseService.GetItem(
+                    UniqueFileFieldsDBEntry.DBSERVICE_UNIQUEFILEFIELDS_TABLE(),
+                    UniqueFileFieldsDBEntry.KEY_NAME_MODEL_UNIQUE_NAME,
+                    new BPrimitiveType(RequestedModelName_UrlEncoded),
+                    UniqueFileFieldsDBEntry.Properties,
+                    out JObject ModelIDResponse,
+                    _ErrorMessageAction) || !ModelIDResponse.ContainsKey(ModelDBEntry.KEY_NAME_MODEL_ID))
+            {
+                return BWebResponse.InternalError("Model ID could not be retrieved upon conflict.");
+            }
+
+            RequestedModelID = (string)ModelIDResponse[ModelDBEntry.KEY_NAME_MODEL_ID];
             RequestedUserID = RestfulUrlParameters[RestfulUrlParameter_UserIDKey];
 
             if (!CommonMethods.TryGettingModelInfo(

@@ -1,6 +1,5 @@
 ﻿/// MIT License, Copyright Burak Kara, burak@burak.io, https://en.wikipedia.org/wiki/MIT_License
 
-using System;
 using System.Collections.Generic;
 using System.Threading;
 using BCloudServiceUtilities;
@@ -19,9 +18,9 @@ namespace CADFileService
         {
             System.Console.WriteLine("Initializing the service...");
 
-#if (Debug || DEBUG)
-            if (!ServicesDebugOnlyUtilities.CalledFromMain()) return;
-#endif
+//#if (Debug || DEBUG)
+//            if (!ServicesDebugOnlyUtilities.CalledFromMain()) return;
+//#endif
 
             // In case of a cloud component dependency or environment variable is added/removed;
 
@@ -31,8 +30,8 @@ namespace CADFileService
             if (!BServiceInitializer.Initialize(out BServiceInitializer ServInit,
                 new string[][]
                 {
-                    new string[] { "GOOGLE_CLOUD_PROJECT_ID" },
-                    new string[] { "GOOGLE_APPLICATION_CREDENTIALS", "GOOGLE_PLAIN_CREDENTIALS" },
+                    new string[] { "MONGO_DB_CONNECTION_STRING" },
+                    new string[] { "MONGO_DB_DATABASE" },
 
                     new string[] { "DEPLOYMENT_BRANCH_NAME" },
                     new string[] { "DEPLOYMENT_BUILD_NUMBER" },
@@ -51,9 +50,9 @@ namespace CADFileService
                 return;
             bool bInitSuccess = true;
             bInitSuccess &= ServInit.WithDatabaseService();
-            bInitSuccess &= ServInit.WithFileService();
+            //bInitSuccess &= ServInit.WithFileService();
             bInitSuccess &= ServInit.WithPubSubService();
-            bInitSuccess &= ServInit.WithTracingService();
+            //bInitSuccess &= ServInit.WithTracingService();
             bInitSuccess &= ServInit.WithMemoryService();
             if (!bInitSuccess) return;
 
@@ -72,7 +71,7 @@ namespace CADFileService
             var CadProcessServiceEndpoint = ServInit.RequiredEnvironmentVariables["CAD_PROCESS_SERVICE_ENDPOINT"];
 
             Controller_DeliveryEnsurer.Get().SetDatabaseService(ServInit.DatabaseService);
-            Controller_DeliveryEnsurer.Get().SetFileService(ServInit.FileService);
+            //Controller_DeliveryEnsurer.Get().SetFileService(ServInit.FileService);
             Controller_DeliveryEnsurer.Get().SetServiceIdentifier("cad-file-service", Actions.EAction.ACTION_CAD_FILE_SERVICE_DELIVERY_ENSURER);
             Controller_AtomicDBOperation.Get().SetMemoryService(ServInit.MemoryService, CommonData.MemoryQueryParameters);
 
@@ -107,8 +106,8 @@ namespace CADFileService
                 new BWebPrefixStructure(new string[] { "/3d/models/get_models_by/user_id/*/metadata_key/*/metadata_values/*" }, () => new GetModelsBy_MetadataKeyValueUserPair(ServInit.DatabaseService, "user_id", "metadata_key", "metadata_values")),
                 new BWebPrefixStructure(new string[] { "/3d/models/get_models_by/user_id/*/metadata_key/*" }, () => new GetModelsBy_MetadataKeyUserPair(ServInit.DatabaseService, "user_id", "metadata_key")),
                 new BWebPrefixStructure(new string[] { "/3d/models/*/revisions/*/unreal/hierarchy_geometry_metadata" }, () => new Model_GetUnrealHierarchyMetadataGeometry(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", CadFileStorageBucketName)),
-                new BWebPrefixStructure(new string[] { "/3d/models/*/revisions/*/unreal/hiearchy_geometry" }, () => new Model_GetUnrealHierarchyGeometry(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", CadFileStorageBucketName)),
-                new BWebPrefixStructure(new string[] { "/3d/models/*/revisions/*/unreal/hiearchy" }, () => new Model_GetUnrealHierarchy(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", CadFileStorageBucketName)),
+                new BWebPrefixStructure(new string[] { "/3d/models/*/revisions/*/unreal/hierarchy_geometry" }, () => new Model_GetUnrealHierarchyGeometry(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", CadFileStorageBucketName)),
+                new BWebPrefixStructure(new string[] { "/3d/models/*/revisions/*/unreal/hierarchy" }, () => new Model_GetUnrealHierarchy(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", CadFileStorageBucketName)),
                 new BWebPrefixStructure(new string[] { "/3d/models/*/revisions/*/unreal/geometry_files/*" }, () => new Model_GetUnrealGeometry(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", "geometry_files", CadFileStorageBucketName)),
                 new BWebPrefixStructure(new string[] { "/3d/models/*/revisions/*/raw" }, () => new Model_GetUpdateDeleteRaw_ForRevision(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", CadFileStorageBucketName, CadProcessServiceEndpoint)),
                 new BWebPrefixStructure(new string[] { "/3d/models/*/revisions/*/hierarchy/nodes/*" }, () => new Model_GetHierarchyNode_ForRevision(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", "nodes", CadFileStorageBucketName)),
@@ -125,7 +124,7 @@ namespace CADFileService
                 new BWebPrefixStructure(new string[] { "/3d/models/*" }, () => new Model_GetUpdateDeleteModel(ServInit.DatabaseService, "models")),
                 new BWebPrefixStructure(new string[] { "/3d/models" }, () => new Model_AddListModels(ServInit.DatabaseService))
             };
-            var BWebService = new BWebService(WebServiceEndpoints.ToArray(), ServInit.ServerPort, ServInit.TracingService);
+            var BWebService = new BWebService(WebServiceEndpoints.ToArray(), ServInit.ServerPort/*, ServInit.TracingService*/);
             BWebService.Run((string Message) =>
             {
                 ServInit.LoggingService.WriteLogs(BLoggingServiceMessageUtility.Single(EBLoggingServiceLogType.Info, Message), ServInit.ProgramID, "WebService");

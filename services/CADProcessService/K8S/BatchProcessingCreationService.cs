@@ -1,21 +1,20 @@
-﻿using BCloudServiceUtilities;
-using BCommonUtilities;
-using k8s.Models;
+﻿/// MIT License, Copyright Burak Kara, burak@burak.io, https://en.wikipedia.org/wiki/MIT_License
+
 using System;
-using System.Net;
-using System.Net.Http;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Threading;
+using BCloudServiceUtilities;
+using BCommonUtilities;
 using BServiceUtilities;
+using CADProcessService.Endpoints.Controllers;
 using CADProcessService.Endpoints.Structures;
+using k8s.Models;
+using ServiceUtilities.Process.Procedure;
+using ServiceUtilities;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Linq;
-using ServiceUtilities.Process.Procedure;
-using CADProcessService.Endpoints.Controllers;
-using ServiceUtilities;
 
 namespace CADProcessService.K8S
 {

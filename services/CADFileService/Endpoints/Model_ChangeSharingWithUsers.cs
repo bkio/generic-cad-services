@@ -8,7 +8,6 @@ using System.Net;
 using BCloudServiceUtilities;
 using BCommonUtilities;
 using BWebServiceUtilities;
-using BWebServiceUtilities_GC;
 using CADFileService.Controllers;
 using CADFileService.Endpoints.Common;
 using CADFileService.Endpoints.Structures;
@@ -78,7 +77,20 @@ namespace CADFileService
 
         private BWebServiceResponse ProcessRequestLocked(HttpListenerContext _Context, Action<string> _ErrorMessageAction)
         {
-            RequestedModelID = RestfulUrlParameters[RestfulUrlParameter_ModelsKey];
+            string RequestedModelName_UrlEncoded = WebUtility.UrlEncode(RestfulUrlParameters[RestfulUrlParameter_ModelsKey]);
+
+            if (!DatabaseService.GetItem(
+                    UniqueFileFieldsDBEntry.DBSERVICE_UNIQUEFILEFIELDS_TABLE(),
+                    UniqueFileFieldsDBEntry.KEY_NAME_MODEL_UNIQUE_NAME,
+                    new BPrimitiveType(RequestedModelName_UrlEncoded),
+                    UniqueFileFieldsDBEntry.Properties,
+                    out JObject ModelIDResponse,
+                    _ErrorMessageAction) || !ModelIDResponse.ContainsKey(ModelDBEntry.KEY_NAME_MODEL_ID))
+            {
+                return BWebResponse.InternalError("Model ID could not be retrieved upon conflict.");
+            }
+
+            RequestedModelID = (string)ModelIDResponse[ModelDBEntry.KEY_NAME_MODEL_ID];
 
             string RequestPayload = null;
             JObject ParsedBody;
@@ -197,7 +209,7 @@ namespace CADFileService
                         ["emailAddresses"] = EmailsJArray
                     };
 
-                    var Result = BWebUtilities_GC_CloudRun.InterServicesRequest(new BWebUtilities_GC_CloudRun.InterServicesRequestRequest()
+                    var Result = BWebServiceExtraUtilities.InterServicesRequest(new BWebServiceExtraUtilities.InterServicesRequestRequest()
                     {
                         DestinationServiceUrl = AuthServiceEndpoint + "/auth/internal/fetch_user_ids_from_emails?secret=" + InternalCallPrivateKey,
                         RequestMethod = "POST",

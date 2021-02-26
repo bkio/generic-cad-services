@@ -53,7 +53,20 @@ namespace CADFileService
                 return BWebResponse.MethodNotAllowed("GET and PUT methods are accepted. But received request method: " + _Context.Request.HttpMethod);
             }
 
-            RequestedModelID = RestfulUrlParameters[RestfulUrlParameter_ModelsKey];
+            string RequestedModelName_UrlEncoded = WebUtility.UrlEncode(RestfulUrlParameters[RestfulUrlParameter_ModelsKey]);
+
+            if (!DatabaseService.GetItem(
+                    UniqueFileFieldsDBEntry.DBSERVICE_UNIQUEFILEFIELDS_TABLE(),
+                    UniqueFileFieldsDBEntry.KEY_NAME_MODEL_UNIQUE_NAME,
+                    new BPrimitiveType(RequestedModelName_UrlEncoded),
+                    UniqueFileFieldsDBEntry.Properties,
+                    out JObject ModelIDResponse,
+                    _ErrorMessageAction) || !ModelIDResponse.ContainsKey(ModelDBEntry.KEY_NAME_MODEL_ID))
+            {
+                return BWebResponse.InternalError("Model ID could not be retrieved upon conflict.");
+            }
+
+            RequestedModelID = (string)ModelIDResponse[ModelDBEntry.KEY_NAME_MODEL_ID];
 
             if (_Context.Request.HttpMethod == "GET")
             {

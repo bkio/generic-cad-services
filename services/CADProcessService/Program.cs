@@ -33,8 +33,8 @@ namespace CADProcessService
             if (!BServiceInitializer.Initialize(out BServiceInitializer ServInit,
                 new string[][]
                 {
-                    new string[] { "GOOGLE_CLOUD_PROJECT_ID" },
-                    new string[] { "GOOGLE_APPLICATION_CREDENTIALS", "GOOGLE_PLAIN_CREDENTIALS" },
+                    new string[] { "MONGO_DB_CONNECTION_STRING" },
+                    new string[] { "MONGO_DB_DATABASE" },
 
                     new string[] { "DEPLOYMENT_BRANCH_NAME" },
                     new string[] { "DEPLOYMENT_BUILD_NUMBER" },
@@ -60,7 +60,7 @@ namespace CADProcessService
             bool bInitSuccess = true;
             bInitSuccess &= ServInit.WithDatabaseService();
             bInitSuccess &= ServInit.WithFileService();
-            bInitSuccess &= ServInit.WithTracingService();
+            //bInitSuccess &= ServInit.WithTracingService();
             bInitSuccess &= ServInit.WithPubSubService();
             bInitSuccess &= ServInit.WithMemoryService();
             if (!bInitSuccess) return;
@@ -115,7 +115,7 @@ namespace CADProcessService
                 new BWebPrefixStructure(new string[] { "/3d/process/internal/get_signed_upload_url_for_unreal_file/*" }, () => new GetSignedUploadUrlRequest(ServInit.FileService)),
                 new BWebPrefixStructure(new string[] { "/3d/process/internal/get_file_optimizer_parameters/*" }, () => new GetOptimizerParametersRequest(ServInit.DatabaseService))
             };
-            var BWebService = new BWebService(WebServiceEndpoints.ToArray(), ServInit.ServerPort, ServInit.TracingService);
+            var BWebService = new BWebService(WebServiceEndpoints.ToArray(), ServInit.ServerPort/*, ServInit.TracingService*/);
             BWebService.Run((string Message) =>
             {
                 ServInit.LoggingService.WriteLogs(BLoggingServiceMessageUtility.Single(EBLoggingServiceLogType.Info, Message), ServInit.ProgramID, "WebService");
