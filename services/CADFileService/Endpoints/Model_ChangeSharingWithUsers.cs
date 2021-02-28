@@ -77,20 +77,17 @@ namespace CADFileService
 
         private BWebServiceResponse ProcessRequestLocked(HttpListenerContext _Context, Action<string> _ErrorMessageAction)
         {
-            string RequestedModelName_UrlEncoded = WebUtility.UrlEncode(RestfulUrlParameters[RestfulUrlParameter_ModelsKey]);
+            var RequestedModelName = RestfulUrlParameters[RestfulUrlParameter_ModelsKey];
 
-            if (!DatabaseService.GetItem(
-                    UniqueFileFieldsDBEntry.DBSERVICE_UNIQUEFILEFIELDS_TABLE(),
-                    UniqueFileFieldsDBEntry.KEY_NAME_MODEL_UNIQUE_NAME,
-                    new BPrimitiveType(RequestedModelName_UrlEncoded),
-                    UniqueFileFieldsDBEntry.Properties,
-                    out JObject ModelIDResponse,
-                    _ErrorMessageAction) || !ModelIDResponse.ContainsKey(ModelDBEntry.KEY_NAME_MODEL_ID))
+            if (!CommonMethods.TryGettingModelID(
+                DatabaseService,
+                RequestedModelName,
+                out RequestedModelID,
+                out BWebServiceResponse FailureResponse,
+                _ErrorMessageAction))
             {
-                return BWebResponse.InternalError("Model ID could not be retrieved upon conflict.");
+                return FailureResponse;
             }
-
-            RequestedModelID = (string)ModelIDResponse[ModelDBEntry.KEY_NAME_MODEL_ID];
 
             string RequestPayload = null;
             JObject ParsedBody;
@@ -140,7 +137,7 @@ namespace CADFileService
                 RequestedModelID,
                 out JObject _,
                 true, out ModelDBEntry Model,
-                out BWebServiceResponse FailureResponse,
+                out FailureResponse,
                 _ErrorMessageAction))
             {
                 return FailureResponse;
