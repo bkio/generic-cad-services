@@ -75,7 +75,18 @@ namespace CADFileService
 
         private BWebServiceResponse ProcessRequestLocked(HttpListenerContext _Context, Action<string> _ErrorMessageAction)
         {
-            RequestedModelID = RestfulUrlParameters[RestfulUrlParameter_ModelsKey];
+            var RequestedModelName = WebUtility.UrlDecode(RestfulUrlParameters[RestfulUrlParameter_ModelsKey]);
+
+            if (!CommonMethods.TryGettingModelID(
+                DatabaseService,
+                RequestedModelName,
+                out RequestedModelID,
+                out BWebServiceResponse FailureResponse,
+                _ErrorMessageAction))
+            {
+                return FailureResponse;
+            }
+
             RequestedUserID = RestfulUrlParameters[RestfulUrlParameter_UserIDKey];
 
             if (!CommonMethods.TryGettingModelInfo(
@@ -83,7 +94,7 @@ namespace CADFileService
                 RequestedModelID,
                 out JObject _,
                 true, out ModelDBEntry Model,
-                out BWebServiceResponse FailureResponse,
+                out FailureResponse,
                 _ErrorMessageAction))
             {
                 return FailureResponse;

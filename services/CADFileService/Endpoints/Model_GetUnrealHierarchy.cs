@@ -1,13 +1,16 @@
-﻿using BCloudServiceUtilities;
+﻿/// MIT License, Copyright Burak Kara, burak@burak.io, https://en.wikipedia.org/wiki/MIT_License
+
+using System;
+using System.Net;
+using BCloudServiceUtilities;
+using BCommonUtilities;
 using BWebServiceUtilities;
 using CADFileService.Endpoints.Common;
-using ServiceUtilities.Process.Procedure;
+using CADFileService.Endpoints.Structures;
 using ServiceUtilities.All;
+using ServiceUtilities.Process.Procedure;
 using ServiceUtilities.PubSubUsers.PubSubRelated;
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Text;
+using Newtonsoft.Json.Linq;
 
 namespace CADFileService.Endpoints
 {
@@ -54,7 +57,18 @@ namespace CADFileService.Endpoints
                 return BWebResponse.MethodNotAllowed("GET method is accepted. But received request method: " + _Context.Request.HttpMethod);
             }
 
-            RequestedModelID = RestfulUrlParameters[RestfulUrlParameter_ModelsKey];
+            var RequestedModelName = WebUtility.UrlDecode(RestfulUrlParameters[RestfulUrlParameter_ModelsKey]);
+
+            if (!CommonMethods.TryGettingModelID(
+                DatabaseService,
+                RequestedModelName,
+                out RequestedModelID,
+                out BWebServiceResponse FailureResponse,
+                _ErrorMessageAction))
+            {
+                return FailureResponse;
+            }
+
             if (!int.TryParse(RestfulUrlParameters[RestfulUrlParameter_RevisionsKey], out RequestedRevisionIndex))
             {
                 return BWebResponse.BadRequest("Revision index must be an integer.");

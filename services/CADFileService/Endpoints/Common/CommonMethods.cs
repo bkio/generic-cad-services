@@ -673,5 +673,31 @@ namespace CADFileService.Endpoints.Common
             });
             return true;
         }
+
+        public static bool TryGettingModelID(
+            IBDatabaseServiceInterface _DatabaseService, 
+            string _RequestedModelName,
+            out string _ModelID,
+            out BWebServiceResponse _FailureResponse,
+            Action<string> _ErrorMessageAction)
+        {
+            _FailureResponse = BWebResponse.InternalError("");
+            _ModelID = string.Empty;
+            
+            if (!_DatabaseService.GetItem(
+                    UniqueFileFieldsDBEntry.DBSERVICE_UNIQUEFILEFIELDS_TABLE(),
+                    UniqueFileFieldsDBEntry.KEY_NAME_MODEL_UNIQUE_NAME,
+                    new BPrimitiveType(_RequestedModelName),
+                    UniqueFileFieldsDBEntry.Properties,
+                    out JObject ModelIDResponse,
+                    _ErrorMessageAction) || !ModelIDResponse.ContainsKey(ModelDBEntry.KEY_NAME_MODEL_ID))
+            {
+                _FailureResponse = BWebResponse.InternalError("Model ID could not be retrieved from the database.");
+                return false;
+            }
+
+            _ModelID = (string)ModelIDResponse[ModelDBEntry.KEY_NAME_MODEL_ID];
+            return true;
+        }
     }
 }

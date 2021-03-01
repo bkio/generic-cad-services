@@ -59,7 +59,18 @@ namespace CADFileService
                 return BWebResponse.MethodNotAllowed("GET, POST and DELETE methods are accepted. But received request method: " + _Context.Request.HttpMethod);
             }
 
-            RequestedModelID = RestfulUrlParameters[RestfulUrlParameter_ModelsKey];
+            var RequestedModelName = WebUtility.UrlDecode(RestfulUrlParameters[RestfulUrlParameter_ModelsKey]);
+
+            if (!CommonMethods.TryGettingModelID(
+                DatabaseService,
+                RequestedModelName,
+                out RequestedModelID,
+                out BWebServiceResponse FailureResponse,
+                _ErrorMessageAction))
+            {
+                return FailureResponse;
+            }
+
             if (!int.TryParse(RestfulUrlParameters[RestfulUrlParameter_RevisionsKey], out RequestedRevisionIndex))
             {
                 return BWebResponse.BadRequest("Revision index must be an integer.");

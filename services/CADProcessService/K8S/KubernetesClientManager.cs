@@ -1,4 +1,6 @@
-﻿using k8s;
+﻿/// MIT License, Copyright Burak Kara, burak@burak.io, https://en.wikipedia.org/wiki/MIT_License
+
+using k8s;
 
 namespace CADProcessService.K8S
 {

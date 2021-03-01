@@ -1,7 +1,7 @@
-﻿using k8s.Models;
-using System;
+﻿/// MIT License, Copyright Burak Kara, burak@burak.io, https://en.wikipedia.org/wiki/MIT_License
+
 using System.Collections.Generic;
-using System.Text;
+using k8s.Models;
 
 namespace CADProcessService.K8S
 {

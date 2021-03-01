@@ -8,7 +8,6 @@ using System.Net;
 using BCloudServiceUtilities;
 using BCommonUtilities;
 using BWebServiceUtilities;
-using BWebServiceUtilities_GC;
 using CADFileService.Controllers;
 using CADFileService.Endpoints.Common;
 using CADFileService.Endpoints.Structures;
@@ -78,7 +77,17 @@ namespace CADFileService
 
         private BWebServiceResponse ProcessRequestLocked(HttpListenerContext _Context, Action<string> _ErrorMessageAction)
         {
-            RequestedModelID = RestfulUrlParameters[RestfulUrlParameter_ModelsKey];
+            var RequestedModelName = WebUtility.UrlDecode(RestfulUrlParameters[RestfulUrlParameter_ModelsKey]);
+
+            if (!CommonMethods.TryGettingModelID(
+                DatabaseService,
+                RequestedModelName,
+                out RequestedModelID,
+                out BWebServiceResponse FailureResponse,
+                _ErrorMessageAction))
+            {
+                return FailureResponse;
+            }
 
             string RequestPayload = null;
             JObject ParsedBody;
@@ -128,7 +137,7 @@ namespace CADFileService
                 RequestedModelID,
                 out JObject _,
                 true, out ModelDBEntry Model,
-                out BWebServiceResponse FailureResponse,
+                out FailureResponse,
                 _ErrorMessageAction))
             {
                 return FailureResponse;
@@ -197,7 +206,7 @@ namespace CADFileService
                         ["emailAddresses"] = EmailsJArray
                     };
 
-                    var Result = BWebUtilities_GC_CloudRun.InterServicesRequest(new BWebUtilities_GC_CloudRun.InterServicesRequestRequest()
+                    var Result = BWebServiceExtraUtilities.InterServicesRequest(new BWebServiceExtraUtilities.InterServicesRequestRequest()
                     {
                         DestinationServiceUrl = AuthServiceEndpoint + "/auth/internal/fetch_user_ids_from_emails?secret=" + InternalCallPrivateKey,
                         RequestMethod = "POST",

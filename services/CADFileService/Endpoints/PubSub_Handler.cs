@@ -1,4 +1,5 @@
 ﻿/// MIT License, Copyright Burak Kara, burak@burak.io, https://en.wikipedia.org/wiki/MIT_License
+
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -15,7 +16,6 @@ using ServiceUtilities;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
-using BWebServiceUtilities_GC;
 
 namespace CADFileService.Endpoints
 {
@@ -587,12 +587,12 @@ namespace CADFileService.Endpoints
 
                         //TODO: Fix instabilities and uncomment below.
                         int TryCount = 0;
-                        BWebUtilities_GC_CloudRun.InterServicesRequestResponse Result;
+                        BWebServiceExtraUtilities.InterServicesRequestResponse Result;
                         do
                         {
                             GetTracingService()?.On_FromServiceToService_Sent(_Context, _ErrorMessageAction);
 
-                            Result = BWebUtilities_GC_CloudRun.InterServicesRequest(new BWebUtilities_GC_CloudRun.InterServicesRequestRequest()
+                            Result = BWebServiceExtraUtilities.InterServicesRequest(new BWebServiceExtraUtilities.InterServicesRequestRequest()
                             {
                                 DestinationServiceUrl = CadProcessServiceEndpoint + "/3d/process/start",
                                 RequestMethod = "POST",
