@@ -683,18 +683,16 @@ namespace CADFileService.Endpoints.Common
         {
             _FailureResponse = BWebResponse.InternalError("");
             _ModelID = string.Empty;
-
-            string RequestedModelName_UrlDecoded = WebUtility.UrlDecode(_RequestedModelName);
-
+            
             if (!_DatabaseService.GetItem(
                     UniqueFileFieldsDBEntry.DBSERVICE_UNIQUEFILEFIELDS_TABLE(),
                     UniqueFileFieldsDBEntry.KEY_NAME_MODEL_UNIQUE_NAME,
-                    new BPrimitiveType(RequestedModelName_UrlDecoded),
+                    new BPrimitiveType(_RequestedModelName),
                     UniqueFileFieldsDBEntry.Properties,
                     out JObject ModelIDResponse,
                     _ErrorMessageAction) || !ModelIDResponse.ContainsKey(ModelDBEntry.KEY_NAME_MODEL_ID))
             {
-                _FailureResponse = BWebResponse.InternalError("Model ID could not be found.");
+                _FailureResponse = BWebResponse.InternalError("Model ID could not be retrieved from the database.");
                 return false;
             }
 

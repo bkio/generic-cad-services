@@ -59,7 +59,7 @@ namespace CADFileService
                 return BWebResponse.MethodNotAllowed("GET method is accepted. But received request method: " + _Context.Request.HttpMethod);
             }
 
-            var RequestedModelName = RestfulUrlParameters[RestfulUrlParameter_ModelsKey];
+            var RequestedModelName = WebUtility.UrlDecode(RestfulUrlParameters[RestfulUrlParameter_ModelsKey]);
 
             if (!CommonMethods.TryGettingModelID(
                 DatabaseService,
