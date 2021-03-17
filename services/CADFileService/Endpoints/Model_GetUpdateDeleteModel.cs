@@ -54,7 +54,17 @@ namespace CADFileService
                 return BWebResponse.MethodNotAllowed("GET, POST and DELETE methods are accepted. But received request method: " + _Context.Request.HttpMethod);
             }
 
-            RequestedModelID = RestfulUrlParameters[RestfulUrlParameter_ModelsKey];
+            var RequestedModelName = WebUtility.UrlDecode(RestfulUrlParameters[RestfulUrlParameter_ModelsKey]);
+
+            if (!CommonMethods.TryGettingModelID(
+                DatabaseService,
+                RequestedModelName,
+                out RequestedModelID,
+                out BWebServiceResponse FailureResponse,
+                _ErrorMessageAction))
+            {
+                return FailureResponse;
+            }
 
             if (_Context.Request.HttpMethod == "GET")
             {
@@ -277,20 +287,16 @@ namespace CADFileService
 
             foreach (var Rev in Model.ModelRevisions)
             {
-                foreach (var RevVer in Rev.RevisionVersions)
-                {
-                    Controller_ModelActions.Get().BroadcastModelAction(new Action_ModelRevisionVersionFileEntryDeleteAll
-                    (
-                        RequestedModelID,
-                        Rev.RevisionIndex,
-                        RevVer.VersionIndex,
-                        Model.ModelOwnerUserID,
-                        Model.ModelSharedWithUserIDs,
-                        AuthorizedUser.UserID,
-                        JObject.Parse(JsonConvert.SerializeObject(RevVer.FileEntry))
-                    ),
-                    _ErrorMessageAction);
-                }
+                Controller_ModelActions.Get().BroadcastModelAction(new Action_ModelRevisionFileEntryDeleteAll
+                (
+                    RequestedModelID,
+                    Rev.RevisionIndex,
+                    Model.ModelOwnerUserID,
+                    Model.ModelSharedWithUserIDs,
+                    AuthorizedUser.UserID,
+                    JObject.Parse(JsonConvert.SerializeObject(Rev.FileEntry))
+                ),
+                _ErrorMessageAction);
             }
 
             Controller_DeliveryEnsurer.Get().DB_DeleteItem_FireAndForget(

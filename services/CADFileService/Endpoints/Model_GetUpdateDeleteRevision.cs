@@ -59,7 +59,18 @@ namespace CADFileService
                 return BWebResponse.MethodNotAllowed("GET, POST and DELETE methods are accepted. But received request method: " + _Context.Request.HttpMethod);
             }
 
-            RequestedModelID = RestfulUrlParameters[RestfulUrlParameter_ModelsKey];
+            var RequestedModelName = WebUtility.UrlDecode(RestfulUrlParameters[RestfulUrlParameter_ModelsKey]);
+
+            if (!CommonMethods.TryGettingModelID(
+                DatabaseService,
+                RequestedModelName,
+                out RequestedModelID,
+                out BWebServiceResponse FailureResponse,
+                _ErrorMessageAction))
+            {
+                return FailureResponse;
+            }
+
             if (!int.TryParse(RestfulUrlParameters[RestfulUrlParameter_RevisionsKey], out RequestedRevisionIndex))
             {
                 return BWebResponse.BadRequest("Revision index must be an integer.");
@@ -183,21 +194,17 @@ namespace CADFileService
                 return BWebResponse.NotFound("Revision does not exist.");
             }
 
-            foreach (var RevVer in RevisionObject.RevisionVersions)
-            {
-                Controller_ModelActions.Get().BroadcastModelAction(new Action_ModelRevisionVersionFileEntryDeleteAll
+            Controller_ModelActions.Get().BroadcastModelAction(new Action_ModelRevisionFileEntryDeleteAll
                 (
                     RequestedModelID,
                     RequestedRevisionIndex,
-                    RevVer.VersionIndex,
                     Model.ModelOwnerUserID,
                     Model.ModelSharedWithUserIDs,
                     AuthorizedUser.UserID,
-                    JObject.Parse(JsonConvert.SerializeObject(RevVer.FileEntry))
+                    JObject.Parse(JsonConvert.SerializeObject(RevisionObject.FileEntry))
                 ),
                 _ErrorMessageAction);
-            }
-            
+
             Model.ModelRevisions.RemoveAt(ModelRevisionListIx);
             Model.MRVLastUpdateTime = CommonMethods.GetTimeAsCreationTime();
 

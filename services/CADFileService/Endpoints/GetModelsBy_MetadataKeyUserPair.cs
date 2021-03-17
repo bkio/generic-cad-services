@@ -49,7 +49,7 @@ namespace CADFileService
             }
 
             var UserID = RestfulUrlParameters[RestfulUrlParameter_UserID];
-            var MetadataKey = RestfulUrlParameters[RestfulUrlParameter_MetadataKey];
+            var MetadataKey = WebUtility.UrlDecode(RestfulUrlParameters[RestfulUrlParameter_MetadataKey]);
 
             if (!DatabaseService.GetItem(
                 AttributeKUPairToOwnerDBEntry.TABLE(),
@@ -77,10 +77,10 @@ namespace CADFileService
                     {
                         AsStr = AsStr.Substring(Controller_AttributeTables.MODEL_METADATA_PREFIX.Length);
                     }
-                    else if (AsStr.StartsWith(Controller_AttributeTables.VERSION_METADATA_PREFIX))
+                    else if (AsStr.StartsWith(Controller_AttributeTables.REVISION_METADATA_PREFIX))
                     {
-                        AsStr = AsStr.Substring(Controller_AttributeTables.VERSION_METADATA_PREFIX.Length);
-                        AsStr = AsStr.Replace(Controller_AttributeTables.VERSION_METADATA_MRV_DELIMITER, "->");
+                        AsStr = AsStr.Substring(Controller_AttributeTables.REVISION_METADATA_PREFIX.Length);
+                        AsStr = AsStr.Replace(Controller_AttributeTables.REVISION_METADATA_MRV_DELIMITER, "->");
                     }
 
                     AsArray[i] = AsStr;

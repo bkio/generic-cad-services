@@ -32,8 +32,8 @@ namespace CADFileService.Controllers
         private const string METADATA_U_DELIMITER = "[(:::)]";
 
         public const string MODEL_METADATA_PREFIX = "MM_";
-        public const string VERSION_METADATA_PREFIX = "VM_";
-        public const string VERSION_METADATA_MRV_DELIMITER = "_";
+        public const string REVISION_METADATA_PREFIX = "RM_";
+        public const string REVISION_METADATA_MRV_DELIMITER = "_";
 
         private static readonly string[] AttributeTables = new string[]
         {
@@ -107,7 +107,6 @@ namespace CADFileService.Controllers
 
             public readonly string ModelID;
             public readonly int RevisionIndex = -1;
-            public readonly int VersionIndex = -1;
             public readonly ulong MetadataNodeID = 0;
 
             private MetadataLocator() { }
@@ -116,21 +115,20 @@ namespace CADFileService.Controllers
                 bIsModelMetadata = true;
                 ModelID = _ModelID;
             }
-            private MetadataLocator(string _ModelID, int _RevisionIndex, int _VersionIndex, ulong _MetadataNodeID)
+            private MetadataLocator(string _ModelID, int _RevisionIndex, ulong _MetadataNodeID)
             {
                 bIsModelMetadata = false;
                 ModelID = _ModelID;
                 RevisionIndex = _RevisionIndex;
-                VersionIndex = _VersionIndex;
                 MetadataNodeID = _MetadataNodeID;
             }
             public static MetadataLocator ItIsModelMetadata(string _ModelID)
             {
                 return new MetadataLocator(_ModelID);
             }
-            public static MetadataLocator ItIsVersionMetadata(string _ModelID, int _RevisionIndex, int _VersionIndex, ulong _MetadataNodeID)
+            public static MetadataLocator ItIsRevisionMetadata(string _ModelID, int _RevisionIndex, ulong _MetadataNodeID)
             {
-                return new MetadataLocator(_ModelID, _RevisionIndex, _VersionIndex, _MetadataNodeID);
+                return new MetadataLocator(_ModelID, _RevisionIndex, _MetadataNodeID);
             }
 
             public override string ToString()
@@ -139,7 +137,7 @@ namespace CADFileService.Controllers
                 {
                     return MODEL_METADATA_PREFIX + ModelID;
                 }
-                return VERSION_METADATA_PREFIX + ModelID + VERSION_METADATA_MRV_DELIMITER + RevisionIndex + VERSION_METADATA_MRV_DELIMITER + VersionIndex + VERSION_METADATA_MRV_DELIMITER + MetadataNodeID;
+                return REVISION_METADATA_PREFIX + ModelID + REVISION_METADATA_MRV_DELIMITER + RevisionIndex + REVISION_METADATA_MRV_DELIMITER + MetadataNodeID;
             }
         }
 

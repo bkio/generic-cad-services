@@ -1,13 +1,16 @@
-﻿using BCloudServiceUtilities;
+﻿/// MIT License, Copyright Burak Kara, burak@burak.io, https://en.wikipedia.org/wiki/MIT_License
+
+using System;
+using System.Net;
+using BCloudServiceUtilities;
+using BCommonUtilities;
 using BWebServiceUtilities;
 using CADFileService.Endpoints.Common;
-using ServiceUtilities.Process.Procedure;
+using CADFileService.Endpoints.Structures;
 using ServiceUtilities.All;
+using ServiceUtilities.Process.Procedure;
 using ServiceUtilities.PubSubUsers.PubSubRelated;
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Text;
+using Newtonsoft.Json.Linq;
 
 namespace CADFileService.Endpoints
 {
@@ -19,24 +22,21 @@ namespace CADFileService.Endpoints
 
         private readonly string RestfulUrlParameter_ModelsKey;
         private readonly string RestfulUrlParameter_RevisionsKey;
-        private readonly string RestfulUrlParameter_VersionsKey;
         private readonly string RestfulUrlParameter_GeometryKey;
 
         private string RequestedModelID;
         private int RequestedRevisionIndex;
-        private int RequestedVersionIndex;
         private string RequestedGeometryId;
 
         private ServiceUtilities.Common.AuthorizedRequester AuthorizedUser;
 
-        public Model_GetUnrealGeometry(IBFileServiceInterface _FileService, IBDatabaseServiceInterface _DatabaseService, string _RestfulUrlParameter_ModelsKey, string _RestfulUrlParameter_RevisionsKey, string _RestfulUrlParameter_VersionsKey, string _RestfulUrlParameter_GeometryKey, string _CadFileStorageBucketName)
+        public Model_GetUnrealGeometry(IBFileServiceInterface _FileService, IBDatabaseServiceInterface _DatabaseService, string _RestfulUrlParameter_ModelsKey, string _RestfulUrlParameter_RevisionsKey, string _RestfulUrlParameter_GeometryKey, string _CadFileStorageBucketName)
         {
             FileService = _FileService;
             DatabaseService = _DatabaseService;
             CadFileStorageBucketName = _CadFileStorageBucketName;
             RestfulUrlParameter_ModelsKey = _RestfulUrlParameter_ModelsKey;
             RestfulUrlParameter_RevisionsKey = _RestfulUrlParameter_RevisionsKey;
-            RestfulUrlParameter_VersionsKey = _RestfulUrlParameter_VersionsKey;
             RestfulUrlParameter_GeometryKey = _RestfulUrlParameter_GeometryKey;
         }
         public override BWebServiceResponse OnRequest_Interruptable_DeliveryEnsurerUser(HttpListenerContext _Context, Action<string> _ErrorMessageAction = null)
@@ -57,20 +57,25 @@ namespace CADFileService.Endpoints
 
             if (_Context.Request.HttpMethod != "GET")
             {
-                _ErrorMessageAction?.Invoke("Model_GetHierarchyFile_ForRevisionVersion: GET method is accepted. But received request method:  " + _Context.Request.HttpMethod);
+                _ErrorMessageAction?.Invoke("Model_GetHierarchyFile_ForRevision: GET method is accepted. But received request method:  " + _Context.Request.HttpMethod);
                 return BWebResponse.MethodNotAllowed("GET method is accepted. But received request method: " + _Context.Request.HttpMethod);
             }
 
-            RequestedModelID = RestfulUrlParameters[RestfulUrlParameter_ModelsKey];
+            var RequestedModelName = WebUtility.UrlDecode(RestfulUrlParameters[RestfulUrlParameter_ModelsKey]);
+
+            if (!CommonMethods.TryGettingModelID(
+                DatabaseService,
+                RequestedModelName,
+                out RequestedModelID,
+                out BWebServiceResponse FailureResponse,
+                _ErrorMessageAction))
+            {
+                return FailureResponse;
+            }
 
             if (!int.TryParse(RestfulUrlParameters[RestfulUrlParameter_RevisionsKey], out RequestedRevisionIndex))
             {
                 return BWebResponse.BadRequest("Revision index must be an integer.");
-            }
-
-            if (!int.TryParse(RestfulUrlParameters[RestfulUrlParameter_VersionsKey], out RequestedVersionIndex))
-            {
-                return BWebResponse.BadRequest("Version index must be an integer.");
             }
 
             RequestedGeometryId = RestfulUrlParameters[RestfulUrlParameter_GeometryKey];
@@ -88,7 +93,6 @@ namespace CADFileService.Endpoints
                 CadFileStorageBucketName,
                 RequestedModelID,
                 RequestedRevisionIndex,
-                RequestedVersionIndex,
                 out BWebServiceResponse _SuccessResponse,
                 out BWebServiceResponse _FailureResponse,
                 _GeometryId,

@@ -1,4 +1,8 @@
-﻿using BCloudServiceUtilities;
+﻿/// MIT License, Copyright Burak Kara, burak@burak.io, https://en.wikipedia.org/wiki/MIT_License
+
+using System;
+using System.Net;
+using BCloudServiceUtilities;
 using BCommonUtilities;
 using BWebServiceUtilities;
 using CADProcessService.Endpoints.Structures;
@@ -6,11 +10,6 @@ using CADProcessService.K8S;
 using ServiceUtilities.All;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net;
-using System.Text;
 
 namespace CADProcessService.Endpoints
 {

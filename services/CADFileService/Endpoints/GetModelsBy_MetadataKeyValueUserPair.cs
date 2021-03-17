@@ -56,10 +56,10 @@ namespace CADFileService
             var UserID = RestfulUrlParameters[RestfulUrlParameter_UserID];
             var MetadataKey = WebUtility.UrlDecode(RestfulUrlParameters[RestfulUrlParameter_MetadataKey]);
             var MetadataValues = WebUtility.UrlDecode(RestfulUrlParameters[RestfulUrlParameter_MetadataValues]);
-            var SplittedValues = MetadataValues.Split("[[DELIM]]", StringSplitOptions.RemoveEmptyEntries);
+            var SplittedValues = MetadataValues.Split("__DELIM__", StringSplitOptions.RemoveEmptyEntries);
             if (SplittedValues == null || SplittedValues.Length == 0)
             {
-                return BWebResponse.BadRequest("Metadata values parameter is invalid. Metadata values must be separated by [[DELIM]] delimiter.");
+                return BWebResponse.BadRequest("Metadata values parameter is invalid. Metadata values must be separated by __DELIM__ delimiter.");
             }
 
             if (!DatabaseService.GetItem(
@@ -88,10 +88,10 @@ namespace CADFileService
                     {
                         AsStr = AsStr.Substring(Controller_AttributeTables.MODEL_METADATA_PREFIX.Length);
                     }
-                    else if (AsStr.StartsWith(Controller_AttributeTables.VERSION_METADATA_PREFIX))
+                    else if (AsStr.StartsWith(Controller_AttributeTables.REVISION_METADATA_PREFIX))
                     {
-                        AsStr = AsStr.Substring(Controller_AttributeTables.VERSION_METADATA_PREFIX.Length);
-                        AsStr = AsStr.Replace(Controller_AttributeTables.VERSION_METADATA_MRV_DELIMITER, "->");
+                        AsStr = AsStr.Substring(Controller_AttributeTables.REVISION_METADATA_PREFIX.Length);
+                        AsStr = AsStr.Replace(Controller_AttributeTables.REVISION_METADATA_MRV_DELIMITER, "->");
                     }
 
                     AsArray[i] = AsStr;
