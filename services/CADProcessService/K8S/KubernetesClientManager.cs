@@ -6,27 +6,29 @@ namespace CADProcessService.K8S
 {
     public class KubernetesClientManager
     {
-        private static string GKEHost = null;
-        private static string GKEClientKey = null;
-        private static string GKEClientCert = null;
+        private static string ClusterHost = null;
+        private static string ClusterClientKey = null;
+        private static string ClusterClientCert = null;
 
-        public static void SetDefaultCredentials(string _GKEHost, string _GKEClientKey, string _GKEClientCert)
+        public static void SetDefaultCredentials(string _ClusterHost, string _ClusterClientKey, string _ClusterClientCert)
         {
-            GKEHost = _GKEHost;
-            GKEClientKey = _GKEClientKey;
-            GKEClientCert = _GKEClientCert;
+            ClusterHost = _ClusterHost;
+            ClusterClientKey = _ClusterClientKey;
+            ClusterClientCert = _ClusterClientCert;
         }
 
         public static Kubernetes GetDefaultKubernetesClient()
         {
-            return GetKubernetesClient(GKEHost, GKEClientKey, GKEClientCert);
+            return GetKubernetesClient(ClusterHost, ClusterClientKey, ClusterClientCert);
         }
 
         public static Kubernetes GetKubernetesClient(string _Host, string _ClientCertificateKey = null, string _ClientCertificateData = null)
         {
             KubernetesClientConfiguration Config = new KubernetesClientConfiguration();
-
-            Config.Host = $"https://{_Host}";
+            
+            Config.Host = _Host;
+            if (!_Host.StartsWith("https://"))
+                Config.Host = $"https://{_Host}";
 
             Config.SkipTlsVerify = true;
 
