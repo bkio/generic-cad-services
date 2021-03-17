@@ -30,6 +30,18 @@ namespace CADFileService
             if (!BServiceInitializer.Initialize(out BServiceInitializer ServInit,
                 new string[][]
                 {
+                    new string[] { "AZ_SUBSCRIPTION_ID" },
+                    new string[] { "AZ_TENANT_ID" },
+                    new string[] { "AZ_CLIENT_ID" },
+                    new string[] { "AZ_CLIENT_SECRET" },
+
+                    new string[] { "AZ_RESOURCE_GROUP_NAME" },
+                    new string[] { "AZ_RESOURCE_GROUP_LOCATION" },
+
+                    new string[] { "AZ_STORAGE_SERVICE_URL" },
+                    new string[] { "AZ_STORAGE_ACCOUNT_NAME" },
+                    new string[] { "AZ_STORAGE_ACCOUNT_ACCESS_KEY" },
+
                     new string[] { "MONGO_DB_CONNECTION_STRING" },
                     new string[] { "MONGO_DB_DATABASE" },
 
