@@ -50,7 +50,7 @@ namespace CADFileService
                 return;
             bool bInitSuccess = true;
             bInitSuccess &= ServInit.WithDatabaseService();
-            //bInitSuccess &= ServInit.WithFileService();
+            bInitSuccess &= ServInit.WithFileService();
             bInitSuccess &= ServInit.WithPubSubService();
             //bInitSuccess &= ServInit.WithTracingService();
             bInitSuccess &= ServInit.WithMemoryService();
