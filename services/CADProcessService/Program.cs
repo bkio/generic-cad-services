@@ -47,9 +47,9 @@ namespace CADProcessService
                     new string[] { "CAD_PROCESS_POD_NAME" },
                     new string[] { "CAD_PROCESS_PORT" },
 
-                    new string[] { "GKE_MASTER_ENDPOINT" },
-                    new string[] { "GKE_CLIENT_KEY" },
-                    new string[] { "GKE_CLIENT_CERTIFICATE" },
+                    new string[] { "CLUSTER_MASTER_ENDPOINT" },
+                    new string[] { "CLUSTER_CLIENT_KEY" },
+                    new string[] { "CLUSTER_CLIENT_CERTIFICATE" },
 
                     new string[] { "CAD_READER_IMAGE" },
                     new string[] { "FILE_WORKER_IMAGE" },
@@ -72,7 +72,7 @@ namespace CADProcessService
             try
             {
                 //Initialize kubernetes client credentials and init pixyz processing classes
-                KubernetesClientManager.SetDefaultCredentials(ServInit.RequiredEnvironmentVariables["GKE_MASTER_ENDPOINT"], ServInit.RequiredEnvironmentVariables["GKE_CLIENT_KEY"], ServInit.RequiredEnvironmentVariables["GKE_CLIENT_CERTIFICATE"]);
+                KubernetesClientManager.SetDefaultCredentials(ServInit.RequiredEnvironmentVariables["CLUSTER_MASTER_ENDPOINT"], ServInit.RequiredEnvironmentVariables["CLUSTER_CLIENT_KEY"], ServInit.RequiredEnvironmentVariables["CLUSTER_CLIENT_CERTIFICATE"]);
 
                 K8sObjectManager.SetImageNames(ServInit.RequiredEnvironmentVariables["FILE_WORKER_IMAGE"], ServInit.RequiredEnvironmentVariables["CAD_READER_IMAGE"], ServInit.RequiredEnvironmentVariables["FILE_OPTIMIZER_IMAGE"]);
 
