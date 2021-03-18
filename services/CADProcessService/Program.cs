@@ -45,8 +45,8 @@ namespace CADProcessService
                     new string[] { "AZ_STORAGE_ACCOUNT_NAME" },
                     new string[] { "AZ_STORAGE_ACCOUNT_ACCESS_KEY" },
 
-                    new string[] { "MONGO_DB_CONNECTION_STRING" },
-                    new string[] { "MONGO_DB_DATABASE" },
+                    new string[] { "MONGODB_CONNECTION_STRING" },
+                    new string[] { "MONGODB_DATABASE" },
 
                     new string[] { "DEPLOYMENT_BRANCH_NAME" },
                     new string[] { "DEPLOYMENT_BUILD_NUMBER" },
