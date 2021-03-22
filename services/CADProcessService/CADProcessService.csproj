@@ -24,14 +24,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BCloudServiceUtilities-BDatabaseService-MongoDB\BCloudServiceUtilities-BDatabaseService-MongoDB.csproj" />
-    <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BCloudServiceUtilities-BFileService-AZ\BCloudServiceUtilities-BFileService-AZ.csproj" />
+    <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BCloudServiceUtilities-BDatabaseService-GC\BCloudServiceUtilities-BDatabaseService-GC.csproj" />
+    <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BCloudServiceUtilities-BFileService-GC\BCloudServiceUtilities-BFileService-GC.csproj" />
     <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BCloudServiceUtilities-BLoggingService-Basic\BCloudServiceUtilities-BLoggingService-Basic.csproj" />
     <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BCloudServiceUtilities-BMemoryService-Redis\BCloudServiceUtilities-BMemoryService-Redis.csproj" />
-    <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BCloudServiceUtilities-BPubSubService-Redis\BCloudServiceUtilities-BPubSubService-Redis.csproj" />
+    <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BCloudServiceUtilities-BPubSubService-GC\BCloudServiceUtilities-BPubSubService-GC.csproj" />
+    <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BCloudServiceUtilities-BTracingService-GC\BCloudServiceUtilities-BTracingService-GC.csproj" />
     <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BCloudServiceUtilities\BCloudServiceUtilities.csproj" />
     <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BCommonUtilities\BCommonUtilities.csproj" />
-    <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BWebServiceUtilities-Basic\BWebServiceUtilities-Basic.csproj" />
+    <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BWebServiceUtilities-GC\BWebServiceUtilities-GC.csproj" />
     <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BWebServiceUtilities\BWebServiceUtilities.csproj" />
   </ItemGroup>
 
@@ -45,10 +46,12 @@
 
   <Import Project="..\..\submodules\BDotNetFramework\Utilities\ServiceUtilities_PubSub_Users\ServiceUtilities_PubSub_Users.projitems" Label="Shared" />
 
-  <Import Project="..\..\submodules\BDotNetFramework\Services\BServiceUtilities-FileService-AZ\BServiceUtilities-FileService-AZ.projitems" Label="Shared" />
+  <Import Project="..\..\submodules\BDotNetFramework\Services\BServiceUtilities-DatabaseService-GC\BServiceUtilities-DatabaseService-GC.projitems" Label="Shared" />
 
-  <Import Project="..\..\submodules\BDotNetFramework\Services\BServiceUtilities-DatabaseService-MongoDB\BServiceUtilities-DatabaseService-MongoDB.projitems" Label="Shared" />
+  <Import Project="..\..\submodules\BDotNetFramework\Services\BServiceUtilities-FileService-GC\BServiceUtilities-FileService-GC.projitems" Label="Shared" />
 
-  <Import Project="..\..\submodules\BDotNetFramework\Services\BServiceUtilities-PubSubService-Redis\BServiceUtilities-PubSubService-Redis.projitems" Label="Shared" />
+  <Import Project="..\..\submodules\BDotNetFramework\Services\BServiceUtilities-PubSubService-GC\BServiceUtilities-PubSubService-GC.projitems" Label="Shared" />
+
+  <Import Project="..\..\submodules\BDotNetFramework\Services\BServiceUtilities-TracingService-GC\BServiceUtilities-TracingService-GC.projitems" Label="Shared" />
 
 </Project>

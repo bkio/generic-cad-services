@@ -33,20 +33,8 @@ namespace CADProcessService
             if (!BServiceInitializer.Initialize(out BServiceInitializer ServInit,
                 new string[][]
                 {
-                    new string[] { "AZ_SUBSCRIPTION_ID" },
-                    new string[] { "AZ_TENANT_ID" },
-                    new string[] { "AZ_CLIENT_ID" },
-                    new string[] { "AZ_CLIENT_SECRET" },
-
-                    new string[] { "AZ_RESOURCE_GROUP_NAME" },
-                    new string[] { "AZ_RESOURCE_GROUP_LOCATION" },
-
-                    new string[] { "AZ_STORAGE_SERVICE_URL" },
-                    new string[] { "AZ_STORAGE_ACCOUNT_NAME" },
-                    new string[] { "AZ_STORAGE_ACCOUNT_ACCESS_KEY" },
-
-                    new string[] { "MONGODB_CONNECTION_STRING" },
-                    new string[] { "MONGODB_DATABASE" },
+                    new string[] { "GOOGLE_CLOUD_PROJECT_ID" },
+                    new string[] { "GOOGLE_APPLICATION_CREDENTIALS", "GOOGLE_PLAIN_CREDENTIALS" },
 
                     new string[] { "DEPLOYMENT_BRANCH_NAME" },
                     new string[] { "DEPLOYMENT_BUILD_NUMBER" },
@@ -72,7 +60,7 @@ namespace CADProcessService
             bool bInitSuccess = true;
             bInitSuccess &= ServInit.WithDatabaseService();
             bInitSuccess &= ServInit.WithFileService();
-            //bInitSuccess &= ServInit.WithTracingService();
+            bInitSuccess &= ServInit.WithTracingService();
             bInitSuccess &= ServInit.WithPubSubService();
             bInitSuccess &= ServInit.WithMemoryService();
             if (!bInitSuccess) return;
