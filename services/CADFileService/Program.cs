@@ -42,6 +42,9 @@ namespace CADFileService
                     new string[] { "AZ_STORAGE_ACCOUNT_NAME" },
                     new string[] { "AZ_STORAGE_ACCOUNT_ACCESS_KEY" },
 
+                    new string[] { "AZ_SERVICEBUS_NAMESPACE_ID" },
+                    new string[] { "AZ_SERVICEBUS_NAMESPACE_CONNECTION_STRING" },
+
                     new string[] { "MONGODB_CONNECTION_STRING" },
                     new string[] { "MONGODB_DATABASE" },
 
