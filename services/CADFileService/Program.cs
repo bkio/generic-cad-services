@@ -71,7 +71,7 @@ namespace CADFileService
             var CadProcessServiceEndpoint = ServInit.RequiredEnvironmentVariables["CAD_PROCESS_SERVICE_ENDPOINT"];
 
             Controller_DeliveryEnsurer.Get().SetDatabaseService(ServInit.DatabaseService);
-            //Controller_DeliveryEnsurer.Get().SetFileService(ServInit.FileService);
+            Controller_DeliveryEnsurer.Get().SetFileService(ServInit.FileService);
             Controller_DeliveryEnsurer.Get().SetServiceIdentifier("cad-file-service", Actions.EAction.ACTION_CAD_FILE_SERVICE_DELIVERY_ENSURER);
             Controller_AtomicDBOperation.Get().SetMemoryService(ServInit.MemoryService, CommonData.MemoryQueryParameters);
 

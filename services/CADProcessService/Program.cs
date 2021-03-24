@@ -12,6 +12,7 @@ using ServiceUtilities;
 using ServiceUtilities.Process.Procedure;
 using ServiceUtilities.All;
 using k8s.Models;
+using Newtonsoft.Json.Linq;
 
 namespace CADProcessService
 {
@@ -53,7 +54,8 @@ namespace CADProcessService
 
                     new string[] { "CAD_READER_IMAGE" },
                     new string[] { "FILE_WORKER_IMAGE" },
-                    new string[] { "FILE_OPTIMIZER_IMAGE" }
+                    new string[] { "FILE_OPTIMIZER_IMAGE" },
+                    new string[] { "FILE_OPTIMIZER_ENVIRONMENT_VARIABLES" }
                 }))
                 return;
 
@@ -85,16 +87,42 @@ namespace CADProcessService
                     return;
                 }
 
-                BatchProcessingCreationService.Initialize(ServInit,
-                () =>
+                // Pass CadProcessService environment variables to FileOptimizer like Google, Azure, AWS Credentials etc.
+                // For example: ['GOOGLE_CLOUD_PROJECT_ID', 'GOOGLE_PLAIN_CREDENTIALS']
+                var FileOptimizerEnvironmentVariables = new Dictionary<string, string>();
+                try
                 {
-                    ServInit.LoggingService.WriteLogs(BLoggingServiceMessageUtility.Single(EBLoggingServiceLogType.Info, "Failed to initialize batch process. Exiting..."), ServInit.ProgramID, "WebService");
-                    Environment.Exit(1);
-                },
-                (string Message) =>
-                {
-                    ServInit.LoggingService.WriteLogs(BLoggingServiceMessageUtility.Single(EBLoggingServiceLogType.Info, Message), ServInit.ProgramID, "WebService");
-                });
+                    var FileOptimizerEnvVarsArray = JArray.Parse(ServInit.RequiredEnvironmentVariables["FILE_OPTIMIZER_ENVIRONMENT_VARIABLES"]);
+                    foreach (var item in FileOptimizerEnvVarsArray)
+                    {
+                        if (item.Type == JTokenType.String)
+                        {
+                            var key = (string)item;
+                            if (ServInit.RequiredEnvironmentVariables.ContainsKey(key))
+                            {
+                                FileOptimizerEnvironmentVariables.Add(key, ServInit.RequiredEnvironmentVariables[key]);
+                            }
+                        }
+                    }
+                }
+                catch (Exception) { }
+
+                BatchProcessingCreationService.Initialize(
+                    ServInit.DatabaseService,
+                    ServInit.FileService,
+                    ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BRANCH_NAME"],
+                    ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BUILD_NUMBER"],
+                    ServInit.RequiredEnvironmentVariables["CAD_PROCESS_SERVICE_NAME"],
+                    FileOptimizerEnvironmentVariables,
+                    () =>
+                    {
+                        ServInit.LoggingService.WriteLogs(BLoggingServiceMessageUtility.Single(EBLoggingServiceLogType.Info, "Failed to initialize batch process. Exiting..."), ServInit.ProgramID, "WebService");
+                        Environment.Exit(1);
+                    },
+                    (string Message) =>
+                    {
+                        ServInit.LoggingService.WriteLogs(BLoggingServiceMessageUtility.Single(EBLoggingServiceLogType.Info, Message), ServInit.ProgramID, "WebService");
+                    });
 
             }
             catch (Exception ex)

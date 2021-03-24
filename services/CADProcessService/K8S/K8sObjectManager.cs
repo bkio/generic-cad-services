@@ -104,11 +104,14 @@ namespace CADProcessService.K8S
             {
                 V1ServiceList ServiceList = KClient.ListNamespacedService(_Namespace);
 
-                for (int i = 0; i < ServiceList.Items.Count; ++i)
+                if (ServiceList != null)
                 {
-                    if (ServiceList.Items[i].Name() == ServiceName)
+                    for (int i = 0; i < ServiceList.Items.Count; ++i)
                     {
-                        return ServiceList.Items[i];
+                        if (ServiceList.Items[i].Name() == ServiceName)
+                        {
+                            return ServiceList.Items[i];
+                        }
                     }
                 }
 
