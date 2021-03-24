@@ -45,7 +45,8 @@ namespace CADFileService
                     new string[] { "AZ_SERVICEBUS_NAMESPACE_ID" },
                     new string[] { "AZ_SERVICEBUS_NAMESPACE_CONNECTION_STRING" },
 
-                    new string[] { "MONGODB_CONNECTION_STRING" },
+                    new string[] { "MONGODB_CLIENT_CONFIG" },
+                    new string[] { "MONGODB_PASSWORD" },
                     new string[] { "MONGODB_DATABASE" },
 
                     new string[] { "DEPLOYMENT_BRANCH_NAME" },
@@ -86,7 +87,7 @@ namespace CADFileService
             var CadProcessServiceEndpoint = ServInit.RequiredEnvironmentVariables["CAD_PROCESS_SERVICE_ENDPOINT"];
 
             Controller_DeliveryEnsurer.Get().SetDatabaseService(ServInit.DatabaseService);
-            //Controller_DeliveryEnsurer.Get().SetFileService(ServInit.FileService);
+            Controller_DeliveryEnsurer.Get().SetFileService(ServInit.FileService);
             Controller_DeliveryEnsurer.Get().SetServiceIdentifier("cad-file-service", Actions.EAction.ACTION_CAD_FILE_SERVICE_DELIVERY_ENSURER);
             Controller_AtomicDBOperation.Get().SetMemoryService(ServInit.MemoryService, CommonData.MemoryQueryParameters);
 

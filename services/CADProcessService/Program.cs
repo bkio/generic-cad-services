@@ -12,6 +12,7 @@ using ServiceUtilities;
 using ServiceUtilities.Process.Procedure;
 using ServiceUtilities.All;
 using k8s.Models;
+using Newtonsoft.Json.Linq;
 
 namespace CADProcessService
 {
@@ -21,9 +22,9 @@ namespace CADProcessService
         {
             Console.WriteLine("Initializing the service...");
 
-#if (Debug || DEBUG)
-            if (!ServicesDebugOnlyUtilities.CalledFromMain()) return;
-#endif
+//#if (Debug || DEBUG)
+//            if (!ServicesDebugOnlyUtilities.CalledFromMain()) return;
+//#endif
 
             // In case of a cloud component dependency or environment variable is added/removed;
 
@@ -48,7 +49,8 @@ namespace CADProcessService
                     new string[] { "AZ_SERVICEBUS_NAMESPACE_ID" },
                     new string[] { "AZ_SERVICEBUS_NAMESPACE_CONNECTION_STRING" },
 
-                    new string[] { "MONGODB_CONNECTION_STRING" },
+                    new string[] { "MONGODB_CLIENT_CONFIG" },
+                    new string[] { "MONGODB_PASSWORD" },
                     new string[] { "MONGODB_DATABASE" },
 
                     new string[] { "DEPLOYMENT_BRANCH_NAME" },
@@ -68,7 +70,8 @@ namespace CADProcessService
 
                     new string[] { "CAD_READER_IMAGE" },
                     new string[] { "FILE_WORKER_IMAGE" },
-                    new string[] { "FILE_OPTIMIZER_IMAGE" }
+                    new string[] { "FILE_OPTIMIZER_IMAGE" },
+                    new string[] { "FILE_OPTIMIZER_ENVIRONMENT_VARIABLES" }
                 }))
                 return;
 
@@ -100,16 +103,41 @@ namespace CADProcessService
                     return;
                 }
 
-                BatchProcessingCreationService.Initialize(ServInit,
-                () =>
+                // Pass CadProcessService environment variables to FileOptimizer like Google, Azure, AWS Credentials etc.
+                var FileOptimizerEnvironmentVariables = new Dictionary<string, string>();
+                try
                 {
-                    ServInit.LoggingService.WriteLogs(BLoggingServiceMessageUtility.Single(EBLoggingServiceLogType.Info, "Failed to initialize batch process. Exiting..."), ServInit.ProgramID, "WebService");
-                    Environment.Exit(1);
-                },
-                (string Message) =>
-                {
-                    ServInit.LoggingService.WriteLogs(BLoggingServiceMessageUtility.Single(EBLoggingServiceLogType.Info, Message), ServInit.ProgramID, "WebService");
-                });
+                    var FileOptimizerEnvVarsArray = JArray.Parse(ServInit.RequiredEnvironmentVariables["FILE_OPTIMIZER_ENVIRONMENT_VARIABLES"]);
+                    foreach (var item in FileOptimizerEnvVarsArray)
+                    {
+                        if (item.Type == JTokenType.String)
+                        {
+                            var key = (string)item;
+                            if (ServInit.RequiredEnvironmentVariables.ContainsKey(key))
+                            {
+                                FileOptimizerEnvironmentVariables.Add(key, ServInit.RequiredEnvironmentVariables[key]);
+                            }
+                        }
+                    }
+                }
+                catch (Exception) { }
+
+                BatchProcessingCreationService.Initialize(
+                    ServInit.DatabaseService,
+                    ServInit.FileService,
+                    ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BRANCH_NAME"],
+                    ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BUILD_NUMBER"],
+                    ServInit.RequiredEnvironmentVariables["CAD_PROCESS_SERVICE_NAME"],
+                    FileOptimizerEnvironmentVariables,
+                    () =>
+                    {
+                        ServInit.LoggingService.WriteLogs(BLoggingServiceMessageUtility.Single(EBLoggingServiceLogType.Info, "Failed to initialize batch process. Exiting..."), ServInit.ProgramID, "WebService");
+                        Environment.Exit(1);
+                    },
+                    (string Message) =>
+                    {
+                        ServInit.LoggingService.WriteLogs(BLoggingServiceMessageUtility.Single(EBLoggingServiceLogType.Info, Message), ServInit.ProgramID, "WebService");
+                    });
 
             }
             catch (Exception ex)

@@ -34,8 +34,7 @@ namespace CADProcessService.K8S
 
         private static ManualResetEvent WaitInit = new ManualResetEvent(false);
 
-        private static string GoogleCloudProjectId;
-        private static string GoogleCloudPlainCredentials;
+        private static Dictionary<string, string> FileWorkerEnvironmentVariables = new Dictionary<string, string>();
         private static string DeploymentBuildNumber;
         private static string DeploymentBranchName;
 
@@ -44,18 +43,25 @@ namespace CADProcessService.K8S
             K8sManager = new K8sObjectManager(KubernetesClientManager.GetDefaultKubernetesClient());
         }
 
-        public static void Initialize(BServiceInitializer _Initializer, System.Action _InitFailedAction, Action<string> _ErrorMessageAction = null)
+        public static void Initialize(
+            IBDatabaseServiceInterface _DatabaseService,
+            IBFileServiceInterface _FileService,
+            string _DeploymentBranchName,
+            string _DeploymentBuildNumber,
+            string _CadProcessServiceName,
+            Dictionary<string, string> _FileWorkerEnvironmentVariables,
+            System.Action _InitFailedAction, 
+            Action<string> _ErrorMessageAction = null)
         {
-            GoogleCloudProjectId = _Initializer.RequiredEnvironmentVariables["GOOGLE_CLOUD_PROJECT_ID"];
-            GoogleCloudPlainCredentials = _Initializer.RequiredEnvironmentVariables["GOOGLE_PLAIN_CREDENTIALS"];
-            DeploymentBranchName = _Initializer.RequiredEnvironmentVariables["DEPLOYMENT_BRANCH_NAME"];
-            DeploymentBuildNumber = _Initializer.RequiredEnvironmentVariables["DEPLOYMENT_BUILD_NUMBER"];
+            FileWorkerEnvironmentVariables = _FileWorkerEnvironmentVariables;
+            DeploymentBranchName = _DeploymentBranchName;
+            DeploymentBuildNumber = _DeploymentBuildNumber;
 
-            FileService = _Initializer.FileService;
-            DatabaseService = _Initializer.DatabaseService;
+            FileService = _FileService;
+            DatabaseService = _DatabaseService;
             Instance = new BatchProcessingCreationService();
 
-            string CadProcessServiceName = _Initializer.RequiredEnvironmentVariables["CAD_PROCESS_SERVICE_NAME"];
+            string CadProcessServiceName = _CadProcessServiceName;
 
             BTaskWrapper.Run(() =>
             {
@@ -178,14 +184,14 @@ namespace CADProcessService.K8S
         {
             try
             {
-                //Do not try to create a pod if initialization hasn't finished yet otherwise the pod won't have a proper notify url
+                //Do not try to create a pod if initialization hasn't finished yet otherwise the pod won't have a proper notify URL
                 WaitInit.WaitOne();
 
                 string PodName = GetPixyzPodName(_BucketName, _FileName);
                 _PodName = PodName;
                 V1Pod CheckExistingPod = K8sManager.GetPodByNameAndNamespace(PodName, BATCH_NAMESPACE);
 
-                //If a pod already exists then reregister it.
+                //If a pod already exists then re-register it.
                 //If pod already exists in a failure state then it will be handled.
                 if (CheckExistingPod != null)
                 {
@@ -250,7 +256,7 @@ namespace CADProcessService.K8S
                     UPLOAD_CONTENT_TYPE, URL_VALIDITY_MINUTES,
                     _ErrorMessageAction))
                 {
-                    _ErrorMessageAction?.Invoke("Failed to create signed url for HIERARCHY_RAF");
+                    _ErrorMessageAction?.Invoke("Failed to create signed URL for HIERARCHY_RAF");
                     return false;
                 }
                 if (!FileService.CreateSignedURLForUpload(
@@ -261,7 +267,7 @@ namespace CADProcessService.K8S
                     URL_VALIDITY_MINUTES,
                     _ErrorMessageAction))
                 {
-                    _ErrorMessageAction?.Invoke("Failed to create signed url for HIERARCHY_RAF");
+                    _ErrorMessageAction?.Invoke("Failed to create signed URL for HIERARCHY_RAF");
                     return false;
                 }
                 if (!FileService.CreateSignedURLForUpload(
@@ -272,7 +278,7 @@ namespace CADProcessService.K8S
                     URL_VALIDITY_MINUTES,
                     _ErrorMessageAction))
                 {
-                    _ErrorMessageAction?.Invoke("Failed to create signed url for HIERARCHY_RAF");
+                    _ErrorMessageAction?.Invoke("Failed to create signed URL for HIERARCHY_RAF");
                     return false;
                 }
                 if (!FileService.CreateSignedURLForUpload(
@@ -283,7 +289,7 @@ namespace CADProcessService.K8S
                     URL_VALIDITY_MINUTES,
                     _ErrorMessageAction))
                 {
-                    _ErrorMessageAction?.Invoke("Failed to create signed url for HIERARCHY_RAF");
+                    _ErrorMessageAction?.Invoke("Failed to create signed URL for HIERARCHY_RAF");
                     return false;
                 }
                 if (!FileService.CreateSignedURLForUpload(
@@ -294,7 +300,7 @@ namespace CADProcessService.K8S
                     URL_VALIDITY_MINUTES,
                     _ErrorMessageAction))
                 {
-                    _ErrorMessageAction?.Invoke("Failed to create signed url for HIERARCHY_RAF");
+                    _ErrorMessageAction?.Invoke("Failed to create signed URL for HIERARCHY_RAF");
                     return false;
                 }
                 if (!FileService.CreateSignedURLForUpload(
@@ -305,7 +311,7 @@ namespace CADProcessService.K8S
                     URL_VALIDITY_MINUTES,
                     _ErrorMessageAction))
                 {
-                    _ErrorMessageAction?.Invoke("Failed to create signed url for HIERARCHY_RAF");
+                    _ErrorMessageAction?.Invoke("Failed to create signed URL for HIERARCHY_RAF");
                     return false;
                 }
 
@@ -336,7 +342,7 @@ namespace CADProcessService.K8S
                     URL_VALIDITY_MINUTES,
                     _ErrorMessageAction))
                 {
-                    _ErrorMessageAction?.Invoke("Failed to create signed url for HIERARCHY_RAF");
+                    _ErrorMessageAction?.Invoke("Failed to create signed URL for HIERARCHY_RAF");
                     return false;
                 }
 
@@ -347,7 +353,7 @@ namespace CADProcessService.K8S
                     URL_VALIDITY_MINUTES,
                     _ErrorMessageAction))
                 {
-                    _ErrorMessageAction?.Invoke("Failed to create signed url for GEOMETRY_CF");
+                    _ErrorMessageAction?.Invoke("Failed to create signed URL for GEOMETRY_CF");
                     return false;
                 }
 
@@ -358,7 +364,7 @@ namespace CADProcessService.K8S
                     URL_VALIDITY_MINUTES,
                     _ErrorMessageAction))
                 {
-                    _ErrorMessageAction?.Invoke("Failed to create signed url for METADATA_CF");
+                    _ErrorMessageAction?.Invoke("Failed to create signed URL for METADATA_CF");
                     return false;
                 }
 
@@ -381,8 +387,10 @@ namespace CADProcessService.K8S
             FileWorkerVars.Add("PORT", "8081");
             FileWorkerVars.Add("PROGRAM_ID", "CadWorkerProcess");
 
-            FileWorkerVars.Add("GOOGLE_CLOUD_PROJECT_ID", GoogleCloudProjectId);
-            FileWorkerVars.Add("GOOGLE_PLAIN_CREDENTIALS", GoogleCloudPlainCredentials);
+            foreach (var key in FileWorkerEnvironmentVariables.Keys)
+            {
+                FileWorkerVars.Add(key, FileWorkerEnvironmentVariables[key]);
+            }
             FileWorkerVars.Add("DEPLOYMENT_BRANCH_NAME", DeploymentBranchName);
             FileWorkerVars.Add("DEPLOYMENT_BUILD_NUMBER", DeploymentBuildNumber);
 
