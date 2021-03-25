@@ -1,4 +1,4 @@
-﻿FROM alpine:3.8
+﻿FROM alpine:3.12.4
 
 RUN apk add --no-cache \ 
     openssl libunwind libc6-compat=1.1.19-r11 \
@@ -7,7 +7,11 @@ RUN apk add --no-cache \
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT true
 
 WORKDIR /app
-COPY /app/out ./
+
+RUN addgroup -S dotnetcoregroup && \     
+    adduser -S dotnetcoreuser USER dotnetcoreuser
+
+COPY --chown=dotnetcoregroup:dotnetcoreuser /app/out ./
 
 EXPOSE 8080
 
