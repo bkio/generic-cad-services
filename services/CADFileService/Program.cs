@@ -55,6 +55,7 @@ namespace CADFileService
                     new string[] { "REDIS_ENDPOINT" },
                     new string[] { "REDIS_PORT" },
                     new string[] { "REDIS_PASSWORD" },
+                    new string[] { "REDIS_SSL_ENABLED" },
 
                     new string[] { "CAD_FILE_STORAGE_BUCKET" },
 

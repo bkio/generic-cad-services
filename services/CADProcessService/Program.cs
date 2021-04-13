@@ -59,6 +59,7 @@ namespace CADProcessService
                     new string[] { "REDIS_ENDPOINT" },
                     new string[] { "REDIS_PORT" },
                     new string[] { "REDIS_PASSWORD" },
+                    new string[] { "REDIS_SSL_ENABLED" },
 
                     new string[] { "CAD_PROCESS_SERVICE_NAME" },
                     new string[] { "CAD_PROCESS_POD_NAME" },
