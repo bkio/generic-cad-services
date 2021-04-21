@@ -15,13 +15,17 @@ namespace CADProcessService.Endpoints
     public class GetSignedUploadUrlRequest : BppWebServiceBase
     {
         private const string UPLOAD_CONTENT_TYPE = "application/octet-stream";
-        private const string DEFAULT_UPLOAD_BUCKET = "cid-cad-file-bucket";
         private const int UPLOAD_URL_VALIDITY_MINUTES = 1440;
-        private readonly IBFileServiceInterface FileService;
 
-        public GetSignedUploadUrlRequest(IBFileServiceInterface _FileService) : base()
+        private readonly IBFileServiceInterface FileService;
+        private readonly string CadFileStorageBucketName;
+
+        public GetSignedUploadUrlRequest(
+            IBFileServiceInterface _FileService, 
+            string _CadFileStorageBucketName) : base()
         {
             FileService = _FileService;
+            CadFileStorageBucketName = _CadFileStorageBucketName;
         }
         protected override BWebServiceResponse OnRequestPP(HttpListenerContext _Context, Action<string> _ErrorMessageAction = null)
         {
@@ -96,7 +100,7 @@ namespace CADProcessService.Endpoints
                 int FilenameStripLength = RawStrippedPath.LastIndexOf('/');
                 RawStrippedPath = RawStrippedPath.Substring(0, FilenameStripLength);
 
-                if (!FileService.CreateSignedURLForUpload(out string SignedUploadUrl, DEFAULT_UPLOAD_BUCKET, $"{Constants.ProcessedFileType_FolderPrefix_Map[FileTypeEnum]}{RawStrippedPath}/{Filename}.{Constants.ProcessedFileType_Extension_Map[FileTypeEnum]}", UPLOAD_CONTENT_TYPE, UPLOAD_URL_VALIDITY_MINUTES, _ErrorMessageAction))
+                if (!FileService.CreateSignedURLForUpload(out string SignedUploadUrl, CadFileStorageBucketName, $"{Constants.ProcessedFileType_FolderPrefix_Map[FileTypeEnum]}{RawStrippedPath}/{Filename}.{Constants.ProcessedFileType_Extension_Map[FileTypeEnum]}", UPLOAD_CONTENT_TYPE, UPLOAD_URL_VALIDITY_MINUTES, _ErrorMessageAction))
                 {
                     return BWebResponse.InternalError("Failed to create Upload Url");
                 }

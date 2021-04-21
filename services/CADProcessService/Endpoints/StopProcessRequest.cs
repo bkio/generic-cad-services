@@ -16,12 +16,10 @@ namespace CADProcessService.Endpoints
     internal class StopProcessRequest : BppWebServiceBase
     {
         private readonly IBDatabaseServiceInterface DatabaseService;
-        private readonly IBFileServiceInterface FileService;
 
-        public StopProcessRequest(IBDatabaseServiceInterface _DatabaseService, IBFileServiceInterface _FileService) : base()
+        public StopProcessRequest(IBDatabaseServiceInterface _DatabaseService) : base()
         {
             DatabaseService = _DatabaseService;
-            FileService = _FileService;
         }
 
         protected override BWebServiceResponse OnRequestPP(HttpListenerContext _Context, Action<string> _ErrorMessageAction = null)
