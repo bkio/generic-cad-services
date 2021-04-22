@@ -75,7 +75,11 @@ namespace CADProcessService
                     new string[] { "CAD_READER_IMAGE" },
                     new string[] { "FILE_WORKER_IMAGE" },
                     new string[] { "FILE_OPTIMIZER_IMAGE" },
-                    new string[] { "FILE_OPTIMIZER_ENVIRONMENT_VARIABLES" }
+                    new string[] { "FILE_OPTIMIZER_ENVIRONMENT_VARIABLES" },
+
+                    new string[] { "VM_ADMIN_USERNAME" },
+                    new string[] { "VM_ADMIN_PASSWORD" },
+                    new string[] { "VM_UUID_NAME_LIST" }
                 }))
                 return;
 
