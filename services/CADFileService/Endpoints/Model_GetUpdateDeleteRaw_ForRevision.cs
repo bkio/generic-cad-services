@@ -243,7 +243,7 @@ namespace CADFileService
 
             //    var Result = BWebUtilities_GC_CloudRun.InterServicesRequest(new BWebUtilities_GC_CloudRun.InterServicesRequestRequest()
             //    {
-            //        DestinationServiceUrl = CadProcessServiceEndpoint + "/3d/process/stop",
+            //        DestinationServiceUrl = CadProcessServiceEndpoint + "3d/process/stop",
             //        RequestMethod = "POST",
             //        ContentType = "application/json",
             //        Content = new BStringOrStream(RequestObject.ToString()),

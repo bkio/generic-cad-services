@@ -76,6 +76,12 @@ namespace CADFileService
 
             Resources_DeploymentManager.Get().SetDeploymentBranchNameAndBuildNumber(ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BRANCH_NAME"], ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BUILD_NUMBER"]);
 
+            var RootPath = "/";
+            if (ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BRANCH_NAME"] != "master" && ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BRANCH_NAME"] != "development")
+            {
+                RootPath = "/" + ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BRANCH_NAME"] + "/";
+            }
+
             CommonData.MemoryQueryParameters = new BMemoryQueryParameters()
             {
                 Domain = Resources_DeploymentManager.Get().GetDeploymentBranchNameEscapedLoweredWithDash().ToUpper(),
@@ -83,10 +89,10 @@ namespace CADFileService
                 Identifier = "MEMORY_SERVICE_DATA"
             };
 
-            var AuthServiceEndpoint = ServInit.RequiredEnvironmentVariables["AUTH_SERVICE_ENDPOINT"];
+            var AuthServiceEndpoint = ServInit.RequiredEnvironmentVariables["AUTH_SERVICE_ENDPOINT"] + RootPath;
 
             var CadFileStorageBucketName = ServInit.RequiredEnvironmentVariables["CAD_FILE_STORAGE_BUCKET"];
-            var CadProcessServiceEndpoint = ServInit.RequiredEnvironmentVariables["CAD_PROCESS_SERVICE_ENDPOINT"];
+            var CadProcessServiceEndpoint = ServInit.RequiredEnvironmentVariables["CAD_PROCESS_SERVICE_ENDPOINT"] + RootPath;
 
             Controller_DeliveryEnsurer.Get().SetDatabaseService(ServInit.DatabaseService);
             Controller_DeliveryEnsurer.Get().SetFileService(ServInit.FileService);
@@ -117,30 +123,30 @@ namespace CADFileService
             */
             var WebServiceEndpoints = new List<BWebPrefixStructure>()
             {
-                new BWebPrefixStructure(new string[] { "/3d/models/internal/pubsub*" }, () => new InternalCalls.PubSub_To_CadFileService(InternalCallPrivateKey, ServInit.DatabaseService, ServInit.FileService, CadFileStorageBucketName, CadProcessServiceEndpoint)),
-                new BWebPrefixStructure(new string[] { "/3d/models/internal/cleanup*" }, () => new InternalCalls.CleanupCall(InternalCallPrivateKey, ServInit.DatabaseService, ServInit.MemoryService)),
-                new BWebPrefixStructure(new string[] { "/3d/models/internal/globally_shared_models*" }, () => new ListGloballySharedModelIds.ForInternal(InternalCallPrivateKey, ServInit.DatabaseService)),
-                new BWebPrefixStructure(new string[] { "/3d/models/internal/check_models_exist*" }, () => new InternalCalls.CheckModelsExist(InternalCallPrivateKey, ServInit.DatabaseService)),
-                new BWebPrefixStructure(new string[] { "/3d/models/get_models_by/user_id/*/metadata_key/*/metadata_values/*" }, () => new GetModelsBy_MetadataKeyValueUserPair(ServInit.DatabaseService, "user_id", "metadata_key", "metadata_values")),
-                new BWebPrefixStructure(new string[] { "/3d/models/get_models_by/user_id/*/metadata_key/*" }, () => new GetModelsBy_MetadataKeyUserPair(ServInit.DatabaseService, "user_id", "metadata_key")),
-                new BWebPrefixStructure(new string[] { "/3d/models/*/revisions/*/unreal/hierarchy_geometry_metadata" }, () => new Model_GetUnrealHierarchyMetadataGeometry(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", CadFileStorageBucketName)),
-                new BWebPrefixStructure(new string[] { "/3d/models/*/revisions/*/unreal/hierarchy_geometry" }, () => new Model_GetUnrealHierarchyGeometry(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", CadFileStorageBucketName)),
-                new BWebPrefixStructure(new string[] { "/3d/models/*/revisions/*/unreal/hierarchy" }, () => new Model_GetUnrealHierarchy(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", CadFileStorageBucketName)),
-                new BWebPrefixStructure(new string[] { "/3d/models/*/revisions/*/unreal/geometry_files/*" }, () => new Model_GetUnrealGeometry(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", "geometry_files", CadFileStorageBucketName)),
-                new BWebPrefixStructure(new string[] { "/3d/models/*/revisions/*/raw" }, () => new Model_GetUpdateDeleteRaw_ForRevision(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", CadFileStorageBucketName, CadProcessServiceEndpoint)),
-                new BWebPrefixStructure(new string[] { "/3d/models/*/revisions/*/hierarchy/nodes/*" }, () => new Model_GetHierarchyNode_ForRevision(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", "nodes", CadFileStorageBucketName)),
-                new BWebPrefixStructure(new string[] { "/3d/models/*/revisions/*/hierarchy" }, () => new Model_GetHierarchyFile_ForRevision(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", CadFileStorageBucketName)),
-                new BWebPrefixStructure(new string[] { "/3d/models/*/revisions/*/geometry/nodes/*" }, () => new Model_GetGeometryNode_ForRevision(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", "nodes", CadFileStorageBucketName)),
-                new BWebPrefixStructure(new string[] { "/3d/models/*/revisions/*/geometry" }, () => new Model_GetGeometryFile_ForRevision(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", CadFileStorageBucketName)),
-                new BWebPrefixStructure(new string[] { "/3d/models/*/revisions/*/metadata/nodes/*" }, () => new Model_GetMetadataNode_ForRevision(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", "keys", CadFileStorageBucketName)),
-                new BWebPrefixStructure(new string[] { "/3d/models/*/revisions/*/metadata" }, () => new Model_GetMetadataFile_ForRevision(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", CadFileStorageBucketName)),
-                new BWebPrefixStructure(new string[] { "/3d/models/*/revisions/*" }, () => new Model_GetUpdateDeleteRevision(ServInit.DatabaseService, "models", "revisions", CadFileStorageBucketName)),
-                new BWebPrefixStructure(new string[] { "/3d/models/*/revisions" }, () => new Model_AddListRevisions(ServInit.DatabaseService, "models")),
-                new BWebPrefixStructure(new string[] { "/3d/models/*/sharing" }, () => new Model_ChangeSharingWithUsers(InternalCallPrivateKey, AuthServiceEndpoint, ServInit.DatabaseService, "models")),
-                new BWebPrefixStructure(new string[] { "/3d/models/*/remove_sharing_from/user_id/*" }, () => new Model_RemoveModelShare(ServInit.DatabaseService, "models", "user_id")),
-                new BWebPrefixStructure(new string[] { "/3d/models/globally_shared" }, () => new ListGloballySharedModelIds.ForUsers(ServInit.DatabaseService)),
-                new BWebPrefixStructure(new string[] { "/3d/models/*" }, () => new Model_GetUpdateDeleteModel(ServInit.DatabaseService, "models")),
-                new BWebPrefixStructure(new string[] { "/3d/models" }, () => new Model_AddListModels(ServInit.DatabaseService))
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models/internal/pubsub*" }, () => new InternalCalls.PubSub_To_CadFileService(InternalCallPrivateKey, ServInit.DatabaseService, ServInit.FileService, CadFileStorageBucketName, CadProcessServiceEndpoint)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models/internal/cleanup*" }, () => new InternalCalls.CleanupCall(InternalCallPrivateKey, ServInit.DatabaseService, ServInit.MemoryService)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models/internal/globally_shared_models*" }, () => new ListGloballySharedModelIds.ForInternal(InternalCallPrivateKey, ServInit.DatabaseService)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models/internal/check_models_exist*" }, () => new InternalCalls.CheckModelsExist(InternalCallPrivateKey, ServInit.DatabaseService)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models/get_models_by/user_id/*/metadata_key/*/metadata_values/*" }, () => new GetModelsBy_MetadataKeyValueUserPair(ServInit.DatabaseService, "user_id", "metadata_key", "metadata_values")),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models/get_models_by/user_id/*/metadata_key/*" }, () => new GetModelsBy_MetadataKeyUserPair(ServInit.DatabaseService, "user_id", "metadata_key")),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models/*/revisions/*/unreal/hierarchy_geometry_metadata" }, () => new Model_GetUnrealHierarchyMetadataGeometry(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", CadFileStorageBucketName)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models/*/revisions/*/unreal/hierarchy_geometry" }, () => new Model_GetUnrealHierarchyGeometry(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", CadFileStorageBucketName)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models/*/revisions/*/unreal/hierarchy" }, () => new Model_GetUnrealHierarchy(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", CadFileStorageBucketName)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models/*/revisions/*/unreal/geometry_files/*" }, () => new Model_GetUnrealGeometry(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", "geometry_files", CadFileStorageBucketName)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models/*/revisions/*/raw" }, () => new Model_GetUpdateDeleteRaw_ForRevision(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", CadFileStorageBucketName, CadProcessServiceEndpoint)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models/*/revisions/*/hierarchy/nodes/*" }, () => new Model_GetHierarchyNode_ForRevision(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", "nodes", CadFileStorageBucketName)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models/*/revisions/*/hierarchy" }, () => new Model_GetHierarchyFile_ForRevision(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", CadFileStorageBucketName)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models/*/revisions/*/geometry/nodes/*" }, () => new Model_GetGeometryNode_ForRevision(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", "nodes", CadFileStorageBucketName)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models/*/revisions/*/geometry" }, () => new Model_GetGeometryFile_ForRevision(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", CadFileStorageBucketName)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models/*/revisions/*/metadata/nodes/*" }, () => new Model_GetMetadataNode_ForRevision(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", "keys", CadFileStorageBucketName)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models/*/revisions/*/metadata" }, () => new Model_GetMetadataFile_ForRevision(ServInit.FileService, ServInit.DatabaseService, "models", "revisions", CadFileStorageBucketName)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models/*/revisions/*" }, () => new Model_GetUpdateDeleteRevision(ServInit.DatabaseService, "models", "revisions", CadFileStorageBucketName)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models/*/revisions" }, () => new Model_AddListRevisions(ServInit.DatabaseService, "models")),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models/*/sharing" }, () => new Model_ChangeSharingWithUsers(InternalCallPrivateKey, AuthServiceEndpoint, ServInit.DatabaseService, "models")),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models/*/remove_sharing_from/user_id/*" }, () => new Model_RemoveModelShare(ServInit.DatabaseService, "models", "user_id")),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models/globally_shared" }, () => new ListGloballySharedModelIds.ForUsers(ServInit.DatabaseService)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models/*" }, () => new Model_GetUpdateDeleteModel(ServInit.DatabaseService, "models")),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models" }, () => new Model_AddListModels(ServInit.DatabaseService))
             };
             var BWebService = new BWebService(WebServiceEndpoints.ToArray(), ServInit.ServerPort/*, ServInit.TracingService*/);
             BWebService.Run((string Message) =>

@@ -594,7 +594,7 @@ namespace CADFileService.Endpoints
 
                             Result = BWebServiceExtraUtilities.InterServicesRequest(new BWebServiceExtraUtilities.InterServicesRequestRequest()
                             {
-                                DestinationServiceUrl = CadProcessServiceEndpoint + "/3d/process/start",
+                                DestinationServiceUrl = CadProcessServiceEndpoint + "3d/process/start",
                                 RequestMethod = "POST",
                                 ContentType = "application/json",
                                 Content = new BStringOrStream(RequestObject.ToString()),

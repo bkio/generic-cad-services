@@ -208,7 +208,7 @@ namespace CADFileService
 
                     var Result = BWebServiceExtraUtilities.InterServicesRequest(new BWebServiceExtraUtilities.InterServicesRequestRequest()
                     {
-                        DestinationServiceUrl = AuthServiceEndpoint + "/auth/internal/fetch_user_ids_from_emails?secret=" + InternalCallPrivateKey,
+                        DestinationServiceUrl = AuthServiceEndpoint + "auth/internal/fetch_user_ids_from_emails?secret=" + InternalCallPrivateKey,
                         RequestMethod = "POST",
                         bWithAuthToken = true,
                         UseContextHeaders = _Context,
