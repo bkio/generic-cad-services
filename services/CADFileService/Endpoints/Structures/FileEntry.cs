@@ -331,7 +331,7 @@ namespace CADFileService.Endpoints.Structures
             _bIsProcessed = false;
             foreach (var FolderPrefix in Constants.ProcessedFileType_FolderPrefix_Map)
             {
-                if (_RelativeUrl.StartsWith(FolderPrefix.Value))
+                if (_RelativeUrl.EndsWith(FolderPrefix.Value))
                 {
                     _ProcessedFileType_IfProcessed = FolderPrefix.Key;
                     _bIsProcessed = true;
@@ -340,7 +340,7 @@ namespace CADFileService.Endpoints.Structures
             }
             if (_ProcessedFileType_IfProcessed == EProcessedFileType.NONE_OR_RAW)
             {
-                if (!_RelativeUrl.StartsWith(RAW_FILE_FOLDER_PREFIX)) return false;
+                if (!_RelativeUrl.EndsWith(RAW_FILE_FOLDER_PREFIX)) return false;
                 _RelativeUrl = _RelativeUrl.Substring(RAW_FILE_FOLDER_PREFIX.Length);
             }
 
@@ -360,70 +360,70 @@ namespace CADFileService.Endpoints.Structures
 
             return true;
         }
-        public string SetRelativeUrls_GetCommonUrlPart_FileEntryFileTypePreSet(string _OwnerModelID, int _OwnerRevisionIndex)
+        public string SetRelativeUrls_GetCommonUrlPart_FileEntryFileTypePreSet(string _DeploymentBranchName, string _OwnerModelID, int _OwnerRevisionIndex)
         {
             var CommonUrlPart = $"{_OwnerModelID}/{_OwnerRevisionIndex}/file.";
 
-            RawFileRelativeUrl = Make_RawFileRelativeUrl_FromCommonUrlPart(CommonUrlPart, FileEntryFileType);
+            RawFileRelativeUrl = Make_RawFileRelativeUrl_FromCommonUrlPart(_DeploymentBranchName, CommonUrlPart, FileEntryFileType);
 
-            HierarchyRAFRelativeUrl = Make_HierarchyRAFRelativeUrl_FromCommonUrlPart(CommonUrlPart);
-            HierarchyCFRelativeUrl = Make_HierarchyCFRelativeUrl_FromCommonUrlPart(CommonUrlPart);
-            GeometryRAFRelativeUrl = Make_GeometryRAFRelativeUrl_FromCommonUrlPart(CommonUrlPart);
-            GeometryCFRelativeUrl = Make_GeometryCFRelativeUrl_FromCommonUrlPart(CommonUrlPart);
-            MetadataRAFRelativeUrl = Make_MetadataRAFRelativeUrl_FromCommonUrlPart(CommonUrlPart);
-            MetadataCFRelativeUrl = Make_MetadataCFRelativeUrl_FromCommonUrlPart(CommonUrlPart);
+            HierarchyRAFRelativeUrl = Make_HierarchyRAFRelativeUrl_FromCommonUrlPart(_DeploymentBranchName, CommonUrlPart);
+            HierarchyCFRelativeUrl = Make_HierarchyCFRelativeUrl_FromCommonUrlPart(_DeploymentBranchName, CommonUrlPart);
+            GeometryRAFRelativeUrl = Make_GeometryRAFRelativeUrl_FromCommonUrlPart(_DeploymentBranchName, CommonUrlPart);
+            GeometryCFRelativeUrl = Make_GeometryCFRelativeUrl_FromCommonUrlPart(_DeploymentBranchName, CommonUrlPart);
+            MetadataRAFRelativeUrl = Make_MetadataRAFRelativeUrl_FromCommonUrlPart(_DeploymentBranchName, CommonUrlPart);
+            MetadataCFRelativeUrl = Make_MetadataCFRelativeUrl_FromCommonUrlPart(_DeploymentBranchName, CommonUrlPart);
 
-            UnrealHGMRelativeUrl = Make_UnrealHGMRelativeUrl_FromCommonUrlPart(CommonUrlPart);
-            UnrealHGRelativeUrl = Make_UnrealHGRelativeUrl_FromCommonUrlPart(CommonUrlPart);
-            UnrealHRelativeUrl = Make_UnrealHRelativeUrl_FromCommonUrlPart(CommonUrlPart);
-            UnrealGRelativeUrlBasePath = Make_UnrealGCFRelativeUrl_FromCommonUrlPart($"{_OwnerModelID}/{_OwnerRevisionIndex}/");
+            UnrealHGMRelativeUrl = Make_UnrealHGMRelativeUrl_FromCommonUrlPart(_DeploymentBranchName, CommonUrlPart);
+            UnrealHGRelativeUrl = Make_UnrealHGRelativeUrl_FromCommonUrlPart(_DeploymentBranchName, CommonUrlPart);
+            UnrealHRelativeUrl = Make_UnrealHRelativeUrl_FromCommonUrlPart(_DeploymentBranchName, CommonUrlPart);
+            UnrealGRelativeUrlBasePath = Make_UnrealGCFRelativeUrl_FromCommonUrlPart(_DeploymentBranchName, $"{_OwnerModelID}/{_OwnerRevisionIndex}/");
 
             return CommonUrlPart;
         }
-        public static string Make_RawFileRelativeUrl_FromCommonUrlPart(string _CommonUrlPart, string _FileEntryFileType)
+        public static string Make_RawFileRelativeUrl_FromCommonUrlPart(string _DeploymentBranchName, string _CommonUrlPart, string _FileEntryFileType)
         {
-            return RAW_FILE_FOLDER_PREFIX + _CommonUrlPart + _FileEntryFileType.ToLower();
+            return _DeploymentBranchName + "_" + RAW_FILE_FOLDER_PREFIX + _CommonUrlPart + _FileEntryFileType.ToLower();
         }
-        public static string Make_HierarchyRAFRelativeUrl_FromCommonUrlPart(string _CommonUrlPart)
+        public static string Make_HierarchyRAFRelativeUrl_FromCommonUrlPart(string _DeploymentBranchName, string _CommonUrlPart)
         {
-            return Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.HIERARCHY_RAF] + _CommonUrlPart + Constants.ProcessedFileType_Extension_Map[EProcessedFileType.HIERARCHY_RAF];
+            return _DeploymentBranchName + "_" + Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.HIERARCHY_RAF] + _CommonUrlPart + Constants.ProcessedFileType_Extension_Map[EProcessedFileType.HIERARCHY_RAF];
         }
-        public static string Make_HierarchyCFRelativeUrl_FromCommonUrlPart(string _CommonUrlPart)
+        public static string Make_HierarchyCFRelativeUrl_FromCommonUrlPart(string _DeploymentBranchName, string _CommonUrlPart)
         {
-            return Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.HIERARCHY_CF] + _CommonUrlPart + Constants.ProcessedFileType_Extension_Map[EProcessedFileType.HIERARCHY_CF];
+            return _DeploymentBranchName + "_" + Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.HIERARCHY_CF] + _CommonUrlPart + Constants.ProcessedFileType_Extension_Map[EProcessedFileType.HIERARCHY_CF];
         }
-        public static string Make_GeometryRAFRelativeUrl_FromCommonUrlPart(string _CommonUrlPart)
+        public static string Make_GeometryRAFRelativeUrl_FromCommonUrlPart(string _DeploymentBranchName, string _CommonUrlPart)
         {
-            return Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.GEOMETRY_RAF] + _CommonUrlPart + Constants.ProcessedFileType_Extension_Map[EProcessedFileType.GEOMETRY_RAF];
+            return _DeploymentBranchName + "_" + Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.GEOMETRY_RAF] + _CommonUrlPart + Constants.ProcessedFileType_Extension_Map[EProcessedFileType.GEOMETRY_RAF];
         }
-        public static string Make_GeometryCFRelativeUrl_FromCommonUrlPart(string _CommonUrlPart)
+        public static string Make_GeometryCFRelativeUrl_FromCommonUrlPart(string _DeploymentBranchName, string _CommonUrlPart)
         {
-            return Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.GEOMETRY_CF] + _CommonUrlPart + Constants.ProcessedFileType_Extension_Map[EProcessedFileType.GEOMETRY_CF];
+            return _DeploymentBranchName + "_" + Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.GEOMETRY_CF] + _CommonUrlPart + Constants.ProcessedFileType_Extension_Map[EProcessedFileType.GEOMETRY_CF];
         }
-        public static string Make_MetadataRAFRelativeUrl_FromCommonUrlPart(string _CommonUrlPart)
+        public static string Make_MetadataRAFRelativeUrl_FromCommonUrlPart(string _DeploymentBranchName, string _CommonUrlPart)
         {
-            return Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.METADATA_RAF] + _CommonUrlPart + Constants.ProcessedFileType_Extension_Map[EProcessedFileType.METADATA_RAF];
+            return _DeploymentBranchName + "_" + Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.METADATA_RAF] + _CommonUrlPart + Constants.ProcessedFileType_Extension_Map[EProcessedFileType.METADATA_RAF];
         }
-        public static string Make_MetadataCFRelativeUrl_FromCommonUrlPart(string _CommonUrlPart)
+        public static string Make_MetadataCFRelativeUrl_FromCommonUrlPart(string _DeploymentBranchName, string _CommonUrlPart)
         {
-            return Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.METADATA_CF] + _CommonUrlPart + Constants.ProcessedFileType_Extension_Map[EProcessedFileType.METADATA_CF];
+            return _DeploymentBranchName + "_" + Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.METADATA_CF] + _CommonUrlPart + Constants.ProcessedFileType_Extension_Map[EProcessedFileType.METADATA_CF];
         }
 
-        public static string Make_UnrealHGMRelativeUrl_FromCommonUrlPart(string _CommonUrlPart)
+        public static string Make_UnrealHGMRelativeUrl_FromCommonUrlPart(string _DeploymentBranchName, string _CommonUrlPart)
         {
-            return Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.UNREAL_HGM] + _CommonUrlPart + Constants.ProcessedFileType_Extension_Map[EProcessedFileType.UNREAL_HGM];
+            return _DeploymentBranchName + "_" + Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.UNREAL_HGM] + _CommonUrlPart + Constants.ProcessedFileType_Extension_Map[EProcessedFileType.UNREAL_HGM];
         }
-        public static string Make_UnrealHGRelativeUrl_FromCommonUrlPart(string _CommonUrlPart)
+        public static string Make_UnrealHGRelativeUrl_FromCommonUrlPart(string _DeploymentBranchName, string _CommonUrlPart)
         {
-            return Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.UNREAL_HG] + _CommonUrlPart + Constants.ProcessedFileType_Extension_Map[EProcessedFileType.UNREAL_HG];
+            return _DeploymentBranchName + "_" + Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.UNREAL_HG] + _CommonUrlPart + Constants.ProcessedFileType_Extension_Map[EProcessedFileType.UNREAL_HG];
         }
-        public static string Make_UnrealHRelativeUrl_FromCommonUrlPart(string _CommonUrlPart)
+        public static string Make_UnrealHRelativeUrl_FromCommonUrlPart(string _DeploymentBranchName, string _CommonUrlPart)
         {
-            return Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.UNREAL_H] + _CommonUrlPart + Constants.ProcessedFileType_Extension_Map[EProcessedFileType.UNREAL_H];
+            return _DeploymentBranchName + "_" + Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.UNREAL_H] + _CommonUrlPart + Constants.ProcessedFileType_Extension_Map[EProcessedFileType.UNREAL_H];
         }
-        public static string Make_UnrealGCFRelativeUrl_FromCommonUrlPart(string _CommonUrlPart)
+        public static string Make_UnrealGCFRelativeUrl_FromCommonUrlPart(string _DeploymentBranchName, string _CommonUrlPart)
         {
-            return Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.UNREAL_G] + _CommonUrlPart;
+            return _DeploymentBranchName + "_" + Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.UNREAL_G] + _CommonUrlPart;
         }
     }
 }

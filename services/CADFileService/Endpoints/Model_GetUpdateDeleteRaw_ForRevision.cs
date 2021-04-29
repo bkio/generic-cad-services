@@ -162,7 +162,7 @@ namespace CADFileService
             RevisionObject.FileEntry.Merge(UpdatedFileEntryJson);
 
             RevisionObject.FileEntry.FileEntryFileType = RevisionObject.FileEntry.FileEntryFileType.ToLower().TrimStart('.');
-            RevisionObject.FileEntry.SetRelativeUrls_GetCommonUrlPart_FileEntryFileTypePreSet(RequestedModelID, RequestedRevisionIndex);
+            RevisionObject.FileEntry.SetRelativeUrls_GetCommonUrlPart_FileEntryFileTypePreSet(Resources_DeploymentManager.Get().GetDeploymentBranchNameEscapedLoweredWithUnderscore(), RequestedModelID, RequestedRevisionIndex);
             RevisionObject.FileEntry.FileEntryCreationTime = CommonMethods.GetTimeAsCreationTime();
             ModelObject.MRVLastUpdateTime = RevisionObject.FileEntry.FileEntryCreationTime;
 
@@ -278,7 +278,7 @@ namespace CADFileService
             {
                 FileEntryFileType = FileType
             };
-            RevisionObject.FileEntry.SetRelativeUrls_GetCommonUrlPart_FileEntryFileTypePreSet(RequestedModelID, RequestedRevisionIndex);
+            RevisionObject.FileEntry.SetRelativeUrls_GetCommonUrlPart_FileEntryFileTypePreSet(Resources_DeploymentManager.Get().GetDeploymentBranchNameEscapedLoweredWithUnderscore(), RequestedModelID, RequestedRevisionIndex);
 
             ModelObject.MRVLastUpdateTime = CommonMethods.GetTimeAsCreationTime();
 

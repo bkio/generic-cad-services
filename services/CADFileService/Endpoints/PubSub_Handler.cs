@@ -55,25 +55,25 @@ namespace CADFileService.Endpoints
                 {
                     var Casted = (Action_StorageFileUploaded)_Action;
 
-                    if (Casted.RelativeUrl.StartsWith(FileEntry.RAW_FILE_FOLDER_PREFIX))
+                    if (Casted.RelativeUrl.EndsWith(FileEntry.RAW_FILE_FOLDER_PREFIX))
                         return RawFileUploaded(_Context, Casted, _ErrorMessageAction);
-                    if (Casted.RelativeUrl.StartsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.HIERARCHY_RAF]))
+                    if (Casted.RelativeUrl.EndsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.HIERARCHY_RAF]))
                         return HierarchyRAFUploaded(_Context, Casted, _ErrorMessageAction);
-                    if (Casted.RelativeUrl.StartsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.HIERARCHY_CF]))
+                    if (Casted.RelativeUrl.EndsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.HIERARCHY_CF]))
                         return HierarchyCFUploaded(_Context, Casted, _ErrorMessageAction);
-                    if (Casted.RelativeUrl.StartsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.GEOMETRY_RAF]))
+                    if (Casted.RelativeUrl.EndsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.GEOMETRY_RAF]))
                         return GeometryRAFUploaded(_Context, Casted, _ErrorMessageAction);
-                    if (Casted.RelativeUrl.StartsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.GEOMETRY_CF]))
+                    if (Casted.RelativeUrl.EndsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.GEOMETRY_CF]))
                         return GeometryCFUploaded(_Context, Casted, _ErrorMessageAction);
-                    if (Casted.RelativeUrl.StartsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.METADATA_RAF]))
+                    if (Casted.RelativeUrl.EndsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.METADATA_RAF]))
                         return MetadataRAFUploaded(_Context, Casted, _ErrorMessageAction);
-                    if (Casted.RelativeUrl.StartsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.METADATA_CF]))
+                    if (Casted.RelativeUrl.EndsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.METADATA_CF]))
                         return MetadataCFUploaded(_Context, Casted, _ErrorMessageAction);
-                    if (Casted.RelativeUrl.StartsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.UNREAL_HGM]))
+                    if (Casted.RelativeUrl.EndsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.UNREAL_HGM]))
                         return UnrealHGMUploaded(_Context, Casted, _ErrorMessageAction);
-                    if (Casted.RelativeUrl.StartsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.UNREAL_HG]))
+                    if (Casted.RelativeUrl.EndsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.UNREAL_HG]))
                         return UnrealHGUploaded(_Context, Casted, _ErrorMessageAction);
-                    if (Casted.RelativeUrl.StartsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.UNREAL_H]))
+                    if (Casted.RelativeUrl.EndsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.UNREAL_H]))
                         return UnrealHUploaded(_Context, Casted, _ErrorMessageAction);
                     //Don't execute for Unreal_G because there is no one specific file for it but multiple
                 }
@@ -83,6 +83,7 @@ namespace CADFileService.Endpoints
 
                     return UpdateModelBatchProcessFailed(_Context, Casted, _ErrorMessageAction);
                 }
+                _ErrorMessageAction?.Invoke($"Info: PubSub_Handler->Handle: {_Action.GetActionType().ToString()}");
                 //else: Other cad file service related actions
 
                 return true;
