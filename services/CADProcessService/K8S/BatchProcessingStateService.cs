@@ -551,7 +551,7 @@ namespace CADProcessService.K8S
         {
             _QueryParameters = new BMemoryQueryParameters();
             _QueryParameters.Domain = Resources_DeploymentManager.Get().GetDeploymentBranchNameEscapedLoweredWithDash().ToUpper();
-            _QueryParameters.SubDomain = "ServiceUtilities-BATCH";
+            _QueryParameters.SubDomain = "ServiceUtilities_BATCH";
             _QueryParameters.Identifier = _ItemKey;
         }
 
