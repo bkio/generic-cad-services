@@ -21,7 +21,7 @@ namespace CADFileService.Endpoints
 {
     partial class InternalCalls
     {
-        internal class PubSub_To_CadFileService : PubSubServiceBaseTimeoutableDeliveryEnsurerUser
+        internal class PubSub_To_CadFileService : PubSubServiceBaseWebhookTimeoutableDeliveryEnsurerUser
         {
             private readonly IBDatabaseServiceInterface DatabaseService;
             private readonly IBFileServiceInterface FileService;
