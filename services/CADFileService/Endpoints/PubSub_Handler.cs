@@ -39,6 +39,7 @@ namespace CADFileService.Endpoints
 
             protected override bool Handle(HttpListenerContext _Context, ServiceUtilities.Action _Action, Action<string> _ErrorMessageAction = null)
             {
+                _ErrorMessageAction?.Invoke($"Info: PubSub_To_CadFileService->Handle: {_Action.GetActionType().ToString()}");
                 if (_Action.GetActionType() == Actions.EAction.ACTION_CAD_FILE_SERVICE_DELIVERY_ENSURER)
                 {
                     Controller_DeliveryEnsurer.Get().Retry_FireAndForget_Operation(_Context, (Action_DeliveryEnsurer)_Action, _ErrorMessageAction);
@@ -83,7 +84,6 @@ namespace CADFileService.Endpoints
 
                     return UpdateModelBatchProcessFailed(_Context, Casted, _ErrorMessageAction);
                 }
-                _ErrorMessageAction?.Invoke($"Info: PubSub_Handler->Handle: {_Action.GetActionType().ToString()}");
                 //else: Other cad file service related actions
 
                 return true;
