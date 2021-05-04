@@ -91,6 +91,7 @@ namespace CADFileService
 
             var AuthServiceEndpoint = ServInit.RequiredEnvironmentVariables["AUTH_SERVICE_ENDPOINT"] + RootPath;
 
+            var AzureStorageServiceUrl = ServInit.RequiredEnvironmentVariables["AZ_STORAGE_SERVICE_URL"];
             var CadFileStorageBucketName = ServInit.RequiredEnvironmentVariables["CAD_FILE_STORAGE_BUCKET"];
             var CadProcessServiceEndpoint = ServInit.RequiredEnvironmentVariables["CAD_PROCESS_SERVICE_ENDPOINT"] + RootPath;
 
@@ -123,7 +124,7 @@ namespace CADFileService
             */
             var WebServiceEndpoints = new List<BWebPrefixStructure>()
             {
-                new BWebPrefixStructure(new string[] { RootPath + "3d/models/internal/pubsub*" }, () => new InternalCalls.PubSub_To_CadFileService(InternalCallPrivateKey, ServInit.DatabaseService, ServInit.FileService, CadFileStorageBucketName, CadProcessServiceEndpoint)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/models/internal/pubsub*" }, () => new InternalCalls.PubSub_To_CadFileService(InternalCallPrivateKey, ServInit.DatabaseService, ServInit.FileService, AzureStorageServiceUrl, CadFileStorageBucketName, CadProcessServiceEndpoint)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/models/internal/cleanup*" }, () => new InternalCalls.CleanupCall(InternalCallPrivateKey, ServInit.DatabaseService, ServInit.MemoryService)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/models/internal/globally_shared_models*" }, () => new ListGloballySharedModelIds.ForInternal(InternalCallPrivateKey, ServInit.DatabaseService)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/models/internal/check_models_exist*" }, () => new InternalCalls.CheckModelsExist(InternalCallPrivateKey, ServInit.DatabaseService)),

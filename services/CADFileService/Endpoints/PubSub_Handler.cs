@@ -26,13 +26,21 @@ namespace CADFileService.Endpoints
             private readonly IBDatabaseServiceInterface DatabaseService;
             private readonly IBFileServiceInterface FileService;
 
+            private readonly string AzureStorageServiceUrl;
             private readonly string CadFileStorageBucketName;
             private readonly string CadProcessServiceEndpoint;
 
-            public PubSub_To_CadFileService(string _InternalCallPrivateKey, IBDatabaseServiceInterface _DatabaseService, IBFileServiceInterface _FileService, string _CadFileStorageBucketName, string _CadProcessServiceEndpoint) : base(_InternalCallPrivateKey)
+            public PubSub_To_CadFileService(
+                string _InternalCallPrivateKey, 
+                IBDatabaseServiceInterface _DatabaseService, 
+                IBFileServiceInterface _FileService, 
+                string _AzureStorageServiceUrl, 
+                string _CadFileStorageBucketName, 
+                string _CadProcessServiceEndpoint) : base(_InternalCallPrivateKey)
             {
                 DatabaseService = _DatabaseService;
                 FileService = _FileService;
+                AzureStorageServiceUrl = _AzureStorageServiceUrl;
                 CadFileStorageBucketName = _CadFileStorageBucketName;
                 CadProcessServiceEndpoint = _CadProcessServiceEndpoint;
             }
@@ -52,29 +60,33 @@ namespace CADFileService.Endpoints
                 {
                     return DeleteFiles(_Context, (Action_ModelRevisionFileEntryDeleteAll)_Action, _ErrorMessageAction);
                 }
-                else if (_Action.GetActionType() == Actions.EAction.ACTION_STORAGE_FILE_UPLOADED)
+                else if (_Action.GetActionType() == Actions.EAction.ACTION_STORAGE_FILE_UPLOADED_CLOUDEVENT)
                 {
-                    var Casted = (Action_StorageFileUploaded)_Action;
+                    var Casted = (Action_StorageFileUploaded_CloudEventSchemaV1_0)_Action;
+                    var _ServiceEndpointPart = AzureStorageServiceUrl + CadFileStorageBucketName + "/";
+                    Casted.ConvertUrlToRelativeUrl(_ServiceEndpointPart);
 
-                    if (Casted.RelativeUrl.EndsWith(FileEntry.RAW_FILE_FOLDER_PREFIX))
+                    var _FinalPrefixFirstPart = Resources_DeploymentManager.Get().GetDeploymentBranchNameEscapedLoweredWithUnderscore() + "_";
+
+                    if (Casted.RelativeUrl.StartsWith((_FinalPrefixFirstPart + FileEntry.RAW_FILE_FOLDER_PREFIX)))
                         return RawFileUploaded(_Context, Casted, _ErrorMessageAction);
-                    if (Casted.RelativeUrl.EndsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.HIERARCHY_RAF]))
+                    if (Casted.RelativeUrl.StartsWith((_FinalPrefixFirstPart + Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.HIERARCHY_RAF])))
                         return HierarchyRAFUploaded(_Context, Casted, _ErrorMessageAction);
-                    if (Casted.RelativeUrl.EndsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.HIERARCHY_CF]))
+                    if (Casted.RelativeUrl.StartsWith((_FinalPrefixFirstPart + Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.HIERARCHY_CF])))
                         return HierarchyCFUploaded(_Context, Casted, _ErrorMessageAction);
-                    if (Casted.RelativeUrl.EndsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.GEOMETRY_RAF]))
+                    if (Casted.RelativeUrl.StartsWith((_FinalPrefixFirstPart + Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.GEOMETRY_RAF])))
                         return GeometryRAFUploaded(_Context, Casted, _ErrorMessageAction);
-                    if (Casted.RelativeUrl.EndsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.GEOMETRY_CF]))
+                    if (Casted.RelativeUrl.StartsWith((_FinalPrefixFirstPart + Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.GEOMETRY_CF])))
                         return GeometryCFUploaded(_Context, Casted, _ErrorMessageAction);
-                    if (Casted.RelativeUrl.EndsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.METADATA_RAF]))
+                    if (Casted.RelativeUrl.StartsWith((_FinalPrefixFirstPart + Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.METADATA_RAF])))
                         return MetadataRAFUploaded(_Context, Casted, _ErrorMessageAction);
-                    if (Casted.RelativeUrl.EndsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.METADATA_CF]))
+                    if (Casted.RelativeUrl.StartsWith((_FinalPrefixFirstPart + Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.METADATA_CF])))
                         return MetadataCFUploaded(_Context, Casted, _ErrorMessageAction);
-                    if (Casted.RelativeUrl.EndsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.UNREAL_HGM]))
+                    if (Casted.RelativeUrl.StartsWith((_FinalPrefixFirstPart + Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.UNREAL_HGM])))
                         return UnrealHGMUploaded(_Context, Casted, _ErrorMessageAction);
-                    if (Casted.RelativeUrl.EndsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.UNREAL_HG]))
+                    if (Casted.RelativeUrl.StartsWith((_FinalPrefixFirstPart + Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.UNREAL_HG])))
                         return UnrealHGUploaded(_Context, Casted, _ErrorMessageAction);
-                    if (Casted.RelativeUrl.EndsWith(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.UNREAL_H]))
+                    if (Casted.RelativeUrl.StartsWith((_FinalPrefixFirstPart + Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.UNREAL_H])))
                         return UnrealHUploaded(_Context, Casted, _ErrorMessageAction);
                     //Don't execute for Unreal_G because there is no one specific file for it but multiple
                 }
@@ -442,7 +454,7 @@ namespace CADFileService.Endpoints
 
             private bool OnFileUploaded_Internal(
                 string _CallerMethod,
-                Action_StorageFileUploaded _Action,
+                Action_StorageFileUploaded_CloudEventSchemaV1_0 _Action,
                 EProcessedFileType _ContinueIfRelativeUrlIsA,
                 Action<string> _ErrorMessageAction,
                 Func<string, int, ModelDBEntry, Revision, bool> _SuccessCallback)
@@ -567,7 +579,7 @@ namespace CADFileService.Endpoints
             }
             private static bool SleepReturnTrue(int _MS) { Thread.Sleep(_MS); return true; }
 
-            private bool RawFileUploaded(HttpListenerContext _Context, Action_StorageFileUploaded _Action, Action<string> _ErrorMessageAction)
+            private bool RawFileUploaded(HttpListenerContext _Context, Action_StorageFileUploaded_CloudEventSchemaV1_0 _Action, Action<string> _ErrorMessageAction)
             {
                 if (!OnFileUploaded_Internal("RawFileUploaded", _Action, EProcessedFileType.NONE_OR_RAW, _ErrorMessageAction,
                     (string ModelID, int RevisionIndex, ModelDBEntry ModelObject, Revision RevisionObject) =>
@@ -647,7 +659,7 @@ namespace CADFileService.Endpoints
                 return true;
             }
 
-            private bool HierarchyRAFUploaded(HttpListenerContext _Context, Action_StorageFileUploaded _Action, Action<string> _ErrorMessageAction)
+            private bool HierarchyRAFUploaded(HttpListenerContext _Context, Action_StorageFileUploaded_CloudEventSchemaV1_0 _Action, Action<string> _ErrorMessageAction)
             {
                 bool bProceedToFindRoot = false;
 
@@ -788,7 +800,7 @@ namespace CADFileService.Endpoints
 
                 return true;
             }
-            private bool HierarchyCFUploaded(HttpListenerContext _Context, Action_StorageFileUploaded _Action, Action<string> _ErrorMessageAction)
+            private bool HierarchyCFUploaded(HttpListenerContext _Context, Action_StorageFileUploaded_CloudEventSchemaV1_0 _Action, Action<string> _ErrorMessageAction)
             {
                 if (!OnFileUploaded_Internal("HierarchyCFUploaded", _Action, EProcessedFileType.HIERARCHY_CF, _ErrorMessageAction,
                     (string ModelID, int RevisionIndex, ModelDBEntry ModelObject, Revision RevisionObject) =>
@@ -804,7 +816,7 @@ namespace CADFileService.Endpoints
                 return true;
             }
 
-            private bool GeometryRAFUploaded(HttpListenerContext _Context, Action_StorageFileUploaded _Action, Action<string> _ErrorMessageAction)
+            private bool GeometryRAFUploaded(HttpListenerContext _Context, Action_StorageFileUploaded_CloudEventSchemaV1_0 _Action, Action<string> _ErrorMessageAction)
             {
                 if (!OnFileUploaded_Internal("GeometryRAFUploaded", _Action, EProcessedFileType.GEOMETRY_RAF, _ErrorMessageAction,
                     (string ModelID, int RevisionIndex, ModelDBEntry ModelObject, Revision RevisionObject) =>
@@ -819,7 +831,7 @@ namespace CADFileService.Endpoints
 
                 return true;
             }
-            private bool GeometryCFUploaded(HttpListenerContext _Context, Action_StorageFileUploaded _Action, Action<string> _ErrorMessageAction)
+            private bool GeometryCFUploaded(HttpListenerContext _Context, Action_StorageFileUploaded_CloudEventSchemaV1_0 _Action, Action<string> _ErrorMessageAction)
             {
                 if (!OnFileUploaded_Internal("GeometryCFUploaded", _Action, EProcessedFileType.GEOMETRY_CF, _ErrorMessageAction,
                 (string ModelID, int RevisionIndex, ModelDBEntry ModelObject, Revision RevisionObject) =>
@@ -835,7 +847,7 @@ namespace CADFileService.Endpoints
                 return true;
             }
 
-            private bool MetadataRAFUploaded(HttpListenerContext _Context, Action_StorageFileUploaded _Action, Action<string> _ErrorMessageAction)
+            private bool MetadataRAFUploaded(HttpListenerContext _Context, Action_StorageFileUploaded_CloudEventSchemaV1_0 _Action, Action<string> _ErrorMessageAction)
             {
                 bool bProceedToParseMetadata = false;
                 string OwnerUserID = null;
@@ -863,7 +875,7 @@ namespace CADFileService.Endpoints
 
                 return true;
             }
-            private bool MetadataCFUploaded(HttpListenerContext _Context, Action_StorageFileUploaded _Action, Action<string> _ErrorMessageAction)
+            private bool MetadataCFUploaded(HttpListenerContext _Context, Action_StorageFileUploaded_CloudEventSchemaV1_0 _Action, Action<string> _ErrorMessageAction)
             {
                 if (!OnFileUploaded_Internal("MetadataCFUploaded", _Action, EProcessedFileType.METADATA_CF, _ErrorMessageAction,
                 (string ModelID, int RevisionIndex, ModelDBEntry ModelObject, Revision RevisionObject) =>
@@ -879,7 +891,7 @@ namespace CADFileService.Endpoints
                 return true;
             }
 
-            private bool UnrealHGMUploaded(HttpListenerContext _Context, Action_StorageFileUploaded _Action, Action<string> _ErrorMessageAction)
+            private bool UnrealHGMUploaded(HttpListenerContext _Context, Action_StorageFileUploaded_CloudEventSchemaV1_0 _Action, Action<string> _ErrorMessageAction)
             {
                 if (!OnFileUploaded_Internal("UnrealHGMUploaded", _Action, EProcessedFileType.UNREAL_HGM, _ErrorMessageAction,
                 (string ModelID, int RevisionIndex, ModelDBEntry ModelObject, Revision RevisionObject) =>
@@ -894,7 +906,7 @@ namespace CADFileService.Endpoints
 
                 return true;
             }
-            private bool UnrealHGUploaded(HttpListenerContext _Context, Action_StorageFileUploaded _Action, Action<string> _ErrorMessageAction)
+            private bool UnrealHGUploaded(HttpListenerContext _Context, Action_StorageFileUploaded_CloudEventSchemaV1_0 _Action, Action<string> _ErrorMessageAction)
             {
                 if (!OnFileUploaded_Internal("UnrealHGUploaded", _Action, EProcessedFileType.UNREAL_HG, _ErrorMessageAction,
                 (string ModelID, int RevisionIndex, ModelDBEntry ModelObject, Revision RevisionObject) =>
@@ -910,7 +922,7 @@ namespace CADFileService.Endpoints
                 return true;
             }
 
-            private bool UnrealHUploaded(HttpListenerContext _Context, Action_StorageFileUploaded _Action, Action<string> _ErrorMessageAction)
+            private bool UnrealHUploaded(HttpListenerContext _Context, Action_StorageFileUploaded_CloudEventSchemaV1_0 _Action, Action<string> _ErrorMessageAction)
             {
                 if (!OnFileUploaded_Internal("UnrealHUploaded", _Action, EProcessedFileType.UNREAL_H, _ErrorMessageAction,
                 (string ModelID, int RevisionIndex, ModelDBEntry ModelObject, Revision RevisionObject) =>
