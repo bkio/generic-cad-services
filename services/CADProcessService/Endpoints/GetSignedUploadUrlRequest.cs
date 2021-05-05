@@ -46,11 +46,15 @@ namespace CADProcessService.Endpoints
             }
 
             string FileTypeStr = "";
-            string Filename = "file";
+            string Filename = "files";
+            int Revision = -1;
+
 
             try
             {
                 FileTypeStr = _Context.Request.QueryString.Get("fileType").ToLower().Trim().TrimStart('.');
+                Revision = int.Parse(_Context.Request.QueryString.Get("revision").ToLower().Trim().TrimStart('.'));
+
             }
             catch
             {
@@ -79,7 +83,7 @@ namespace CADProcessService.Endpoints
 
             if (string.IsNullOrWhiteSpace(Filename))
             {
-                Filename = "file";
+                Filename = "files";
             }
 
             string Url = _Context.Request.RawUrl;
