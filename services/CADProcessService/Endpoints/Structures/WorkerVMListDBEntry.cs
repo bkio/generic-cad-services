@@ -65,7 +65,7 @@ namespace CADProcessService.Endpoints.Structures
         public List<DateTime> StageProcessStartDates = new List<DateTime>();
 
         [JsonProperty(CURRENT_PROCESS_STAGE_PROPERTY)]
-        public int CurrentProcessStage = (int)EProcessStage.Stage0_FileUploaded;
+        public int CurrentProcessStage = (int)EProcessStage.Stage0_FileUpload;
 
         public void Merge(JObject _Content)
         {
