@@ -55,7 +55,7 @@ namespace CADProcessService.Endpoints.Structures
         public DateTime HistoryRecordDate { get; set; }
 
         [JsonProperty(CURRENT_PROCESS_STAGE_PROPERTY)]
-        public int CurrentProcessStage = (int)EProcessStage.Stage0_FileUploaded;
+        public int CurrentProcessStage = (int)EProcessStage.Stage0_FileUpload;
 
         [JsonProperty(PROCESS_INFO_PROPERTY)]
         public string ProcessInfo { get; set; }
