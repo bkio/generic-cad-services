@@ -45,14 +45,15 @@ namespace CADProcessService.Endpoints
                 return BWebResponse.BadRequest($"This service does not accept requests of type : {_Context.Request.HttpMethod}");
             }
 
-            string FileTypeStr = "";
+            string FileTypeStageStr = "";
             string Filename = "files";
+            string modelName = "";
             int Revision = -1;
 
 
             try
             {
-                FileTypeStr = _Context.Request.QueryString.Get("fileType").ToLower().Trim().TrimStart('.');
+                FileTypeStageStr = _Context.Request.QueryString.Get("fileType").ToLower().Trim().TrimStart('.');
                 Revision = int.Parse(_Context.Request.QueryString.Get("revision").ToLower().Trim().TrimStart('.'));
 
             }
@@ -63,9 +64,9 @@ namespace CADProcessService.Endpoints
 
             EProcessedFileType FileTypeEnum = EProcessedFileType.NONE_OR_RAW;
 
-            if (Constants.ProcessedFileType_Enum_Map.ContainsKey(FileTypeStr))
+            if (Constants.ProcessedFileType_Enum_Map.ContainsKey(FileTypeStageStr))
             {
-                FileTypeEnum = Constants.ProcessedFileType_Enum_Map[FileTypeStr];
+                FileTypeEnum = Constants.ProcessedFileType_Enum_Map[FileTypeStageStr];
             }
             else
             {
@@ -104,7 +105,7 @@ namespace CADProcessService.Endpoints
                 int FilenameStripLength = RawStrippedPath.LastIndexOf('/');
                 RawStrippedPath = RawStrippedPath.Substring(0, FilenameStripLength);
 
-                if (!FileService.CreateSignedURLForUpload(out string SignedUploadUrl, CadFileStorageBucketName, $"{Constants.ProcessedFileType_FolderPrefix_Map[FileTypeEnum]}{RawStrippedPath}/{Filename}.{Constants.ProcessedFileType_Extension_Map[FileTypeEnum]}", UPLOAD_CONTENT_TYPE, UPLOAD_URL_VALIDITY_MINUTES, _ErrorMessageAction))
+                if (!FileService.CreateSignedURLForUpload(out string SignedUploadUrl, CadFileStorageBucketName, $"raw/{modelName}/{Revision}/stages/{FileTypeStageStr}/{Filename}.zip", UPLOAD_CONTENT_TYPE, UPLOAD_URL_VALIDITY_MINUTES, _ErrorMessageAction))
                 {
                     return BWebResponse.InternalError("Failed to create Upload Url");
                 }

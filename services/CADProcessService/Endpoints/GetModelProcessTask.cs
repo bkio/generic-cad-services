@@ -52,7 +52,7 @@ namespace CADProcessService.Endpoints
 
             Locker.LockedAction("ProcessTaskCheck", MemoryService, () =>
             {
-                if (!DatabaseService.ScanTable(FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(), out List<JObject> ConversionItems, _ErrorMessageAction))
+                if (DatabaseService.ScanTable(FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(), out List<JObject> ConversionItems, _ErrorMessageAction))
                 {
                     if (ConversionItems != null)
                     {
@@ -95,7 +95,7 @@ namespace CADProcessService.Endpoints
                                     Task.ModelRevision = Entry.ModelRevision;
                                     Task.ProcessStep = Entry.ConversionStage;
 
-                                    FileService.CreateSignedURLForDownload(out string _StageDownloadUrl, Entry.BucketName, $"raw/{Entry.ModelName}/{Entry.ModelRevision}/{Entry.ConversionStage}/Files.zip", 60, _ErrorMessageAction);
+                                    FileService.CreateSignedURLForDownload(out string _StageDownloadUrl, Entry.BucketName, $"raw/{Entry.ModelName}/{Entry.ModelRevision}/stages/{Entry.ConversionStage}/Files.zip", 60, _ErrorMessageAction);
                                     Task.StageDownloadUrl = _StageDownloadUrl;
 
                                     Response = new BWebServiceResponse(200, new BStringOrStream(JsonConvert.SerializeObject(Task)));

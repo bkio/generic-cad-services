@@ -51,8 +51,7 @@ namespace CADProcessService.Endpoints
             string BucketName = null;
             string RelativeFileName = null;
             string ZipMainAssembly = "";
-            string ModelName = "";
-            int ModelRevision = -1;
+  
 
             using (var InputStream = _Context.Request.InputStream)
             {
@@ -80,15 +79,70 @@ namespace CADProcessService.Endpoints
 
                         if(ParsedBody.ContainsKey("modelName"))
                         {
-                            ModelName = (string)ParsedBody["modelName"];
+                            NewDBEntry.ModelName = (string)ParsedBody["modelName"];
                         }
                         
                         if (ParsedBody.ContainsKey("modelRevision"))
                         {
-                            ModelRevision = (int)ParsedBody["modelRevision"];
+                            NewDBEntry.ModelRevision = (int)ParsedBody["modelRevision"];
                         }
 
+                        if (ParsedBody.ContainsKey("processStep"))
+                        {
+                            NewDBEntry.ConversionStage = (int)ParsedBody["processStep"];
+                        }
 
+                        if (ParsedBody.ContainsKey("globalScale"))
+                        {
+                            NewDBEntry.GlobalScale = (float)ParsedBody["globalScale"];
+                        }
+
+                        if (ParsedBody.ContainsKey("globalXOffset"))
+                        {
+                            NewDBEntry.GlobalXOffset = (float)ParsedBody["globalXOffset"];
+                        }
+
+                        if (ParsedBody.ContainsKey("globalYOffset"))
+                        {
+                            NewDBEntry.GlobalYOffset = (float)ParsedBody["globalYOffset"];
+                        }
+
+                        if (ParsedBody.ContainsKey("globalZOffset"))
+                        {
+                            NewDBEntry.GlobalZOffset = (float)ParsedBody["globalZOffset"];
+                        }
+
+                        if (ParsedBody.ContainsKey("globalXRotation"))
+                        {
+                            NewDBEntry.GlobalXRotation = (float)ParsedBody["globalXRotation"];
+                        }
+
+                        if (ParsedBody.ContainsKey("globalYRotation"))
+                        {
+                            NewDBEntry.GlobalYRotation = (float)ParsedBody["globalYRotation"];
+                        }
+
+                        if (ParsedBody.ContainsKey("globalZRotation"))
+                        {
+                            NewDBEntry.GlobalZRotation = (float)ParsedBody["globalZRotation"];
+                        }
+
+                        if (ParsedBody.ContainsKey("levelThresholds"))
+                        {
+                            NewDBEntry.LevelThresholds = ParsedBody["levelThresholds"].ToObject<float[]>();
+                        }
+
+                        if (ParsedBody.ContainsKey("lodParameters"))
+                        {
+                            NewDBEntry.LodParameters = (string)ParsedBody["lodParameters"];
+                        }
+
+                        if (ParsedBody.ContainsKey("cullingThresholds"))
+                        {
+                            NewDBEntry.CullingThresholds = (string)ParsedBody["cullingThresholds"];
+                        }
+
+                        NewDBEntry.QueuedTime = DateTime.UtcNow.ToString();
 
                         if (ParsedBody.ContainsKey("zipTypeMainAssemblyFileNameIfAny"))
                         {
@@ -157,82 +211,81 @@ namespace CADProcessService.Endpoints
             {
                 return BWebResponse.Conflict("File is already being processed/queued.");
             }
+            return BWebResponse.StatusAccepted("Request has been accepted; process is now being started.");
+            //try
+            //{
+            //    if (BatchProcessingCreationService.Instance.StartBatchProcess(BucketName, RelativeFileName, ZipMainAssembly, out string _PodName, _ErrorMessageAction))
+            //    {
+            //        //Code for initial method of starting optimizer after pixyz completes
+            //        //return BWebResponse.StatusAccepted("Request has been accepted; process is now being started.");
+            //        if (BatchProcessingCreationService.Instance.StartFileOptimizer(BucketName, RelativeFileName, _ErrorMessageAction))
+            //        {
+            //            return BWebResponse.StatusAccepted("Request has been accepted; process is now being started.");
+            //        }
+            //        else
+            //        {
+            //            NewDBEntry.ConversionStatus = (int)EInternalProcessStage.ProcessFailed;
 
-            try
-            {
-                if (BatchProcessingCreationService.Instance.StartBatchProcess(BucketName, RelativeFileName, ZipMainAssembly, out string _PodName, _ErrorMessageAction))
-                {
-                    //Code for initial method of starting optimizer after pixyz completes
-                    //return BWebResponse.StatusAccepted("Request has been accepted; process is now being started.");
-                    if (BatchProcessingCreationService.Instance.StartFileOptimizer(BucketName, RelativeFileName, _ErrorMessageAction))
-                    {
-                        return BWebResponse.StatusAccepted("Request has been accepted; process is now being started.");
-                    }
-                    else
-                    {
-                        NewDBEntry.ConversionStatus = (int)EInternalProcessStage.ProcessFailed;
+            //            if (!DatabaseService.UpdateItem(
+            //                FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
+            //                FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
+            //                new BPrimitiveType(NewConversionID_FromRelativeUrl_UrlEncoded),
+            //                JObject.Parse(JsonConvert.SerializeObject(NewDBEntry)),
+            //                out JObject _, EBReturnItemBehaviour.DoNotReturn,
+            //                null,
+            //                _ErrorMessageAction))
+            //            {
+            //                return BWebResponse.InternalError("Failed to start the batch process and experienced a Database error");
+            //            }
 
-                        if (!DatabaseService.UpdateItem(
-                            FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
-                            FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
-                            new BPrimitiveType(NewConversionID_FromRelativeUrl_UrlEncoded),
-                            JObject.Parse(JsonConvert.SerializeObject(NewDBEntry)),
-                            out JObject _, EBReturnItemBehaviour.DoNotReturn,
-                            null,
-                            _ErrorMessageAction))
-                        {
-                            return BWebResponse.InternalError("Failed to start the batch process and experienced a Database error");
-                        }
+            //            //Try kill pixyz pod that we have succeeded in creating
+            //            if (!BatchProcessingCreationService.Instance.TryKillPod(_PodName, "cip-batch"))
+            //            {
+            //                return BWebResponse.InternalError("Failed to start the unreal optimizer and failed to kill pixyz pod");
+            //            }
 
-                        //Try kill pixyz pod that we have succeeded in creating
-                        if (!BatchProcessingCreationService.Instance.TryKillPod(_PodName, "cip-batch"))
-                        {
-                            return BWebResponse.InternalError("Failed to start the unreal optimizer and failed to kill pixyz pod");
-                        }
+            //            return BWebResponse.InternalError("Failed to start the batch process and experienced a Database error");
+            //        }
+            //    }
+            //    else
+            //    {
+            //        NewDBEntry.ConversionStatus = (int)EInternalProcessStage.ProcessFailed;
 
-                        return BWebResponse.InternalError("Failed to start the batch process and experienced a Database error");
-                    }
+            //        if (!DatabaseService.UpdateItem(
+            //            FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
+            //            FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
+            //            new BPrimitiveType(NewConversionID_FromRelativeUrl_UrlEncoded),
+            //            JObject.Parse(JsonConvert.SerializeObject(NewDBEntry)),
+            //            out JObject _, EBReturnItemBehaviour.DoNotReturn,
+            //            null,
+            //            _ErrorMessageAction))
+            //        {
+            //            return BWebResponse.InternalError("Failed to start the batch process and experienced a Database error");
+            //        }
 
-                }
-                else
-                {
-                    NewDBEntry.ConversionStatus = (int)EInternalProcessStage.ProcessFailed;
+            //        return BWebResponse.InternalError("Failed to start the batch process");
+            //    }
+            //}
+            //catch (Exception ex)
+            //{
+            //    _ErrorMessageAction?.Invoke($"{ex.Message}\n{ex.StackTrace}");
 
-                    if (!DatabaseService.UpdateItem(
-                        FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
-                        FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
-                        new BPrimitiveType(NewConversionID_FromRelativeUrl_UrlEncoded),
-                        JObject.Parse(JsonConvert.SerializeObject(NewDBEntry)),
-                        out JObject _, EBReturnItemBehaviour.DoNotReturn,
-                        null,
-                        _ErrorMessageAction))
-                    {
-                        return BWebResponse.InternalError("Failed to start the batch process and experienced a Database error");
-                    }
+            //    NewDBEntry.ConversionStatus = (int)EInternalProcessStage.ProcessFailed;
 
-                    return BWebResponse.InternalError("Failed to start the batch process");
-                }
-            }
-            catch (Exception ex)
-            {
-                _ErrorMessageAction?.Invoke($"{ex.Message}\n{ex.StackTrace}");
+            //    if (!DatabaseService.UpdateItem(
+            //        FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
+            //        FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
+            //        new BPrimitiveType(NewConversionID_FromRelativeUrl_UrlEncoded),
+            //        JObject.Parse(JsonConvert.SerializeObject(NewDBEntry)),
+            //        out JObject _, EBReturnItemBehaviour.DoNotReturn,
+            //        null,
+            //        _ErrorMessageAction))
+            //    {
+            //        return BWebResponse.InternalError("Failed to start the batch process and experienced a Database error");
+            //    }
 
-                NewDBEntry.ConversionStatus = (int)EInternalProcessStage.ProcessFailed;
-
-                if (!DatabaseService.UpdateItem(
-                    FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
-                    FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
-                    new BPrimitiveType(NewConversionID_FromRelativeUrl_UrlEncoded),
-                    JObject.Parse(JsonConvert.SerializeObject(NewDBEntry)),
-                    out JObject _, EBReturnItemBehaviour.DoNotReturn,
-                    null,
-                    _ErrorMessageAction))
-                {
-                    return BWebResponse.InternalError("Failed to start the batch process and experienced a Database error");
-                }
-
-                return BWebResponse.InternalError("Failed to start the batch process");
-            }
+            //    return BWebResponse.InternalError("Failed to start the batch process");
+            //}
         }
     }
 }

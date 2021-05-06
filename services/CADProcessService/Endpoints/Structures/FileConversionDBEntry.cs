@@ -40,7 +40,10 @@ namespace CADProcessService.Endpoints.Structures
         public int ConversionStatus = (int)EInternalProcessStage.Queued;
         
         [JsonProperty("queuedTime")]
-        public DateTime QueuedTime { get; set; }
+        public string QueuedTime { get; set; }
+
+        [JsonProperty("updatedTimeTime")]
+        public string UpdatedTime { get; set; }
 
         [JsonProperty("modelName")]
         public string ModelName { get; set; }
