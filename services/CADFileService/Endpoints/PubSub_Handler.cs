@@ -514,7 +514,8 @@ namespace CADFileService.Endpoints
                                 ["layers"] = JsonConvert.SerializeObject(RevisionObject.FileEntry.Layers),
                                 ["globalTransformOffset"] = JsonConvert.SerializeObject(RevisionObject.FileEntry.GlobalTransformOffset),
                                 ["optimizationPreset"] = RevisionObject.FileEntry.OptimizationPreset,
-                                ["mergeFinalLevel"] = RevisionObject.FileEntry.bMergeFinalLevel
+                                ["mergeFinalLevel"] = RevisionObject.FileEntry.bMergeFinalLevel,
+                                ["detectDuplicateMeshes"] = RevisionObject.FileEntry.bDetectDuplicateMeshes
                             };
 
                             //TODO: Fix instabilities and uncomment below.

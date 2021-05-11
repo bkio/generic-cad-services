@@ -31,6 +31,7 @@ namespace CADFileService.Endpoints.Structures
         public const string GLOBAL_TRANSFORM_OFFSET_PROPERTY = "globalTransformOffset";
         public const string OPTIMIZATION_PRESET_PROPERTY = "optimizationPreset";
         public const string MERGE_FINAL_LEVEL_PROPERTY = "mergeFinalLevel";
+        public const string DETECT_DUPLICATE_MESHES_PROPERTY = "detectDuplicateMeshes";
 
         //Not properties, but being sent in responses
         public const string FILE_DOWNLOAD_URL_PROPERTY = "fileDownloadUrl";
@@ -54,7 +55,8 @@ namespace CADFileService.Endpoints.Structures
             LAYERS_PROPERTY,
             GLOBAL_TRANSFORM_OFFSET_PROPERTY,
             OPTIMIZATION_PRESET_PROPERTY,
-            MERGE_FINAL_LEVEL_PROPERTY
+            MERGE_FINAL_LEVEL_PROPERTY,
+            DETECT_DUPLICATE_MESHES_PROPERTY
         };
 
         public static readonly Dictionary<string, Func<JToken, bool>> UpdatablePropertiesValidityCheck = new Dictionary<string, Func<JToken, bool>>()
@@ -97,6 +99,10 @@ namespace CADFileService.Endpoints.Structures
                 return true;
             },
             [MERGE_FINAL_LEVEL_PROPERTY] = (JToken _Parameter) =>
+            {
+                return _Parameter.Type == JTokenType.Boolean;
+            },
+            [DETECT_DUPLICATE_MESHES_PROPERTY] = (JToken _Parameter) =>
             {
                 return _Parameter.Type == JTokenType.Boolean;
             },
@@ -149,6 +155,9 @@ namespace CADFileService.Endpoints.Structures
 
         [JsonProperty(MERGE_FINAL_LEVEL_PROPERTY)]
         public bool bMergeFinalLevel = false;
+        
+        [JsonProperty(DETECT_DUPLICATE_MESHES_PROPERTY)]
+        public bool bDetectDuplicateMeshes = false;
 
         public void Merge(JObject _Content)
         {
@@ -187,6 +196,8 @@ namespace CADFileService.Endpoints.Structures
                 OptimizationPreset = ContentObject.OptimizationPreset;
             if (_Content.ContainsKey(MERGE_FINAL_LEVEL_PROPERTY))
                 bMergeFinalLevel = ContentObject.bMergeFinalLevel;
+            if (_Content.ContainsKey(DETECT_DUPLICATE_MESHES_PROPERTY))
+                bDetectDuplicateMeshes = ContentObject.bDetectDuplicateMeshes;
         }
 
         public override bool Equals(object _Other)
