@@ -11,8 +11,8 @@ namespace CADProcessService.Endpoints.Structures
         public int ModelRevision { get; set; }
         public int ProcessStep { get; set; }
 
-        public float GlobalScale { get; set; }
 
+        public float GlobalScale { get; set; }
         public float GlobalXOffset { get; set; }
         public float GlobalYOffset { get; set; }
         public float GlobalZOffset { get; set; }

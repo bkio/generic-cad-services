@@ -50,7 +50,7 @@ namespace CADProcessService.Endpoints
         {
             BWebServiceResponse Response = BWebResponse.NotFound("No task was found to process");
 
-            Locker.LockedAction("ProcessTaskCheck", MemoryService, () =>
+            MemoryLocker.LockedAction("ProcessTaskCheck", MemoryService, () =>
             {
                 if (DatabaseService.ScanTable(FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(), out List<JObject> ConversionItems, _ErrorMessageAction))
                 {
@@ -99,6 +99,7 @@ namespace CADProcessService.Endpoints
                                     Task.StageDownloadUrl = _StageDownloadUrl;
 
                                     Response = new BWebServiceResponse(200, new BStringOrStream(JsonConvert.SerializeObject(Task)));
+                                    return true;
                                 }
                             }
                         }

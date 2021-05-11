@@ -26,6 +26,22 @@ namespace CADProcessService.Endpoints.Structures
 
         public const string CONVERSION_STATUS_PROPERTY = "conversionStatus";
 
+        public const string QUEUED_TIME_PROPERTY = "queuedTime";
+        public const string UPDATED_TIME_PROPERTY = "updatedTime";
+        public const string MODEL_NAME_PROPERTY = "modelName";
+        public const string MODEL_REVISION_PROPERTY = "modelRevision";
+        public const string CONVERSION_STAGE_PROPERTY = "conversionStage";
+        public const string GLOBAL_SCALE_PROPERTY = "globalScale";
+        public const string GLOBAL_X_OFFSET_PROPERTY = "globalXOffset";
+        public const string GLOBAL_Y_OFFSET_PROPERTY = "globalYOffset";
+        public const string GLOBAL_Z_OFFSET_PROPERTY = "globalZOffset";
+        public const string GLOBAL_X_ROTATION_PROPERTY = "globalXRotation";
+        public const string GLOBAL_Y_ROTATION_PROPERTY = "globalYRotation";
+        public const string GLOBAL_Z_ROTATION_PROPERTY = "globalZRotation";
+        public const string LEVEL_THRESHOLDS_PROPERTY = "levelThresholds";
+        public const string LOD_PARAMETERS_PROPERTY = "lodParameters";
+        public const string CULLNG_THRESHOLDS_PROPERTY = "cullingThresholds";
+
         //All fields
         public static readonly string[] Properties =
         {
@@ -39,45 +55,45 @@ namespace CADProcessService.Endpoints.Structures
         [JsonProperty(CONVERSION_STATUS_PROPERTY)]
         public int ConversionStatus = (int)EInternalProcessStage.Queued;
         
-        [JsonProperty("queuedTime")]
+        [JsonProperty(QUEUED_TIME_PROPERTY)]
         public string QueuedTime { get; set; }
 
-        [JsonProperty("updatedTimeTime")]
+        [JsonProperty(UPDATED_TIME_PROPERTY)]
         public string UpdatedTime { get; set; }
 
-        [JsonProperty("modelName")]
+        [JsonProperty(MODEL_NAME_PROPERTY)]
         public string ModelName { get; set; }
-        [JsonProperty("modelRevision")]
+        [JsonProperty(MODEL_REVISION_PROPERTY)]
         public int ModelRevision { get; set; }
 
 
 
-        [JsonProperty("conversionStage")]
+        [JsonProperty(CONVERSION_STAGE_PROPERTY)]
         public int ConversionStage = 0;
 
 
 
-        [JsonProperty("globalScale")]
+        [JsonProperty(GLOBAL_SCALE_PROPERTY)]
         public float GlobalScale = 1;
-        [JsonProperty("globalXOffset")]
+        [JsonProperty(GLOBAL_X_OFFSET_PROPERTY)]
         public float GlobalXOffset { get; set; }
-        [JsonProperty("globalYOffset")]
+        [JsonProperty(GLOBAL_Y_OFFSET_PROPERTY)]
         public float GlobalYOffset { get; set; }
-        [JsonProperty("globalZOffset")]
+        [JsonProperty(GLOBAL_Z_OFFSET_PROPERTY)]
         public float GlobalZOffset { get; set; }
 
-        [JsonProperty("globalXRotation")]
+        [JsonProperty(GLOBAL_X_ROTATION_PROPERTY)]
         public float GlobalXRotation { get; set; }
-        [JsonProperty("globalYRotation")]
+        [JsonProperty(GLOBAL_Y_ROTATION_PROPERTY)]
         public float GlobalYRotation { get; set; }
-        [JsonProperty("globalZRotation")]
+        [JsonProperty(GLOBAL_Z_ROTATION_PROPERTY)]
         public float GlobalZRotation { get; set; }
 
-        [JsonProperty("levelThresholds")]
+        [JsonProperty(LEVEL_THRESHOLDS_PROPERTY)]
         public float[] LevelThresholds { get; set; }
-        [JsonProperty("lodParameters")]
+        [JsonProperty(LOD_PARAMETERS_PROPERTY)]
         public string LodParameters { get; set; }
-        [JsonProperty("cullingThresholds")]
+        [JsonProperty(CULLNG_THRESHOLDS_PROPERTY)]
         public string CullingThresholds { get; set; }
 
     }

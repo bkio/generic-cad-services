@@ -13,6 +13,7 @@ using ServiceUtilities.Process.Procedure;
 using ServiceUtilities.All;
 using k8s.Models;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 namespace CADProcessService
 {
@@ -50,8 +51,10 @@ namespace CADProcessService
                     new string[] { "AZ_SERVICEBUS_NAMESPACE_CONNECTION_STRING" },
 
                     //new string[] { "MONGODB_CONNECTION_STRING" },
-                    new string[] { "MONGODB_CLIENT_CONFIG" },
-                    new string[] { "MONGODB_PASSWORD" },
+                    //new string[] { "MONGODB_CLIENT_CONFIG" },
+                    //new string[] { "MONGODB_PASSWORD" },
+                    new string[] { "MONGODB_HOST" },
+                    new string[] { "MONGODB_PORT" },
                     new string[] { "MONGODB_DATABASE" },
 
                     new string[] { "DEPLOYMENT_BRANCH_NAME" },
@@ -89,7 +92,10 @@ namespace CADProcessService
             //bInitSuccess &= ServInit.WithTracingService();
             bInitSuccess &= ServInit.WithPubSubService();
             bInitSuccess &= ServInit.WithMemoryService();
+            bInitSuccess &= ServInit.WithVMService();
             if (!bInitSuccess) return;
+
+            Dictionary<string, string> VMList = JsonConvert.DeserializeObject<Dictionary<string, string>>(ServInit.RequiredEnvironmentVariables["VM_UUID_NAME_LIST"]);
 
             Resources_DeploymentManager.Get().SetDeploymentBranchNameAndBuildNumber(ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BRANCH_NAME"], ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BUILD_NUMBER"]);
 
@@ -168,10 +174,10 @@ namespace CADProcessService
             */
             var WebServiceEndpoints = new List<BWebPrefixStructure>()
             {
-                new BWebPrefixStructure(new string[] { RootPath + "3d/process/start" }, () => new StartProcessRequest(ServInit.DatabaseService)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/process/start" }, () => new StartProcessRequest(ServInit.MemoryService, ServInit.DatabaseService, ServInit.VMService, VMList)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/stop" }, () => new StopProcessRequest(ServInit.DatabaseService)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/job-complete/*" }, () => new BatchJobCompleteRequest(ServInit.DatabaseService, ServInit.FileService, ServInit.MemoryService)),
-                new BWebPrefixStructure(new string[] { RootPath + "/internal/fetch_task/*" }, () => new GetModelProcessTask( ServInit.FileService,ServInit.DatabaseService, ServInit.MemoryService, CadFileStorageBucketName)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/internal/fetch_task/*" }, () => new GetModelProcessTask( ServInit.FileService,ServInit.DatabaseService, ServInit.MemoryService, CadFileStorageBucketName)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/get_signed_upload_url_for_unreal_file/*" }, () => new GetSignedUploadUrlRequest(ServInit.FileService, CadFileStorageBucketName)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/get_file_optimizer_parameters/*" }, () => new GetOptimizerParametersRequest(ServInit.DatabaseService))
             };

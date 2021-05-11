@@ -11,16 +11,24 @@ using CADProcessService.K8S;
 using ServiceUtilities.All;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+using ServiceUtilities_All.Common;
+using CADProcessService.Endpoints.Utilities;
 
 namespace CADProcessService.Endpoints
 {
     internal class StartProcessRequest : BppWebServiceBase
     {
         private readonly IBDatabaseServiceInterface DatabaseService;
+        private readonly IBVMServiceInterface VMService;
+        private readonly IBMemoryServiceInterface MemoryService;
+        public Dictionary<string, string> VirtualMachines = new Dictionary<string, string>();
 
-        public StartProcessRequest(IBDatabaseServiceInterface _DatabaseService) : base()
+        public StartProcessRequest(IBMemoryServiceInterface _MemoryService, IBDatabaseServiceInterface _DatabaseService, IBVMServiceInterface _VMService, Dictionary<string, string> _VirtualMachines) : base()
         {
             DatabaseService = _DatabaseService;
+            VMService = _VMService;
+            VirtualMachines = _VirtualMachines;
         }
 
         protected override BWebServiceResponse OnRequestPP(HttpListenerContext _Context, Action<string> _ErrorMessageAction = null)
@@ -52,7 +60,6 @@ namespace CADProcessService.Endpoints
             string RelativeFileName = null;
             string ZipMainAssembly = "";
   
-
             using (var InputStream = _Context.Request.InputStream)
             {
                 var NewObjectJson = new JObject();
@@ -211,7 +218,33 @@ namespace CADProcessService.Endpoints
             {
                 return BWebResponse.Conflict("File is already being processed/queued.");
             }
+
+
+            //Lock to avoid race condition with deallocation
+            MemoryLocker.LockedAction("UpdateVmStatus", MemoryService, () =>
+            {
+                WorkerVMListDBEntry VmEntry = GetAvailableVm(out string _VMID, out string _VMName, _ErrorMessageAction);
+
+                StartVM(_VMName, VmEntry, () =>
+                {
+
+                    VmEntry.VMStatus = (int)EVMStatus.Busy;
+                    DatabaseService.UpdateItem(
+                    WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
+                    WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
+                    new BPrimitiveType(_VMID),
+                    JObject.Parse(JsonConvert.SerializeObject(NewDBEntry)),
+                    out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
+                    UpdateCondition,
+                    _ErrorMessageAction);
+
+                }, _ErrorMessageAction);
+
+                return true;
+            });
+
             return BWebResponse.StatusAccepted("Request has been accepted; process is now being started.");
+
             //try
             //{
             //    if (BatchProcessingCreationService.Instance.StartBatchProcess(BucketName, RelativeFileName, ZipMainAssembly, out string _PodName, _ErrorMessageAction))
@@ -286,6 +319,57 @@ namespace CADProcessService.Endpoints
 
             //    return BWebResponse.InternalError("Failed to start the batch process");
             //}
+        }
+
+        public WorkerVMListDBEntry GetAvailableVm(out string _Id, out string _VmName, Action<string> _ErrorMessageAction)
+        {
+            //Fetch VM entries
+            //Find VM that is available and return name.
+            foreach(var vm in VirtualMachines)
+            {
+                if(DatabaseService.GetItem(
+                WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
+                WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
+                new BPrimitiveType(vm.Key),
+                FileConversionDBEntry.Properties,
+                out JObject VMEntry
+                ))
+                {
+                    WorkerVMListDBEntry CurrentEntry = VMEntry.ToObject<WorkerVMListDBEntry>();
+
+                    if ((EVMStatus)CurrentEntry.VMStatus == EVMStatus.Available)
+                    {
+                        _Id = vm.Key;
+                        _VmName = vm.Value;
+                        return CurrentEntry;
+                    }
+                }
+            }
+            _Id = null;
+            _VmName = null;
+            return null;
+        }
+
+        private void StartVM(string _VMName, WorkerVMListDBEntry _vm, Action VMStartFailureAction, Action<string> _ErrorMessageAction)
+        {
+            if (_vm != null)
+            {
+                VMService.StartInstances(new string[] { }, () =>
+                {
+
+                },
+                () =>
+                {
+                    _ErrorMessageAction?.Invoke($"FAILED TO START VM [{_VMName}]");
+                    VMStartFailureAction();
+                },
+                    _ErrorMessageAction
+                );
+            }else
+            {
+                _ErrorMessageAction?.Invoke($"NO AVAILABLE VM WAS FOUND[{_VMName}]");
+                VMStartFailureAction();
+            }
         }
     }
 }
