@@ -51,8 +51,6 @@ namespace CADProcessService.Endpoints
             string BucketName = null;
             string RelativeFileName = null;
             string ZipMainAssembly = "";
-            string ModelName = "";
-            int ModelRevision = -1;
 
             using (var InputStream = _Context.Request.InputStream)
             {
@@ -78,18 +76,7 @@ namespace CADProcessService.Endpoints
                             return BWebResponse.BadRequest("Request body contains invalid fields.");
                         }
 
-                        if(ParsedBody.ContainsKey("modelName"))
-                        {
-                            ModelName = (string)ParsedBody["modelName"];
-                        }
                         
-                        if (ParsedBody.ContainsKey("modelRevision"))
-                        {
-                            ModelRevision = (int)ParsedBody["modelRevision"];
-                        }
-
-
-
                         if (ParsedBody.ContainsKey("zipTypeMainAssemblyFileNameIfAny"))
                         {
                             var ZipMainAssemblyToken = ParsedBody["zipTypeMainAssemblyFileNameIfAny"];

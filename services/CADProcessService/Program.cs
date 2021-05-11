@@ -171,7 +171,6 @@ namespace CADProcessService
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/start" }, () => new StartProcessRequest(ServInit.DatabaseService)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/stop" }, () => new StopProcessRequest(ServInit.DatabaseService)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/job-complete/*" }, () => new BatchJobCompleteRequest(ServInit.DatabaseService, ServInit.FileService, ServInit.MemoryService)),
-                new BWebPrefixStructure(new string[] { RootPath + "/internal/fetch_task/*" }, () => new GetModelProcessTask( ServInit.FileService,ServInit.DatabaseService, ServInit.MemoryService, CadFileStorageBucketName)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/get_signed_upload_url_for_unreal_file/*" }, () => new GetSignedUploadUrlRequest(ServInit.FileService, CadFileStorageBucketName)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/get_file_optimizer_parameters/*" }, () => new GetOptimizerParametersRequest(ServInit.DatabaseService))
             };
