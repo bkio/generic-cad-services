@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json;
+﻿/// MIT License, Copyright Burak Kara, burak@burak.io, https://en.wikipedia.org/wiki/MIT_License
+
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ServiceUtilities;
 using ServiceUtilities_All.Common;
