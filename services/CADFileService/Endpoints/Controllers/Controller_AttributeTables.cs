@@ -6,7 +6,6 @@ using System.Net;
 using System.Threading;
 using BCommonUtilities;
 using BWebServiceUtilities;
-using CADFileService.Endpoints.Common;
 using CADFileService.Endpoints.Structures;
 using ServiceUtilities;
 using ServiceUtilities.PubSubUsers.PubSubRelated;
@@ -38,16 +37,12 @@ namespace CADFileService.Controllers
         private static readonly string[] AttributeTables = new string[]
         {
             AttributeKeyToOwnerDBEntry.TABLE(),
-            AttributeKVPairToOwnerDBEntry.TABLE(),
-            AttributeKUPairToOwnerDBEntry.TABLE(),
-            AttributeKVPairUserToOwnerDBEntry.TABLE()
+            AttributeKVPairToOwnerDBEntry.TABLE()
         };
         private static readonly string[] AttributeTableKeys = new string[]
         {
             AttributeKeyToOwnerDBEntry.KEY_NAME,
-            AttributeKVPairToOwnerDBEntry.KEY_NAME,
-            AttributeKUPairToOwnerDBEntry.KEY_NAME,
-            AttributeKVPairUserToOwnerDBEntry.KEY_NAME
+            AttributeKVPairToOwnerDBEntry.KEY_NAME
         };
         private static readonly Func<AttributeKeyGeneration_Input, string>[] AttributeKeyGeneration = new Func<AttributeKeyGeneration_Input, string>[]
         {

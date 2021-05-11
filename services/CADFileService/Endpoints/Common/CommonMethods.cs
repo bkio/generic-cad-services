@@ -16,6 +16,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Convert = ServiceUtilities.Process.Convert;
 using StreamReader = System.IO.StreamReader;
+using ServiceUtilities_All.Common;
 
 namespace CADFileService.Endpoints.Common
 {
@@ -250,74 +251,29 @@ namespace CADFileService.Endpoints.Common
 
         public static bool GetProcessedFile(
             WebServiceBaseTimeoutable _Request,
-            ENodeType _FileType,
-            IBDatabaseServiceInterface _DatabaseService,
-            IBFileServiceInterface _FileService,
-            string _CadFileStorageBucketName,
-            string _ModelID,
-            int _RevisionIndex,
-            out BWebServiceResponse _SuccessResponse,
-            out BWebServiceResponse _FailureResponse,
-            Action<string> _ErrorMessageAction = null)
-        {
-            _SuccessResponse = BWebResponse.InternalError("");
-
-            if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(_Request.InnerProcessor, ModelDBEntry.DBSERVICE_MODELS_TABLE(), _ModelID, _ErrorMessageAction))
-            {
-                _FailureResponse = BWebResponse.InternalError("Atomic operation control has failed.");
-                return false;
-            }
-
-            var bResult = GetProcessedFile_Internal(
-                _FileType,
-                _DatabaseService,
-                _FileService,
-                _CadFileStorageBucketName,
-                _ModelID,
-                _RevisionIndex,
-                out _SuccessResponse,
-                out _FailureResponse,
-                _ErrorMessageAction);
-
-            Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(_Request.InnerProcessor, ModelDBEntry.DBSERVICE_MODELS_TABLE(), _ModelID, _ErrorMessageAction);
-
-            return bResult;
-        }
-
-        public static bool GetProcessedFile(
-            WebServiceBaseTimeoutable _Request,
             EProcessedFileType _FileType,
             IBDatabaseServiceInterface _DatabaseService,
             IBFileServiceInterface _FileService,
             string _CadFileStorageBucketName,
-            string _ModelID,
+            string _ModelUniqueName,
             int _RevisionIndex,
             out BWebServiceResponse _SuccessResponse,
             out BWebServiceResponse _FailureResponse,
             string _GeometryId = null,
             Action<string> _ErrorMessageAction = null)
         {
-            _SuccessResponse = BWebResponse.InternalError("");
-
-            if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(_Request.InnerProcessor, ModelDBEntry.DBSERVICE_MODELS_TABLE(), _ModelID, _ErrorMessageAction))
-            {
-                _FailureResponse = BWebResponse.InternalError("Atomic operation control has failed.");
-                return false;
-            }
-
             var bResult = GetProcessedFile_Internal(
+                _Request.InnerProcessor,
                 _FileType,
                 _DatabaseService,
                 _FileService,
                 _CadFileStorageBucketName,
-                _ModelID,
+                _ModelUniqueName,
                 _RevisionIndex,
                 out _SuccessResponse,
                 out _FailureResponse,
                 _GeometryId,
                 _ErrorMessageAction);
-
-            Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(_Request.InnerProcessor, ModelDBEntry.DBSERVICE_MODELS_TABLE(), _ModelID, _ErrorMessageAction);
 
             return bResult;
         }
@@ -361,11 +317,12 @@ namespace CADFileService.Endpoints.Common
         }
 
         private static bool GetProcessedFile_Internal(
+            WebServiceBaseTimeoutableProcessor _InnerProcessor,
             EProcessedFileType _FileType,
             IBDatabaseServiceInterface _DatabaseService,
             IBFileServiceInterface _FileService,
             string _CadFileStorageBucketName,
-            string _ModelID,
+            string _ModelUniqueName,
             int _RevisionIndex,
             out BWebServiceResponse _SuccessResponse,
             out BWebServiceResponse _FailureResponse,
@@ -374,222 +331,28 @@ namespace CADFileService.Endpoints.Common
         {
             _SuccessResponse = BWebResponse.InternalError("");
 
-            if (!TryGettingAllInfo(
+            if (!TryGettingModelID(
                 _DatabaseService,
-                _ModelID,
-                _RevisionIndex,
-                out ModelDBEntry _,
-                out Revision RevisionObject,
-                out int _,
-                out _FailureResponse,
+                _ModelUniqueName,
+                out string _ModelID,
+                out BWebServiceResponse FailureResponse,
                 _ErrorMessageAction))
             {
+                _FailureResponse = FailureResponse;
                 return false;
             }
 
-            if (RevisionObject.FileEntry.FileProcessStage != (int)Constants.EProcessStage.Uploaded_Processed)
-            {
-                _FailureResponse = BWebResponse.NotFound("Raw file has not been processed yet.");
-                return false;
-            }
-
-            string RelativeFileUrl = null;
-            switch (_FileType)
-            {
-                case EProcessedFileType.HIERARCHY_CF:
-                    RelativeFileUrl = RevisionObject.FileEntry.HierarchyCFRelativeUrl;
-                    break;
-                case EProcessedFileType.HIERARCHY_RAF:
-                    RelativeFileUrl = RevisionObject.FileEntry.HierarchyRAFRelativeUrl;
-                    break;
-                case EProcessedFileType.METADATA_CF:
-                    RelativeFileUrl = RevisionObject.FileEntry.MetadataCFRelativeUrl;
-                    break;
-                case EProcessedFileType.METADATA_RAF:
-                    RelativeFileUrl = RevisionObject.FileEntry.MetadataRAFRelativeUrl;
-                    break;
-                case EProcessedFileType.GEOMETRY_CF:
-                    RelativeFileUrl = RevisionObject.FileEntry.GeometryCFRelativeUrl;
-                    break;
-                case EProcessedFileType.GEOMETRY_RAF:
-                    RelativeFileUrl = RevisionObject.FileEntry.GeometryRAFRelativeUrl;
-                    break;
-                case EProcessedFileType.UNREAL_HGM:
-                    RelativeFileUrl = RevisionObject.FileEntry.UnrealHGMRelativeUrl;
-                    break;
-                case EProcessedFileType.UNREAL_HG:
-                    RelativeFileUrl = RevisionObject.FileEntry.UnrealHGRelativeUrl;
-                    break;
-                case EProcessedFileType.UNREAL_H:
-                    RelativeFileUrl = RevisionObject.FileEntry.UnrealHRelativeUrl;
-                    break;
-                case EProcessedFileType.UNREAL_G:
-                    if(_GeometryId == null)
-                    {
-                        _ErrorMessageAction?.Invoke("GeometryId was not set when tried to retrieve UnrealGeometry file (u_g)");
-                        _FailureResponse = BWebResponse.InternalError("GeometryId was not provided.");
-                    }
-
-                    RelativeFileUrl = $"{RevisionObject.FileEntry.UnrealGRelativeUrlBasePath}{_GeometryId}.{Constants.ProcessedFileType_Extension_Map[EProcessedFileType.UNREAL_G]}";
-                    break;
-            }
-
-            if (!_FileService.CreateSignedURLForDownload(
-                out string DownloadUrl,
-                _CadFileStorageBucketName,
-                RelativeFileUrl,
-                FileEntry.EXPIRY_MINUTES,
-                _ErrorMessageAction))
-            {
-                _FailureResponse = BWebResponse.InternalError("Signed url generation has failed.");
-                return false;
-            }
-
-            _SuccessResponse = BWebResponse.StatusOK("File has been located.", new JObject()
-            {
-                [FileEntry.FILE_DOWNLOAD_URL_PROPERTY] = DownloadUrl,
-                [FileEntry.FILE_DOWNLOAD_UPLOAD_EXPIRY_MINUTES_PROPERTY] = FileEntry.EXPIRY_MINUTES
-            });
-
-            return true;
-        }
-
-        private static bool GetProcessedFile_Internal(
-            ENodeType _FileType,
-            IBDatabaseServiceInterface _DatabaseService,
-            IBFileServiceInterface _FileService,
-            string _CadFileStorageBucketName,
-            string _ModelID,
-            int _RevisionIndex,
-            out BWebServiceResponse _SuccessResponse,
-            out BWebServiceResponse _FailureResponse,
-            Action<string> _ErrorMessageAction = null)
-        {
-            _SuccessResponse = BWebResponse.InternalError("");
-
-            if (!TryGettingAllInfo(
-                _DatabaseService,
-                _ModelID,
-                _RevisionIndex,
-                out ModelDBEntry _,
-                out Revision RevisionObject,
-                out int _,
-                out _FailureResponse,
-                _ErrorMessageAction))
-            {
-                return false;
-            }
-
-            if (RevisionObject.FileEntry.FileProcessStage != (int)Constants.EProcessStage.Uploaded_Processed)
-            {
-                _FailureResponse = BWebResponse.NotFound("Raw file has not been processed yet.");
-                return false;
-            }
-
-            string RelativeFileUrl = null;
-            switch (_FileType)
-            {
-                case ENodeType.Hierarchy:
-                    RelativeFileUrl = RevisionObject.FileEntry.HierarchyCFRelativeUrl;
-                    break;
-                case ENodeType.Geometry:
-                    RelativeFileUrl = RevisionObject.FileEntry.GeometryCFRelativeUrl;
-                    break;
-                case ENodeType.Metadata:
-                    RelativeFileUrl = RevisionObject.FileEntry.MetadataCFRelativeUrl;
-                    break;
-            }
-
-            if (!_FileService.CreateSignedURLForDownload(
-                out string DownloadUrl,
-                _CadFileStorageBucketName,
-                RelativeFileUrl,
-                FileEntry.EXPIRY_MINUTES,
-                _ErrorMessageAction))
-            {
-                _FailureResponse = BWebResponse.InternalError("Signed url generation has failed.");
-                return false;
-            }
-
-            _SuccessResponse = BWebResponse.StatusOK("File has been located.", new JObject()
-            {
-                [FileEntry.FILE_DOWNLOAD_URL_PROPERTY] = DownloadUrl,
-                [FileEntry.FILE_DOWNLOAD_UPLOAD_EXPIRY_MINUTES_PROPERTY] = FileEntry.EXPIRY_MINUTES
-            });
-
-            return true;
-        }
-
-        public static bool GetProcessedFileNode(
-            WebServiceBaseTimeoutable _Request,
-            ENodeType _FileType,
-            IBDatabaseServiceInterface _DatabaseService,
-            IBFileServiceInterface _FileService,
-            string _CadFileStorageBucketName,
-            string _ModelID,
-            int _RevisionIndex,
-            bool _bRootNodeRequested, ulong _NodeID,
-            out BWebServiceResponse _SuccessResponse,
-            out BWebServiceResponse _FailureResponse,
-            Action<string> _ErrorMessageAction = null)
-        {
-            _SuccessResponse = BWebResponse.InternalError("");
-            
-            uint StartIndex = 0, Size = 0;
-            if (!_bRootNodeRequested)
-            {
-                Convert.UniqueIDToStartIndexAndSize(_NodeID, out StartIndex, out Size);
-                if (StartIndex == 0 || Size == 0)
-                {
-                    _FailureResponse = BWebResponse.BadRequest("Invalid Node ID.");
-                    return false;
-                }
-            }
-
-            if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(_Request.InnerProcessor, ModelDBEntry.DBSERVICE_MODELS_TABLE(), _ModelID, _ErrorMessageAction))
+            if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(_InnerProcessor, ModelDBEntry.DBSERVICE_MODELS_TABLE(), _ModelID, _ErrorMessageAction))
             {
                 _FailureResponse = BWebResponse.InternalError("Atomic operation control has failed.");
                 return false;
             }
 
-            var bResult = GetProcessedFileNode_Internal(
-                _FileType,
-                _DatabaseService,
-                _FileService,
-                _CadFileStorageBucketName,
-                _ModelID,
-                _RevisionIndex,
-                _bRootNodeRequested,
-                StartIndex,
-                Size,
-                out _SuccessResponse,
-                out _FailureResponse,
-                _ErrorMessageAction);
-
-            Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(_Request.InnerProcessor, ModelDBEntry.DBSERVICE_MODELS_TABLE(), _ModelID, _ErrorMessageAction);
-
-            return bResult;
-        }
-
-        private static bool GetProcessedFileNode_Internal(
-            ENodeType _FileType,
-            IBDatabaseServiceInterface _DatabaseService,
-            IBFileServiceInterface _FileService,
-            string _CadFileStorageBucketName,
-            string _ModelID,
-            int _RevisionIndex,
-            bool _bRootNodeRequested, uint _NodeStartIndex, uint _NodeSize,
-            out BWebServiceResponse _SuccessResponse,
-            out BWebServiceResponse _FailureResponse,
-            Action<string> _ErrorMessageAction = null)
-        {
-            _SuccessResponse = BWebResponse.InternalError("");
-
             if (!TryGettingAllInfo(
                 _DatabaseService,
                 _ModelID,
                 _RevisionIndex,
-                out ModelDBEntry ModelObject,
+                out ModelDBEntry _,
                 out Revision RevisionObject,
                 out int _,
                 out _FailureResponse,
@@ -597,80 +360,55 @@ namespace CADFileService.Endpoints.Common
             {
                 return false;
             }
-            
-            if (RevisionObject.FileEntry.FileProcessStage != (int)Constants.EProcessStage.Uploaded_Processed)
+
+            if (RevisionObject.FileEntry.FileUploadProcessStage != (int)EUploadProcessStage.Uploaded_Processed)
             {
                 _FailureResponse = BWebResponse.NotFound("Raw file has not been processed yet.");
                 return false;
             }
 
-            if (_bRootNodeRequested)
-            {
-                Convert.UniqueIDToStartIndexAndSize(RevisionObject.FileEntry.ProcessedFilesRootNodeID, out _NodeStartIndex, out _NodeSize);
-                if (_NodeStartIndex == 0 || _NodeSize == 0)
-                {
-                    _FailureResponse = BWebResponse.InternalError("Invalid Root Node ID.");
-                    return false;
-                }
-            }
-            
-            string RelativeFileUrl = null;
+            string _RelativeFileUrl = RevisionObject.FileEntry.FileRelativeUrl;
             switch (_FileType)
             {
-                case ENodeType.Hierarchy:
-                    RelativeFileUrl = RevisionObject.FileEntry.HierarchyRAFRelativeUrl;
+                case EProcessedFileType.UNREAL_HGM:
+                    _RelativeFileUrl = RevisionObject.FileEntry.GetFileRelativeUrl(_ModelUniqueName, _RevisionIndex, (int)EProcessStage.Stage6_UnrealEngineConvertion, Constants.ProcessedFileType_Extension_Map[EProcessedFileType.UNREAL_HGM]);
                     break;
-                case ENodeType.Geometry:
-                    RelativeFileUrl = RevisionObject.FileEntry.GeometryRAFRelativeUrl;
+                case EProcessedFileType.UNREAL_HG:
+                    _RelativeFileUrl = RevisionObject.FileEntry.GetFileRelativeUrl(_ModelUniqueName, _RevisionIndex, (int)EProcessStage.Stage6_UnrealEngineConvertion, Constants.ProcessedFileType_Extension_Map[EProcessedFileType.UNREAL_HG]);
                     break;
-                case ENodeType.Metadata:
-                    RelativeFileUrl = RevisionObject.FileEntry.MetadataRAFRelativeUrl;
+                case EProcessedFileType.UNREAL_H:
+                    _RelativeFileUrl = RevisionObject.FileEntry.GetFileRelativeUrl(_ModelUniqueName, _RevisionIndex, (int)EProcessStage.Stage6_UnrealEngineConvertion, Constants.ProcessedFileType_Extension_Map[EProcessedFileType.UNREAL_H]);
+                    break;
+                case EProcessedFileType.UNREAL_G:
+                    if (_GeometryId == null)
+                    {
+                        _ErrorMessageAction?.Invoke("GeometryId was not set when tried to retrieve UnrealGeometry file (u_g)");
+                        _FailureResponse = BWebResponse.InternalError("GeometryId was not provided.");
+                    }
+
+                    _RelativeFileUrl = RevisionObject.FileEntry.GetFileRelativeUrl(_ModelUniqueName, _RevisionIndex, (int)EProcessStage.Stage6_UnrealEngineConvertion, Constants.ProcessedFileType_Extension_Map[EProcessedFileType.UNREAL_G], _GeometryId);
                     break;
             }
 
-            Node RetrievedNode;
-
-            var Buffer = new byte[_NodeSize];
-            try
+            if (!_FileService.CreateSignedURLForDownload(
+                out string DownloadUrl,
+                _CadFileStorageBucketName,
+                _RelativeFileUrl,
+                FileEntry.EXPIRY_MINUTES,
+                _ErrorMessageAction))
             {
-                using (var MemStream = new MemoryStream((int)_NodeStartIndex))
-                {
-                    var Destination = new BStringOrStream(MemStream, _NodeSize);
-                    
-                    if (!_FileService.DownloadFile(_CadFileStorageBucketName, RelativeFileUrl, Destination, _ErrorMessageAction, _NodeStartIndex, _NodeSize))
-                    {
-                        _ErrorMessageAction?.Invoke("DownloadFile has failed in GetProcessedFileNode_Internal. ModelID: " + _ModelID + ", RevisionIndex: " + _RevisionIndex + ", NodeStartIndex: " + _NodeStartIndex + ", NodeSize: " + _NodeSize);
-                        _FailureResponse = BWebResponse.NotFound("Given Node ID does not exist.");
-                        return false;
-                    }
-
-                    MemStream.Seek(0, SeekOrigin.Begin);
-                    if (MemStream.Read(Buffer, 0, (int)_NodeSize) < (int)_NodeSize)
-                    {
-                        _FailureResponse = BWebResponse.InternalError("Stream read operation has failed.");
-                        return false;
-                    }
-
-                    Convert.BufferToNode(out RetrievedNode, _FileType, Buffer, 0);
-                }
-            }
-            catch (Exception e)
-            {
-                _ErrorMessageAction?.Invoke("File random access/stream operations have failed. ModelID: " + _ModelID + ", RevisionIndex: " + _RevisionIndex + ", NodeStartIndex: " + _NodeStartIndex + ", NodeSize: " + _NodeSize + ", Message: " + e.Message + ", Trace: " + e.StackTrace);
-                _FailureResponse = BWebResponse.NotFound("Given Node ID does not exist.");
+                _FailureResponse = BWebResponse.InternalError("Signed url generation has failed.");
                 return false;
             }
 
-            if (RetrievedNode == null)
+            _SuccessResponse = BWebResponse.StatusOK("File has been located.", new JObject()
             {
-                _FailureResponse = BWebResponse.InternalError("File node parse operation has failed.");
-                return false;
-            }
-
-            _SuccessResponse = BWebResponse.StatusOK("Node has been located.", new JObject()
-            {
-                ["node"] = JObject.Parse(JsonConvert.SerializeObject(RetrievedNode))
+                [FileEntry.FILE_DOWNLOAD_URL_PROPERTY] = DownloadUrl,
+                [FileEntry.FILE_DOWNLOAD_UPLOAD_EXPIRY_MINUTES_PROPERTY] = FileEntry.EXPIRY_MINUTES
             });
+
+            Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(_InnerProcessor, ModelDBEntry.DBSERVICE_MODELS_TABLE(), _ModelID, _ErrorMessageAction);
+
             return true;
         }
 
