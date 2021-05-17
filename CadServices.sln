@@ -163,8 +163,10 @@ Global
 		submodules\BDotNetFramework\Services\BServiceUtilities-FileService-AZ\BServiceUtilities-FileService-AZ.projitems*{bfae34cb-8c34-4a80-8ae2-45ed63aeb427}*SharedItemsImports = 5
 		submodules\BDotNetFramework\Services\BServiceUtilities-MemoryService-Redis\BServiceUtilities-MemoryService-Redis.projitems*{bfae34cb-8c34-4a80-8ae2-45ed63aeb427}*SharedItemsImports = 5
 		submodules\BDotNetFramework\Services\BServiceUtilities-PubSubService-AZ\BServiceUtilities-PubSubService-AZ.projitems*{bfae34cb-8c34-4a80-8ae2-45ed63aeb427}*SharedItemsImports = 5
+		submodules\BDotNetFramework\Services\BServiceUtilities-VMService-AZ\BServiceUtilities-VMService-AZ.projitems*{bfae34cb-8c34-4a80-8ae2-45ed63aeb427}*SharedItemsImports = 5
 		submodules\BDotNetFramework\Services\BServiceUtilities\BServiceUtilities.projitems*{bfae34cb-8c34-4a80-8ae2-45ed63aeb427}*SharedItemsImports = 5
 		submodules\BDotNetFramework\Utilities\ServiceUtilities_All\ServiceUtilities_All.projitems*{bfae34cb-8c34-4a80-8ae2-45ed63aeb427}*SharedItemsImports = 5
+		submodules\BDotNetFramework\Utilities\ServiceUtilities_PubSub_DB_Users\ServiceUtilities_PubSub_DB_Users.projitems*{bfae34cb-8c34-4a80-8ae2-45ed63aeb427}*SharedItemsImports = 5
 		submodules\BDotNetFramework\Utilities\ServiceUtilities_PubSub_Users\ServiceUtilities_PubSub_Users.projitems*{bfae34cb-8c34-4a80-8ae2-45ed63aeb427}*SharedItemsImports = 5
 		submodules\BFilesdk-Dotnet\common\BFileSDK-Dotnet\BFileSDK-Dotnet.projitems*{bfae34cb-8c34-4a80-8ae2-45ed63aeb427}*SharedItemsImports = 5
 		submodules\BDotNetFramework\Services\BServiceUtilities-FileService-GC\BServiceUtilities-FileService-GC.projitems*{c7d560ac-a66b-44e9-8634-26543a8ead2d}*SharedItemsImports = 13

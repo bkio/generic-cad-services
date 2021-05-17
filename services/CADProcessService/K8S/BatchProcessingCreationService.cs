@@ -432,7 +432,7 @@ namespace CADProcessService.K8S
 
         private static bool GetModelDetailsFromFilePath(
             string _Filename, 
-            out string _ModelId, 
+            out string _ModelName, 
             out int _RevisionIndex, 
             Action<string> _ErrorMessageAction = null)
         {
@@ -440,14 +440,14 @@ namespace CADProcessService.K8S
             {
                 //Expecting format raw/b7192e4a29de7c3be8f1fbdd12913886/0/0/file.zip"
                 string[] Parts = _Filename.Split('/');
-                _ModelId = Parts[1];
+                _ModelName = Parts[1];
                 _RevisionIndex = int.Parse(Parts[2]);
                 return true;
             }
             catch (Exception ex)
             {
                 _ErrorMessageAction?.Invoke($"Failed to extract model info from [{_Filename}] - {ex.Message}\n{ex.StackTrace}");
-                _ModelId = null;
+                _ModelName = null;
                 _RevisionIndex = -1;
                 return false;
             }
@@ -484,12 +484,12 @@ namespace CADProcessService.K8S
                     }
                 }
 
-                if (GetModelDetailsFromFilePath(Filename, out string _ModelId, out int _RevisionIndex, _ErrorMessageAction))
+                if (GetModelDetailsFromFilePath(Filename, out string _ModelName, out int _RevisionIndex, _ErrorMessageAction))
                 {
                     //if we fail then you have a broken model on a broken path
                     Controller_BatchProcess.Get().BroadcastBatchProcessAction(new Action_BatchProcessFailed()
                     {
-                        ModelID = _ModelId,
+                        ModelName = _ModelName,
                         RevisionIndex = _RevisionIndex
                     },
                     _ErrorMessageAction);

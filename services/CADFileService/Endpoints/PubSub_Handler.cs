@@ -9,14 +9,11 @@ using BCommonUtilities;
 using BWebServiceUtilities;
 using CADFileService.Controllers;
 using CADFileService.Endpoints.Common;
-using ServiceUtilities.Process.Procedure;
-using ServiceUtilities.Process.RandomAccessFile;
 using CADFileService.Endpoints.Structures;
 using ServiceUtilities;
+using ServiceUtilities.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.IO;
-using ServiceUtilities_All.Common;
 
 namespace CADFileService.Endpoints
 {
@@ -82,7 +79,18 @@ namespace CADFileService.Endpoints
 
             private bool UpdateModelBatchProcessFailed(HttpListenerContext _Context, Action_BatchProcessFailed _Action, Action<string> _ErrorMessageAction = null)
             {
-                if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, ModelDBEntry.DBSERVICE_MODELS_TABLE(), _Action.ModelID, _ErrorMessageAction))
+                if (!CommonMethods.TryGettingModelID(
+                    DatabaseService,
+                    _Action.ModelName,
+                    out string _ModelID,
+                    out BWebServiceResponse FailureResponse,
+                    _ErrorMessageAction))
+                {
+                    _ErrorMessageAction?.Invoke($"Error: PubSub_Handler->UpdateModelBatchProcessFailed: ModelID could not find with this ModelName: {_Action.ModelName}->{_Action.RevisionIndex}");
+                    return false;
+                }
+
+                if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, ModelDBEntry.DBSERVICE_MODELS_TABLE(), _ModelID, _ErrorMessageAction))
                 {
                     return false; //Retry
                 }
@@ -90,7 +98,7 @@ namespace CADFileService.Endpoints
                 {
                     if (!CommonMethods.TryGettingAllInfo(
                         DatabaseService,
-                        _Action.ModelID,
+                        _ModelID,
                         _Action.RevisionIndex,
                         out ModelDBEntry ModelObject,
                         out Revision RevisionObject,
@@ -100,7 +108,7 @@ namespace CADFileService.Endpoints
                     {
                         if (_FailureResponse.StatusCode == BWebResponse.Error_NotFound_Code)
                         {
-                            _ErrorMessageAction?.Invoke($"Error: PubSub_Handler->UpdateModelBatchProcessFailed: Model/revision does not exist: {_Action.ModelID}->{_Action.RevisionIndex}");
+                            _ErrorMessageAction?.Invoke($"Error: PubSub_Handler->UpdateModelBatchProcessFailed: Model/revision does not exist: {_Action.ModelName}->{_Action.RevisionIndex}");
                             return true; //Should return 200
                         }
                         return false; //DB Error - Retry
@@ -113,14 +121,14 @@ namespace CADFileService.Endpoints
                         _Context,
                         ModelDBEntry.DBSERVICE_MODELS_TABLE(),
                         ModelDBEntry.KEY_NAME_MODEL_ID,
-                        new BPrimitiveType(_Action.ModelID),
+                        new BPrimitiveType(_ModelID),
                         JObject.Parse(JsonConvert.SerializeObject(ModelObject)));
 
                     return true;
                 }
                 finally
                 {
-                    Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(InnerProcessor, ModelDBEntry.DBSERVICE_MODELS_TABLE(), _Action.ModelID, _ErrorMessageAction);
+                    Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(InnerProcessor, ModelDBEntry.DBSERVICE_MODELS_TABLE(), _ModelID, _ErrorMessageAction);
                 }
             }
 
