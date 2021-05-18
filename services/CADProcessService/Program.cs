@@ -183,8 +183,8 @@ namespace CADProcessService
             */
             var WebServiceEndpoints = new List<BWebPrefixStructure>()
             {
-                new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/vm_heartbeat" }, () => new InternalCalls.VMHeartbeat(ServInit.DatabaseService, InternalCallPrivateKey)),
-                new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/vm_health_check" }, () => new InternalCalls.VMHealthCheck(InternalCallPrivateKey)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/vm_heartbeat*" }, () => new InternalCalls.VMHeartbeat(ServInit.DatabaseService, InternalCallPrivateKey)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/vm_health_check*" }, () => new InternalCalls.VMHealthCheck(InternalCallPrivateKey)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/start" }, () => new StartProcessRequest(ServInit.DatabaseService)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/stop" }, () => new StopProcessRequest(ServInit.DatabaseService, ServInit.VMService, VirtualMachineDictionary)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/job-complete/*" }, () => new BatchJobCompleteRequest(ServInit.DatabaseService, ServInit.FileService, ServInit.MemoryService)),
