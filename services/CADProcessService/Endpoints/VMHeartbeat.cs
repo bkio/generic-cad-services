@@ -67,7 +67,7 @@ namespace CADProcessService.Endpoints
                     }
                 }
 
-                return ProcessHeartbeat(RequestedVirtualMachineId);
+                return ProcessHeartbeat(RequestedVirtualMachineId, _ErrorMessageAction);
             }
 
             private BWebServiceResponse ProcessHeartbeat(string _RequestedVirtualMachineId, Action<string> _ErrorMessageAction = null)
