@@ -312,7 +312,7 @@ namespace CADProcessService.Endpoints
                     [ProcessHistoryDBEntry.MODEL_UNIQUE_NAME_PROPERTY] = _VirtualMachineEntry.ModelName,
                     [ProcessHistoryDBEntry.MODEL_REVISION_INDEX_PROPERTY] = _VirtualMachineEntry.RevisionIndex,
                     [ProcessHistoryDBEntry.CURRENT_PROCESS_STAGE_PROPERTY] = _VirtualMachineEntry.CurrentProcessStage,
-                    [ProcessHistoryDBEntry.HISTORY_RECORD_DATE_PROPERTY] = Methods.GetNowAsLongDateAndTimeString(),
+                    [ProcessHistoryDBEntry.HISTORY_RECORD_DATE_PROPERTY] = Methods.GetUtcNowShortDateAndLongTimeString(),
                     [ProcessHistoryDBEntry.PROCESS_STATUS_PROPERTY] = (int)EProcessStatus.Canceled,
                     [ProcessHistoryDBEntry.PROCESS_INFO_PROPERTY] = "Stop process has been called."
                 };
