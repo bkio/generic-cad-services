@@ -13,6 +13,7 @@ using ServiceUtilities;
 using ServiceUtilities.PubSubUsers.PubSubRelated;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using ServiceUtilities.Common;
 
 namespace CADFileService
 {
@@ -68,10 +69,10 @@ namespace CADFileService
             }
             NewModelObject.ModelOwnerUserID = AuthorizedUser.UserID;
 
-            if (!CommonMethods.GenerateNonExistentUniqueID(
+            if (!Methods.GenerateNonExistentUniqueID(
                 this, 
                 DatabaseService, ModelDBEntry.DBSERVICE_MODELS_TABLE(), ModelDBEntry.KEY_NAME_MODEL_ID, ModelDBEntry.MustHaveProperties,
-                CommonMethods.EGetClearance.Yes,
+                EGetClearance.Yes,
                 out string ModelID,
                 out BWebServiceResponse _FailureResponse,
                 _ErrorMessageAction))

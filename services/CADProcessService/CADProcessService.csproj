@@ -29,6 +29,7 @@
     <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BCloudServiceUtilities-BLoggingService-Basic\BCloudServiceUtilities-BLoggingService-Basic.csproj" />
     <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BCloudServiceUtilities-BMemoryService-Redis\BCloudServiceUtilities-BMemoryService-Redis.csproj" />
     <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BCloudServiceUtilities-BPubSubService-AZ\BCloudServiceUtilities-BPubSubService-AZ.csproj" />
+    <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BCloudServiceUtilities-BVMService-AZ\BCloudServiceUtilities-BVMService-AZ.csproj" />
     <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BCloudServiceUtilities\BCloudServiceUtilities.csproj" />
     <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BCommonUtilities\BCommonUtilities.csproj" />
     <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BWebServiceUtilities-Basic\BWebServiceUtilities-Basic.csproj" />
@@ -50,5 +51,9 @@
   <Import Project="..\..\submodules\BDotNetFramework\Services\BServiceUtilities-DatabaseService-MongoDB\BServiceUtilities-DatabaseService-MongoDB.projitems" Label="Shared" />
 
   <Import Project="..\..\submodules\BDotNetFramework\Services\BServiceUtilities-PubSubService-AZ\BServiceUtilities-PubSubService-AZ.projitems" Label="Shared" />
+
+  <Import Project="..\..\submodules\BDotNetFramework\Services\BServiceUtilities-VMService-AZ\BServiceUtilities-VMService-AZ.projitems" Label="Shared" />
+
+  <Import Project="..\..\submodules\BDotNetFramework\Utilities\ServiceUtilities_PubSub_DB_Users\ServiceUtilities_PubSub_DB_Users.projitems" Label="Shared" />
 
 </Project>
