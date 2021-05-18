@@ -55,7 +55,7 @@ namespace CADProcessService.Endpoints.Structures
         public int VMStatus = (int)EVMStatus.Available;
 
         [JsonProperty(PROCESS_START_DATE_PROPERTY)]
-        public string ProcessStartDate = Methods.GetNowAsLongDateAndTimeString();
+        public string ProcessStartDate = Methods.GetUtcNowShortDateAndLongTimeString();
 
         [JsonProperty(MODEL_UNIQUE_NAME_PROPERTY)]
         public string ModelName { get; set; }

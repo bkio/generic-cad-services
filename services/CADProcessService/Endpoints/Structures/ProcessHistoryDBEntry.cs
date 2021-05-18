@@ -54,7 +54,7 @@ namespace CADProcessService.Endpoints.Structures
         public int ProcessStatus = (int)EProcessStatus.Idle;
 
         [JsonProperty(HISTORY_RECORD_DATE_PROPERTY)]
-        public string HistoryRecordDate = Methods.GetNowAsLongDateAndTimeString();
+        public string HistoryRecordDate = Methods.GetUtcNowShortDateAndLongTimeString();
 
         [JsonProperty(CURRENT_PROCESS_STAGE_PROPERTY)]
         public int CurrentProcessStage = (int)EProcessStage.Stage0_FileUpload;
