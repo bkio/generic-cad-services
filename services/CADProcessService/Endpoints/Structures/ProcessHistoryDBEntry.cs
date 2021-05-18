@@ -1,7 +1,9 @@
-﻿using Newtonsoft.Json;
+﻿/// MIT License, Copyright Burak Kara, burak@burak.io, https://en.wikipedia.org/wiki/MIT_License
+
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ServiceUtilities;
-using ServiceUtilities_All.Common;
+using ServiceUtilities.Common;
 using System;
 
 namespace CADProcessService.Endpoints.Structures
@@ -52,7 +54,7 @@ namespace CADProcessService.Endpoints.Structures
         public int ProcessStatus = (int)EProcessStatus.Idle;
 
         [JsonProperty(HISTORY_RECORD_DATE_PROPERTY)]
-        public DateTime HistoryRecordDate { get; set; }
+        public string HistoryRecordDate = Methods.GetNowAsLongDateAndTimeString();
 
         [JsonProperty(CURRENT_PROCESS_STAGE_PROPERTY)]
         public int CurrentProcessStage = (int)EProcessStage.Stage0_FileUpload;

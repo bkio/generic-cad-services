@@ -2,38 +2,36 @@
 
 using System;
 using System.Collections.Generic;
-using ServiceUtilities.Process.Procedure;
-using ServiceUtilities;
+using System.Net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Net;
 using CADFileService.Endpoints.Common;
+using ServiceUtilities;
+using ServiceUtilities.Common;
 
 namespace CADFileService.Endpoints.Structures
 {
+
     public class FileEntry : IComparable<FileEntry>
     {
         public const string FILE_ENTRY_NAME_PROPERTY = "fileEntryName";
         public const string FILE_ENTRY_FILE_TYPE_PROPERTY = "fileEntryFileType";
         public const string FILE_ENTRY_COMMENTS_PROPERTY = "fileEntryComments";
         public const string FILE_ENTRY_CREATION_TIME_PROPERTY = "fileEntryCreationTime";
-        public const string RAW_FILE_RELATIVE_URL_PROPERTY = "rawFileRelativeUrl";
-        public const string FILE_PROCESS_STAGE_PROPERTY = "fileProcessStage";
+        public const string FILE_RELATIVE_URL_PROPERTY = "fileRelativeUrl";
+        public const string FILE_UPLOAD_PROCESS_STAGE_PROPERTY = "fileUploadProcessStage";
         public const string FILE_PROCESSED_AT_TIME_PROPERTY = "fileProcessedAtTime";
+        public const string CURRENT_PROCESS_STAGE_PROPERTY = "currentProcessStage";
         public const string PROCESSED_FILES_ROOT_NODE_ID = "processedFilesRootNodeId";
-        public const string HIERARCHY_RANDOM_ACCESSIBLE_FILE_RELATIVE_URL_PROPERTY = "hierarchyRAFRelativeUrl";
-        public const string HIERARCHY_COMPRESSED_FILE_RELATIVE_URL_PROPERTY = "hierarchyCFRelativeUrl";
-        public const string GEOMETRY_RANDOM_ACCESSIBLE_FILE_RELATIVE_URL_PROPERTY = "geometryRAFRelativeUrl";
-        public const string GEOMETRY_COMPRESSED_FILE_RELATIVE_URL_PROPERTY = "geometryCFRelativeUrl";
-        public const string METADATA_RANDOM_ACCESSIBLE_FILE_RELATIVE_URL_PROPERTY = "metadataRAFRelativeUrl";
-        public const string METADATA_COMPRESSED_FILE_RELATIVE_URL_PROPERTY = "metadataCFRelativeUrl";
         public const string ZIP_MAIN_ASSEMBLY_FILE_NAME_IF_ANY_PROPERTY = "zipMainAssemblyFileNameIfAny";
         public const string GENERATE_UPLOAD_URL_PROPERTY = "generateUploadUrl";
         public const string DATA_SOURCE_PROPERTY = "dataSource";
-        public const string UNREAL_HGM_FILE_RELATIVE_URL_PROPERTY = "unrealHGMRelativeUrl";
-        public const string UNREAL_HG_FILE_RELATIVE_URL_PROPERTY = "unrealHGRelativeUrl";
-        public const string UNREAL_H_FILE_RELATIVE_URL_PROPERTY = "unrealHRelativeUrl";
-        public const string UNREAL_G_FILES_RELATIVE_URL_PROPERTY = "unrealGRelativeUrlBasePath";
+
+        public const string LAYERS_PROPERTY = "layers";
+        public const string GLOBAL_TRANSFORM_OFFSET_PROPERTY = "globalTransformOffset";
+        public const string OPTIMIZATION_PRESET_PROPERTY = "optimizationPreset";
+        public const string MERGE_FINAL_LEVEL_PROPERTY = "mergeFinalLevel";
+        public const string DETECT_DUPLICATE_MESHES_PROPERTY = "detectDuplicateMeshes";
 
         //Not properties, but being sent in responses
         public const string FILE_DOWNLOAD_URL_PROPERTY = "fileDownloadUrl";
@@ -42,7 +40,7 @@ namespace CADFileService.Endpoints.Structures
         public const string FILE_DOWNLOAD_UPLOAD_EXPIRY_MINUTES_PROPERTY = "expiryMinutes";
 
         public const int EXPIRY_MINUTES = 5;
-        public const string RAW_FILE_UPLOAD_CONTENT_TYPE = "application/octet-stream";
+        public const string FILE_UPLOAD_CONTENT_TYPE = "application/octet-stream";
 
         //Update info call can change these fields.
         public static readonly string[] UpdatableProperties =
@@ -52,7 +50,13 @@ namespace CADFileService.Endpoints.Structures
             FILE_ENTRY_COMMENTS_PROPERTY,
             ZIP_MAIN_ASSEMBLY_FILE_NAME_IF_ANY_PROPERTY,
             GENERATE_UPLOAD_URL_PROPERTY,
-            DATA_SOURCE_PROPERTY
+            DATA_SOURCE_PROPERTY,
+            CURRENT_PROCESS_STAGE_PROPERTY,
+            LAYERS_PROPERTY,
+            GLOBAL_TRANSFORM_OFFSET_PROPERTY,
+            OPTIMIZATION_PRESET_PROPERTY,
+            MERGE_FINAL_LEVEL_PROPERTY,
+            DETECT_DUPLICATE_MESHES_PROPERTY
         };
 
         public static readonly Dictionary<string, Func<JToken, bool>> UpdatablePropertiesValidityCheck = new Dictionary<string, Func<JToken, bool>>()
@@ -63,7 +67,7 @@ namespace CADFileService.Endpoints.Structures
             },
             [FILE_ENTRY_FILE_TYPE_PROPERTY] = (JToken _Parameter) =>
             {
-                return _Parameter.Type == JTokenType.String && CADFileService.Endpoints.Common.SupportedFileFormats.Formats.ContainsKey("." + (((string)_Parameter).ToLower().TrimStart('.')));
+                return _Parameter.Type == JTokenType.String && SupportedFileFormats.Formats.ContainsKey("." + (((string)_Parameter).ToLower().TrimStart('.')));
             },
             [FILE_ENTRY_COMMENTS_PROPERTY] = (JToken _Parameter) =>
             {
@@ -82,7 +86,26 @@ namespace CADFileService.Endpoints.Structures
             [DATA_SOURCE_PROPERTY] = (JToken _Parameter) =>
             {
                 return _Parameter.Type == JTokenType.String && ((string)_Parameter).Length > 0;
-            }
+            },
+            [LAYERS_PROPERTY] = (JToken _Parameter) =>
+            {
+                if (!(_Parameter is JArray)) return false;
+                foreach (var Cur in _Parameter) if (Cur.Type != JTokenType.Object) return false;
+                return true;
+            },
+            [GLOBAL_TRANSFORM_OFFSET_PROPERTY] = (JToken _Parameter) =>
+            {
+                if (!(_Parameter is JObject)) return false;
+                return true;
+            },
+            [MERGE_FINAL_LEVEL_PROPERTY] = (JToken _Parameter) =>
+            {
+                return _Parameter.Type == JTokenType.Boolean;
+            },
+            [DETECT_DUPLICATE_MESHES_PROPERTY] = (JToken _Parameter) =>
+            {
+                return _Parameter.Type == JTokenType.Boolean;
+            },
         };
 
         [JsonProperty(FILE_ENTRY_NAME_PROPERTY)]
@@ -100,11 +123,11 @@ namespace CADFileService.Endpoints.Structures
         [JsonProperty(FILE_ENTRY_CREATION_TIME_PROPERTY)]
         public string FileEntryCreationTime = CommonMethods.GetTimeAsCreationTime();
 
-        [JsonProperty(RAW_FILE_RELATIVE_URL_PROPERTY)]
-        public string RawFileRelativeUrl = "";
+        [JsonProperty(FILE_RELATIVE_URL_PROPERTY)]
+        public string FileRelativeUrl = "";
 
-        [JsonProperty(FILE_PROCESS_STAGE_PROPERTY)]
-        public int FileProcessStage = (int)Constants.EProcessStage.NotUploaded;
+        [JsonProperty(FILE_UPLOAD_PROCESS_STAGE_PROPERTY)]
+        public int FileUploadProcessStage = (int)EUploadProcessStage.NotUploaded;
 
         [JsonProperty(FILE_PROCESSED_AT_TIME_PROPERTY)]
         public string FileProcessedAtTime = "";
@@ -112,38 +135,29 @@ namespace CADFileService.Endpoints.Structures
         [JsonProperty(PROCESSED_FILES_ROOT_NODE_ID)]
         public ulong ProcessedFilesRootNodeID = 0;
 
-        [JsonProperty(HIERARCHY_RANDOM_ACCESSIBLE_FILE_RELATIVE_URL_PROPERTY)]
-        public string HierarchyRAFRelativeUrl = "";
-
-        [JsonProperty(HIERARCHY_COMPRESSED_FILE_RELATIVE_URL_PROPERTY)]
-        public string HierarchyCFRelativeUrl = "";
-
-        [JsonProperty(GEOMETRY_RANDOM_ACCESSIBLE_FILE_RELATIVE_URL_PROPERTY)]
-        public string GeometryRAFRelativeUrl = "";
-
-        [JsonProperty(GEOMETRY_COMPRESSED_FILE_RELATIVE_URL_PROPERTY)]
-        public string GeometryCFRelativeUrl = "";
-
-        [JsonProperty(METADATA_RANDOM_ACCESSIBLE_FILE_RELATIVE_URL_PROPERTY)]
-        public string MetadataRAFRelativeUrl = "";
-
-        [JsonProperty(METADATA_COMPRESSED_FILE_RELATIVE_URL_PROPERTY)]
-        public string MetadataCFRelativeUrl = "";
-
         [JsonProperty(GENERATE_UPLOAD_URL_PROPERTY)]
         public bool bGenerateUploadUrl = false;
 
         [JsonProperty(DATA_SOURCE_PROPERTY)]
         public string DataSource = "NULL";
 
-        [JsonProperty(UNREAL_HGM_FILE_RELATIVE_URL_PROPERTY)]
-        public string UnrealHGMRelativeUrl = "";
-        [JsonProperty(UNREAL_HG_FILE_RELATIVE_URL_PROPERTY)]
-        public string UnrealHGRelativeUrl = "";
-        [JsonProperty(UNREAL_H_FILE_RELATIVE_URL_PROPERTY)]
-        public string UnrealHRelativeUrl = "";
-        [JsonProperty(UNREAL_G_FILES_RELATIVE_URL_PROPERTY)]
-        public string UnrealGRelativeUrlBasePath = "";
+        [JsonProperty(CURRENT_PROCESS_STAGE_PROPERTY)]
+        public int CurrentProcessStage = (int)EProcessStage.Stage0_FileUpload;
+
+        [JsonProperty(LAYERS_PROPERTY)]
+        public List<LayerFilter> Layers = new List<LayerFilter>();
+
+        [JsonProperty(GLOBAL_TRANSFORM_OFFSET_PROPERTY)]
+        public TransformOffset GlobalTransformOffset = new TransformOffset();
+
+        [JsonProperty(OPTIMIZATION_PRESET_PROPERTY)]
+        public int OptimizationPreset = (int)EOptimizationPreset.Default;
+
+        [JsonProperty(MERGE_FINAL_LEVEL_PROPERTY)]
+        public bool bMergeFinalLevel = false;
+        
+        [JsonProperty(DETECT_DUPLICATE_MESHES_PROPERTY)]
+        public bool bDetectDuplicateMeshes = false;
 
         public void Merge(JObject _Content)
         {
@@ -159,46 +173,37 @@ namespace CADFileService.Endpoints.Structures
                 FileEntryComments = ContentObject.FileEntryComments;
             if (_Content.ContainsKey(FILE_ENTRY_CREATION_TIME_PROPERTY))
                 FileEntryCreationTime = ContentObject.FileEntryCreationTime;
-            if (_Content.ContainsKey(RAW_FILE_RELATIVE_URL_PROPERTY))
-                RawFileRelativeUrl = ContentObject.RawFileRelativeUrl;
-            if (_Content.ContainsKey(FILE_PROCESS_STAGE_PROPERTY))
-                FileProcessStage = ContentObject.FileProcessStage;
+            if (_Content.ContainsKey(FILE_RELATIVE_URL_PROPERTY))
+                FileRelativeUrl = ContentObject.FileRelativeUrl;
+            if (_Content.ContainsKey(FILE_UPLOAD_PROCESS_STAGE_PROPERTY))
+                FileUploadProcessStage = ContentObject.FileUploadProcessStage;
             if (_Content.ContainsKey(FILE_PROCESSED_AT_TIME_PROPERTY))
                 FileProcessedAtTime = ContentObject.FileProcessedAtTime;
             if (_Content.ContainsKey(PROCESSED_FILES_ROOT_NODE_ID))
                 ProcessedFilesRootNodeID = ContentObject.ProcessedFilesRootNodeID;
-            if (_Content.ContainsKey(HIERARCHY_RANDOM_ACCESSIBLE_FILE_RELATIVE_URL_PROPERTY))
-                HierarchyRAFRelativeUrl = ContentObject.HierarchyRAFRelativeUrl;
-            if (_Content.ContainsKey(HIERARCHY_COMPRESSED_FILE_RELATIVE_URL_PROPERTY))
-                HierarchyCFRelativeUrl = ContentObject.HierarchyCFRelativeUrl;
-            if (_Content.ContainsKey(GEOMETRY_RANDOM_ACCESSIBLE_FILE_RELATIVE_URL_PROPERTY))
-                GeometryRAFRelativeUrl = ContentObject.GeometryRAFRelativeUrl;
-            if (_Content.ContainsKey(GEOMETRY_COMPRESSED_FILE_RELATIVE_URL_PROPERTY))
-                GeometryCFRelativeUrl = ContentObject.GeometryCFRelativeUrl;
-            if (_Content.ContainsKey(METADATA_RANDOM_ACCESSIBLE_FILE_RELATIVE_URL_PROPERTY))
-                MetadataRAFRelativeUrl = ContentObject.MetadataRAFRelativeUrl;
-            if (_Content.ContainsKey(METADATA_COMPRESSED_FILE_RELATIVE_URL_PROPERTY))
-                MetadataCFRelativeUrl = ContentObject.MetadataCFRelativeUrl;
-
-            if (_Content.ContainsKey(UNREAL_HGM_FILE_RELATIVE_URL_PROPERTY))
-                UnrealHGMRelativeUrl = ContentObject.UnrealHGMRelativeUrl;
-            if (_Content.ContainsKey(UNREAL_HG_FILE_RELATIVE_URL_PROPERTY))
-                UnrealHGRelativeUrl = ContentObject.UnrealHGRelativeUrl;
-            if (_Content.ContainsKey(UNREAL_H_FILE_RELATIVE_URL_PROPERTY))
-                UnrealHRelativeUrl = ContentObject.UnrealHRelativeUrl;
-            if (_Content.ContainsKey(UNREAL_G_FILES_RELATIVE_URL_PROPERTY))
-                UnrealGRelativeUrlBasePath = ContentObject.UnrealGRelativeUrlBasePath;
-
             if (_Content.ContainsKey(GENERATE_UPLOAD_URL_PROPERTY))
                 bGenerateUploadUrl = ContentObject.bGenerateUploadUrl;
             if (_Content.ContainsKey(DATA_SOURCE_PROPERTY))
                 DataSource = ContentObject.DataSource;
+
+            if (_Content.ContainsKey(CURRENT_PROCESS_STAGE_PROPERTY))
+                CurrentProcessStage = ContentObject.CurrentProcessStage;
+            if (_Content.ContainsKey(LAYERS_PROPERTY))
+                Layers = ContentObject.Layers;
+            if (_Content.ContainsKey(GLOBAL_TRANSFORM_OFFSET_PROPERTY))
+                GlobalTransformOffset = ContentObject.GlobalTransformOffset;
+            if (_Content.ContainsKey(OPTIMIZATION_PRESET_PROPERTY))
+                OptimizationPreset = ContentObject.OptimizationPreset;
+            if (_Content.ContainsKey(MERGE_FINAL_LEVEL_PROPERTY))
+                bMergeFinalLevel = ContentObject.bMergeFinalLevel;
+            if (_Content.ContainsKey(DETECT_DUPLICATE_MESHES_PROPERTY))
+                bDetectDuplicateMeshes = ContentObject.bDetectDuplicateMeshes;
         }
 
         public override bool Equals(object _Other)
         {
             return _Other is FileEntry Casted &&
-                   RawFileRelativeUrl == Casted.RawFileRelativeUrl;
+                   FileRelativeUrl == Casted.FileRelativeUrl;
         }
         public static bool operator ==(FileEntry x, FileEntry y)
         {
@@ -210,151 +215,83 @@ namespace CADFileService.Endpoints.Structures
         }
         public override int GetHashCode()
         {
-            return HashCode.Combine(RawFileRelativeUrl);
+            return HashCode.Combine(FileRelativeUrl);
         }
         public int CompareTo(FileEntry _Other)
         {
-            return RawFileRelativeUrl.CompareTo(_Other.RawFileRelativeUrl);
+            return FileRelativeUrl.CompareTo(_Other.FileRelativeUrl);
         }
 
         public void Prune_NonGettableProperties()
         {
-            RawFileRelativeUrl = "HIDDEN";
-
-            HierarchyRAFRelativeUrl = "HIDDEN";
-            HierarchyCFRelativeUrl = "HIDDEN";
-            GeometryRAFRelativeUrl = "HIDDEN";
-            GeometryCFRelativeUrl = "HIDDEN";
-            MetadataRAFRelativeUrl = "HIDDEN";
-            MetadataCFRelativeUrl = "HIDDEN";
-
-            UnrealHGMRelativeUrl = "HIDDEN";
-            UnrealHGRelativeUrl = "HIDDEN";
-            UnrealHRelativeUrl = "HIDDEN";
-            UnrealGRelativeUrlBasePath = "HIDDEN";
+            FileRelativeUrl = "HIDDEN";
 
             bGenerateUploadUrl = false;
         }
 
         public void DeleteAllFiles(HttpListenerContext _Context, string _BucketName, Action<string> _ErrorMessageAction = null)
         {
-            switch (FileProcessStage)
+            switch (FileUploadProcessStage)
             {
-                case (int)Constants.EProcessStage.Uploaded_ProcessFailed:
-                case (int)Constants.EProcessStage.Uploaded_Processed:
-                case (int)Constants.EProcessStage.Uploaded_Processing:
+                case (int)EUploadProcessStage.Uploaded_ProcessFailed:
+                case (int)EUploadProcessStage.Uploaded_Processed:
+                case (int)EUploadProcessStage.Uploaded_Processing:
                     {
-                        Controller_DeliveryEnsurer.Get().FS_DeleteFile_FireAndForget(
-                            _Context,
-                            _BucketName,
-                            RawFileRelativeUrl);
-
-                        RawFileRelativeUrl = "";
-
-                        if (FileProcessStage == (int)Constants.EProcessStage.Uploaded_Processed)
+                        if(SplitRelativeUrl(
+                            FileRelativeUrl, 
+                            out string _OwnerModelName,
+                            out int _OwnerRevisionIndex,
+                            out int _,
+                            out bool _,
+                            out string _))
                         {
-                            Controller_DeliveryEnsurer.Get().FS_DeleteFile_FireAndForget(
-                                _Context,
-                                _BucketName,
-                                HierarchyRAFRelativeUrl);
-                            Controller_DeliveryEnsurer.Get().FS_DeleteFile_FireAndForget(
-                                _Context,
-                                _BucketName,
-                                HierarchyCFRelativeUrl);
-                            Controller_DeliveryEnsurer.Get().FS_DeleteFile_FireAndForget(
-                                _Context,
-                                _BucketName,
-                                GeometryRAFRelativeUrl);
-                            Controller_DeliveryEnsurer.Get().FS_DeleteFile_FireAndForget(
-                                _Context,
-                                _BucketName,
-                                GeometryCFRelativeUrl);
-                            Controller_DeliveryEnsurer.Get().FS_DeleteFile_FireAndForget(
-                                _Context,
-                                _BucketName,
-                                MetadataRAFRelativeUrl);
-                            Controller_DeliveryEnsurer.Get().FS_DeleteFile_FireAndForget(
-                                _Context,
-                                _BucketName,
-                                MetadataCFRelativeUrl);
+                            for (int CurrentStage = 0; CurrentStage <= (int)EProcessStage.Stage6_UnrealEngineConvertion; CurrentStage++)
+                            {
+                                var _FileRelativeUrl = GetFileRelativeUrl(_OwnerModelName, _OwnerRevisionIndex, CurrentStage);
 
-                            Controller_DeliveryEnsurer.Get().FS_DeleteFile_FireAndForget(
-                                _Context,
-                                _BucketName,
-                                UnrealHGMRelativeUrl);
-                            Controller_DeliveryEnsurer.Get().FS_DeleteFile_FireAndForget(
-                                _Context,
-                                _BucketName,
-                                UnrealHGRelativeUrl);
-                            Controller_DeliveryEnsurer.Get().FS_DeleteFile_FireAndForget(
-                                _Context,
-                                _BucketName,
-                                UnrealHRelativeUrl);
-
-                            Controller_DeliveryEnsurer.Get().FS_DeleteFolder_FireAndForget(
-                                _Context,
-                                _BucketName,
-                                UnrealGRelativeUrlBasePath);
-
-                            HierarchyRAFRelativeUrl = "";
-                            HierarchyCFRelativeUrl = "";
-                            GeometryRAFRelativeUrl = "";
-                            GeometryCFRelativeUrl = "";
-                            MetadataRAFRelativeUrl = "";
-                            MetadataCFRelativeUrl = "";
-
-                            UnrealHGMRelativeUrl = "";
-                            UnrealHGRelativeUrl = "";
-                            UnrealHRelativeUrl = "";
-                            UnrealGRelativeUrlBasePath = "";
+                                Controller_DeliveryEnsurer.Get().FS_DeleteFile_FireAndForget(
+                                    _Context,
+                                    _BucketName,
+                                    _FileRelativeUrl);
+                            }
                         }
+
+                        FileRelativeUrl = "";
                         break;
                     }
             }
         }
 
-        public const string RAW_FILE_FOLDER_PREFIX = "raw/";
-
         public static bool SplitRelativeUrl(
             string _RelativeUrl, 
-            out string _OwnerModelID, 
+            out string _OwnerModelName, 
             out int _OwnerRevisionIndex, 
-            out bool _bIsProcessed, 
-            out EProcessedFileType _ProcessedFileType_IfProcessed, 
+            out int _StageNumber,
+            out bool _bIsProcessed,
             out string _RawExtension_IfRaw)
         {
             var DeploymentBranchName = Resources_DeploymentManager.Get().GetDeploymentBranchNameEscapedLoweredWithUnderscore();
 
-            _OwnerModelID = null;
+            _OwnerModelName = null;
             _OwnerRevisionIndex = -1;
-            _ProcessedFileType_IfProcessed = EProcessedFileType.NONE_OR_RAW;
             _RawExtension_IfRaw = null;
+            _StageNumber = -1;
 
             _bIsProcessed = false;
-            foreach (var FolderPrefix in Constants.ProcessedFileType_FolderPrefix_Map)
-            {
-                var _FinalPrefix = DeploymentBranchName + "_" + FolderPrefix.Value;
-                if (_RelativeUrl.StartsWith(_FinalPrefix))
-                {
-                    _ProcessedFileType_IfProcessed = FolderPrefix.Key;
-                    _bIsProcessed = true;
-                    _RelativeUrl = _RelativeUrl.Substring(_FinalPrefix.Length);
-                }
-            }
-            if (_ProcessedFileType_IfProcessed == EProcessedFileType.NONE_OR_RAW)
-            {
-                var _FinalPrefix = DeploymentBranchName + "_" + RAW_FILE_FOLDER_PREFIX;
-                if (!_RelativeUrl.StartsWith(_FinalPrefix)) return false;
-                _RelativeUrl = _RelativeUrl.Substring(_FinalPrefix.Length);
-            }
+
+            var _Prefix = DeploymentBranchName + "/";
+            if (!_RelativeUrl.StartsWith(_Prefix)) return false;
+            _RelativeUrl = _RelativeUrl.Substring(_Prefix.Length);
 
             if (_RelativeUrl == null || _RelativeUrl.Length == 0) return false;
             var Splitted = _RelativeUrl.Split('/');
-            if (Splitted.Length < 3) return false;
+            if (Splitted.Length < 5) return false;
 
-            _OwnerModelID = Splitted[0];
+            _OwnerModelName = Splitted[0];
             if (!int.TryParse(Splitted[1], out _OwnerRevisionIndex)) return false;
-            
+
+            if (!int.TryParse(Splitted[3], out _StageNumber)) return false;
+
             if (!_bIsProcessed)
             {
                 var ExtensionSplit = Splitted[2].Split('.');
@@ -364,29 +301,46 @@ namespace CADFileService.Endpoints.Structures
 
             return true;
         }
-        public string SetRelativeUrls_GetCommonUrlPart_FileEntryFileTypePreSet(string _OwnerModelID, int _OwnerRevisionIndex)
+        public string GetFileRelativeUrl(string _OwnerModelName, int _OwnerRevisionIndex)
         {
-            var CommonUrlPart = $"{_OwnerModelID}/{_OwnerRevisionIndex}/file.";
+            var DeploymentBranchName = Resources_DeploymentManager.Get().GetDeploymentBranchNameEscapedLoweredWithUnderscore();
 
-            RawFileRelativeUrl = Make_RelativeUrl(RAW_FILE_FOLDER_PREFIX, CommonUrlPart, FileEntryFileType);
-
-            HierarchyRAFRelativeUrl = Make_RelativeUrl(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.HIERARCHY_RAF], CommonUrlPart, Constants.ProcessedFileType_Extension_Map[EProcessedFileType.HIERARCHY_RAF]);
-            HierarchyCFRelativeUrl = Make_RelativeUrl(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.HIERARCHY_CF], CommonUrlPart, Constants.ProcessedFileType_Extension_Map[EProcessedFileType.HIERARCHY_CF]);
-            GeometryRAFRelativeUrl = Make_RelativeUrl(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.GEOMETRY_RAF], CommonUrlPart, Constants.ProcessedFileType_Extension_Map[EProcessedFileType.GEOMETRY_RAF]);
-            GeometryCFRelativeUrl = Make_RelativeUrl(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.GEOMETRY_CF], CommonUrlPart, Constants.ProcessedFileType_Extension_Map[EProcessedFileType.GEOMETRY_CF]);
-            MetadataRAFRelativeUrl = Make_RelativeUrl(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.METADATA_RAF], CommonUrlPart, Constants.ProcessedFileType_Extension_Map[EProcessedFileType.METADATA_RAF]);
-            MetadataCFRelativeUrl = Make_RelativeUrl(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.METADATA_CF], CommonUrlPart, Constants.ProcessedFileType_Extension_Map[EProcessedFileType.METADATA_CF]);
-
-            UnrealHGMRelativeUrl = Make_RelativeUrl(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.UNREAL_HGM], CommonUrlPart, Constants.ProcessedFileType_Extension_Map[EProcessedFileType.UNREAL_HGM]);
-            UnrealHGRelativeUrl = Make_RelativeUrl(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.UNREAL_HG], CommonUrlPart, Constants.ProcessedFileType_Extension_Map[EProcessedFileType.UNREAL_HG]);
-            UnrealHRelativeUrl = Make_RelativeUrl(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.UNREAL_H], CommonUrlPart, Constants.ProcessedFileType_Extension_Map[EProcessedFileType.UNREAL_H]);
-            UnrealGRelativeUrlBasePath = Make_RelativeUrl(Constants.ProcessedFileType_FolderPrefix_Map[EProcessedFileType.UNREAL_G], $"{_OwnerModelID}/{_OwnerRevisionIndex}/", string.Empty); // File name and extension will be calculated with GeometryId later.
-
-            return CommonUrlPart;
+            if (CurrentProcessStage == (int)EProcessStage.Stage0_FileUpload)
+            {
+                return $"{DeploymentBranchName}/{_OwnerModelName}/{_OwnerRevisionIndex}/stages/{CurrentProcessStage}/files.{FileEntryFileType}";
+            }
+            else
+            {
+                return $"{DeploymentBranchName}/{_OwnerModelName}/{_OwnerRevisionIndex}/stages/{CurrentProcessStage}/files.zip";
+            }
         }
-        public static string Make_RelativeUrl(string _Prefix, string _CommonUrlPart, string _FileEntryFileType)
+
+        public string GetFileRelativeUrl(string _OwnerModelName, int _OwnerRevisionIndex, int _CurrentProcessStage)
         {
-            return Resources_DeploymentManager.Get().GetDeploymentBranchNameEscapedLoweredWithUnderscore() + "_" + _Prefix + _CommonUrlPart + _FileEntryFileType.ToLower();
+            var DeploymentBranchName = Resources_DeploymentManager.Get().GetDeploymentBranchNameEscapedLoweredWithUnderscore();
+
+            if (CurrentProcessStage == (int)EProcessStage.Stage0_FileUpload)
+            {
+                return $"{DeploymentBranchName}/{_OwnerModelName}/{_OwnerRevisionIndex}/stages/{_CurrentProcessStage}/files.{FileEntryFileType}";
+            }
+            else
+            {
+                return $"{DeploymentBranchName}/{_OwnerModelName}/{_OwnerRevisionIndex}/stages/{_CurrentProcessStage}/files.zip";
+            }
+        }
+
+        public string GetFileRelativeUrl(string _OwnerModelName, int _OwnerRevisionIndex, int _CurrentProcessStage, string _Extension)
+        {
+            var DeploymentBranchName = Resources_DeploymentManager.Get().GetDeploymentBranchNameEscapedLoweredWithUnderscore();
+
+            return $"{DeploymentBranchName}/{_OwnerModelName}/{_OwnerRevisionIndex}/stages/{_CurrentProcessStage}/files.{_Extension}";
+        }
+
+        public string GetFileRelativeUrl(string _OwnerModelName, int _OwnerRevisionIndex, int _CurrentProcessStage, string _Extension, string _GeometryId)
+        {
+            var DeploymentBranchName = Resources_DeploymentManager.Get().GetDeploymentBranchNameEscapedLoweredWithUnderscore();
+
+            return $"{DeploymentBranchName}/{_OwnerModelName}/{_OwnerRevisionIndex}/stages/{_CurrentProcessStage}/{_GeometryId}.{_Extension}";
         }
     }
 }

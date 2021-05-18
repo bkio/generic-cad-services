@@ -123,7 +123,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BCloudServiceUtilities-BPub
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BWebServiceUtilities-Basic", "submodules\BDotNetFramework\Utilities\BWebServiceUtilities-Basic\BWebServiceUtilities-Basic.csproj", "{21A83E08-319E-4A91-B605-DD9678C0881C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BCloudServiceUtilities-BVMService-AZ", "..\BDotNetFramework\Utilities\BCloudServiceUtilities-BVMService-AZ\BCloudServiceUtilities-BVMService-AZ.csproj", "{C3CDBE2F-1797-4DC4-A426-71E1584A15E7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BCloudServiceUtilities-BVMService-AZ", "submodules\BDotNetFramework\Utilities\BCloudServiceUtilities-BVMService-AZ\BCloudServiceUtilities-BVMService-AZ.csproj", "{CF003E26-CFA4-4582-8423-A642EF7B2862}"
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "BServiceUtilities-VMService-AZ", "submodules\BDotNetFramework\Services\BServiceUtilities-VMService-AZ\BServiceUtilities-VMService-AZ.shproj", "{9D86E4D0-8B57-4F15-BFDE-A537107825B3}"
 EndProject
@@ -166,6 +166,7 @@ Global
 		submodules\BDotNetFramework\Services\BServiceUtilities-VMService-AZ\BServiceUtilities-VMService-AZ.projitems*{bfae34cb-8c34-4a80-8ae2-45ed63aeb427}*SharedItemsImports = 5
 		submodules\BDotNetFramework\Services\BServiceUtilities\BServiceUtilities.projitems*{bfae34cb-8c34-4a80-8ae2-45ed63aeb427}*SharedItemsImports = 5
 		submodules\BDotNetFramework\Utilities\ServiceUtilities_All\ServiceUtilities_All.projitems*{bfae34cb-8c34-4a80-8ae2-45ed63aeb427}*SharedItemsImports = 5
+		submodules\BDotNetFramework\Utilities\ServiceUtilities_PubSub_DB_Users\ServiceUtilities_PubSub_DB_Users.projitems*{bfae34cb-8c34-4a80-8ae2-45ed63aeb427}*SharedItemsImports = 5
 		submodules\BDotNetFramework\Utilities\ServiceUtilities_PubSub_Users\ServiceUtilities_PubSub_Users.projitems*{bfae34cb-8c34-4a80-8ae2-45ed63aeb427}*SharedItemsImports = 5
 		submodules\BFilesdk-Dotnet\common\BFileSDK-Dotnet\BFileSDK-Dotnet.projitems*{bfae34cb-8c34-4a80-8ae2-45ed63aeb427}*SharedItemsImports = 5
 		submodules\BDotNetFramework\Services\BServiceUtilities-FileService-GC\BServiceUtilities-FileService-GC.projitems*{c7d560ac-a66b-44e9-8634-26543a8ead2d}*SharedItemsImports = 13
@@ -362,12 +363,12 @@ Global
 		{21A83E08-319E-4A91-B605-DD9678C0881C}.DebugInteractive|Any CPU.Build.0 = Debug|Any CPU
 		{21A83E08-319E-4A91-B605-DD9678C0881C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{21A83E08-319E-4A91-B605-DD9678C0881C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C3CDBE2F-1797-4DC4-A426-71E1584A15E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C3CDBE2F-1797-4DC4-A426-71E1584A15E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C3CDBE2F-1797-4DC4-A426-71E1584A15E7}.DebugInteractive|Any CPU.ActiveCfg = Debug|Any CPU
-		{C3CDBE2F-1797-4DC4-A426-71E1584A15E7}.DebugInteractive|Any CPU.Build.0 = Debug|Any CPU
-		{C3CDBE2F-1797-4DC4-A426-71E1584A15E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C3CDBE2F-1797-4DC4-A426-71E1584A15E7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF003E26-CFA4-4582-8423-A642EF7B2862}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF003E26-CFA4-4582-8423-A642EF7B2862}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF003E26-CFA4-4582-8423-A642EF7B2862}.DebugInteractive|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF003E26-CFA4-4582-8423-A642EF7B2862}.DebugInteractive|Any CPU.Build.0 = Debug|Any CPU
+		{CF003E26-CFA4-4582-8423-A642EF7B2862}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF003E26-CFA4-4582-8423-A642EF7B2862}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -431,7 +432,7 @@ Global
 		{92303AAC-BD85-4D42-BE9B-1B0790609AF9} = {F05D3BA0-ED61-4BA5-A118-7005F432ECAF}
 		{9DFFCADF-C447-42E9-BA7E-479C3222D4E7} = {F05D3BA0-ED61-4BA5-A118-7005F432ECAF}
 		{21A83E08-319E-4A91-B605-DD9678C0881C} = {F05D3BA0-ED61-4BA5-A118-7005F432ECAF}
-		{C3CDBE2F-1797-4DC4-A426-71E1584A15E7} = {F05D3BA0-ED61-4BA5-A118-7005F432ECAF}
+		{CF003E26-CFA4-4582-8423-A642EF7B2862} = {F05D3BA0-ED61-4BA5-A118-7005F432ECAF}
 		{9D86E4D0-8B57-4F15-BFDE-A537107825B3} = {939F2CC0-8FFE-45B6-B06B-B505A9CD6754}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution

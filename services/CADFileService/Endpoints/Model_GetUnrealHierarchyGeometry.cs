@@ -3,14 +3,10 @@
 using System;
 using System.Net;
 using BCloudServiceUtilities;
-using BCommonUtilities;
 using BWebServiceUtilities;
 using CADFileService.Endpoints.Common;
-using CADFileService.Endpoints.Structures;
-using ServiceUtilities.All;
 using ServiceUtilities.Process.Procedure;
 using ServiceUtilities.PubSubUsers.PubSubRelated;
-using Newtonsoft.Json.Linq;
 
 namespace CADFileService.Endpoints
 {
@@ -23,7 +19,7 @@ namespace CADFileService.Endpoints
         private readonly string RestfulUrlParameter_ModelsKey;
         private readonly string RestfulUrlParameter_RevisionsKey;
 
-        private string RequestedModelID;
+        private string RequestedModelName;
         private int RequestedRevisionIndex;
 
         private ServiceUtilities.Common.AuthorizedRequester AuthorizedUser;
@@ -58,17 +54,7 @@ namespace CADFileService.Endpoints
                 return BWebResponse.MethodNotAllowed("GET method is accepted. But received request method: " + _Context.Request.HttpMethod);
             }
 
-            var RequestedModelName = WebUtility.UrlDecode(RestfulUrlParameters[RestfulUrlParameter_ModelsKey]);
-
-            if (!CommonMethods.TryGettingModelID(
-                DatabaseService,
-                RequestedModelName,
-                out RequestedModelID,
-                out BWebServiceResponse FailureResponse,
-                _ErrorMessageAction))
-            {
-                return FailureResponse;
-            }
+            RequestedModelName = WebUtility.UrlDecode(RestfulUrlParameters[RestfulUrlParameter_ModelsKey]);
 
             if (!int.TryParse(RestfulUrlParameters[RestfulUrlParameter_RevisionsKey], out RequestedRevisionIndex))
             {
@@ -86,7 +72,7 @@ namespace CADFileService.Endpoints
                 DatabaseService,
                 FileService,
                 CadFileStorageBucketName,
-                RequestedModelID,
+                RequestedModelName,
                 RequestedRevisionIndex,
                 out BWebServiceResponse _SuccessResponse,
                 out BWebServiceResponse _FailureResponse,

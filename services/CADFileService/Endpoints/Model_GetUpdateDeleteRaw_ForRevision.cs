@@ -13,6 +13,7 @@ using ServiceUtilities;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ServiceUtilities.PubSubUsers.PubSubRelated;
+using ServiceUtilities.Common;
 
 namespace CADFileService
 {
@@ -119,6 +120,9 @@ namespace CADFileService
             {
                 return FailureResponse;
             }
+
+            bool bIsRawFileUpload = ((int)UpdatedFileEntryJson[FileEntry.CURRENT_PROCESS_STAGE_PROPERTY] == (int)EProcessStage.Stage0_FileUpload);
+
             bool bGenerateUploadUrl = CheckForGenerateUploadUrl.bGenerateUploadUrl;
             if (bGenerateUploadUrl)
             {
@@ -126,10 +130,9 @@ namespace CADFileService
             }
             else
             {
-                if (UpdatedFileEntryJson.ContainsKey(FileEntry.FILE_ENTRY_NAME_PROPERTY)
+                if ((UpdatedFileEntryJson.ContainsKey(FileEntry.FILE_ENTRY_NAME_PROPERTY)
                     || UpdatedFileEntryJson.ContainsKey(FileEntry.FILE_ENTRY_FILE_TYPE_PROPERTY)
-                    || UpdatedFileEntryJson.ContainsKey(FileEntry.ZIP_MAIN_ASSEMBLY_FILE_NAME_IF_ANY_PROPERTY)
-                    || UpdatedFileEntryJson.ContainsKey(FileEntry.DATA_SOURCE_PROPERTY))
+                    || UpdatedFileEntryJson.ContainsKey(FileEntry.DATA_SOURCE_PROPERTY)) && bIsRawFileUpload)
                 {
                     return BWebResponse.BadRequest("Name|type related fields can only be set when " + FileEntry.GENERATE_UPLOAD_URL_PROPERTY + " option is true.");
                 }
@@ -150,10 +153,9 @@ namespace CADFileService
 
             if (RevisionObject.FileEntry.FileEntryName != null && RevisionObject.FileEntry.FileEntryName.Length > 0)
             {
-                if (UpdatedFileEntryJson.ContainsKey(FileEntry.FILE_ENTRY_NAME_PROPERTY)
+                if ((UpdatedFileEntryJson.ContainsKey(FileEntry.FILE_ENTRY_NAME_PROPERTY)
                     || UpdatedFileEntryJson.ContainsKey(FileEntry.FILE_ENTRY_FILE_TYPE_PROPERTY)
-                    || UpdatedFileEntryJson.ContainsKey(FileEntry.ZIP_MAIN_ASSEMBLY_FILE_NAME_IF_ANY_PROPERTY)
-                    || UpdatedFileEntryJson.ContainsKey(FileEntry.DATA_SOURCE_PROPERTY))
+                    || UpdatedFileEntryJson.ContainsKey(FileEntry.DATA_SOURCE_PROPERTY)) && bIsRawFileUpload)
                 {
                     return BWebResponse.BadRequest("File entry (raw) must be deleted before updating.");
                 }
@@ -162,19 +164,18 @@ namespace CADFileService
             RevisionObject.FileEntry.Merge(UpdatedFileEntryJson);
 
             RevisionObject.FileEntry.FileEntryFileType = RevisionObject.FileEntry.FileEntryFileType.ToLower().TrimStart('.');
-            RevisionObject.FileEntry.SetRelativeUrls_GetCommonUrlPart_FileEntryFileTypePreSet(RequestedModelID, RequestedRevisionIndex);
+            RevisionObject.FileEntry.FileRelativeUrl = RevisionObject.FileEntry.GetFileRelativeUrl(RequestedModelID, RequestedRevisionIndex);
             RevisionObject.FileEntry.FileEntryCreationTime = CommonMethods.GetTimeAsCreationTime();
             ModelObject.MRVLastUpdateTime = RevisionObject.FileEntry.FileEntryCreationTime;
 
             string UploadUrl_IfRequested = null;
 
-            if (bGenerateUploadUrl &&
-
-                !FileService.CreateSignedURLForUpload(
+            if (bGenerateUploadUrl 
+                && !FileService.CreateSignedURLForUpload(
                     out UploadUrl_IfRequested,
                     CadFileStorageBucketName,
-                    RevisionObject.FileEntry.RawFileRelativeUrl,
-                    FileEntry.RAW_FILE_UPLOAD_CONTENT_TYPE,
+                    RevisionObject.FileEntry.FileRelativeUrl,
+                    FileEntry.FILE_UPLOAD_CONTENT_TYPE,
                     FileEntry.EXPIRY_MINUTES,
                     _ErrorMessageAction))
             {
@@ -203,7 +204,7 @@ namespace CADFileService
             if (bGenerateUploadUrl)
             {
                 ResultObject[FileEntry.FILE_UPLOAD_URL_PROPERTY] = UploadUrl_IfRequested;
-                ResultObject[FileEntry.FILE_UPLOAD_CONTENT_TYPE_PROPERTY] = FileEntry.RAW_FILE_UPLOAD_CONTENT_TYPE;
+                ResultObject[FileEntry.FILE_UPLOAD_CONTENT_TYPE_PROPERTY] = FileEntry.FILE_UPLOAD_CONTENT_TYPE;
                 ResultObject[FileEntry.FILE_DOWNLOAD_UPLOAD_EXPIRY_MINUTES_PROPERTY] = FileEntry.EXPIRY_MINUTES;
             }
 
@@ -225,13 +226,13 @@ namespace CADFileService
                 return _FailureResponse;
             }
 
-            var PreviousProcessStage = RevisionObject.FileEntry.FileProcessStage;
-            if (PreviousProcessStage == (int)Constants.EProcessStage.NotUploaded)
+            var PreviousProcessStage = RevisionObject.FileEntry.FileUploadProcessStage;
+            if (PreviousProcessStage == (int)EUploadProcessStage.NotUploaded)
             {
                 return BWebResponse.NotFound("Raw files have not been uploaded.");
             }
 
-            //if (RevisionObject.FileEntry.FileProcessStage == (int)Constants.EProcessStage.Uploaded_Processing)
+            //if (RevisionObject.FileEntry.FileUploadProcessStage == (int)EUploadProcessStage.Uploaded_Processing)
             //{
             //    var RequestObject = new JObject()
             //    {
@@ -276,9 +277,11 @@ namespace CADFileService
             var FileType = RevisionObject.FileEntry.FileEntryFileType;
             RevisionObject.FileEntry = new FileEntry()
             {
-                FileEntryFileType = FileType
+                FileEntryFileType = FileType,
+                CurrentProcessStage = (int)EProcessStage.Stage0_FileUpload,
+                FileUploadProcessStage = (int)EUploadProcessStage.NotUploaded
             };
-            RevisionObject.FileEntry.SetRelativeUrls_GetCommonUrlPart_FileEntryFileTypePreSet(RequestedModelID, RequestedRevisionIndex);
+            RevisionObject.FileEntry.FileRelativeUrl = RevisionObject.FileEntry.GetFileRelativeUrl(RequestedModelID, RequestedRevisionIndex);
 
             ModelObject.MRVLastUpdateTime = CommonMethods.GetTimeAsCreationTime();
 
@@ -300,7 +303,7 @@ namespace CADFileService
             _ErrorMessageAction);
 
             return BWebResponse.StatusOK("Raw " 
-                + (PreviousProcessStage == (int)Constants.EProcessStage.Uploaded_Processed ? "and processed models have " : "model has ")
+                + (PreviousProcessStage == (int)EUploadProcessStage.Uploaded_Processed ? "and processed models have " : "model has ")
                 + "been deleted.");
         }
 
@@ -319,7 +322,7 @@ namespace CADFileService
                 return _FailureResponse;
             }
 
-            if (RevisionObject.FileEntry.FileProcessStage == (int)Constants.EProcessStage.NotUploaded)
+            if (RevisionObject.FileEntry.FileUploadProcessStage == (int)EUploadProcessStage.NotUploaded)
             {
                 return BWebResponse.NotFound("Raw file has not been uploaded yet.");
             }
@@ -327,7 +330,7 @@ namespace CADFileService
             if (!FileService.CreateSignedURLForDownload(
                 out string DownloadUrl, 
                 CadFileStorageBucketName,
-                RevisionObject.FileEntry.RawFileRelativeUrl,
+                RevisionObject.FileEntry.FileRelativeUrl,
                 FileEntry.EXPIRY_MINUTES, 
                 _ErrorMessageAction))
             {

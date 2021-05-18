@@ -59,6 +59,7 @@ namespace CADProcessService
 
                     new string[] { "DEPLOYMENT_BRANCH_NAME" },
                     new string[] { "DEPLOYMENT_BUILD_NUMBER" },
+                    new string[] { "INTERNAL_CALL_PRIVATE_KEY" },
 
                     new string[] { "REDIS_ENDPOINT" },
                     new string[] { "REDIS_PORT" },
@@ -161,6 +162,8 @@ namespace CADProcessService
                 return;
             }
 
+            Dictionary<string, string> VirtualMachineDictionary = JsonConvert.DeserializeObject<Dictionary<string, string>>(ServInit.RequiredEnvironmentVariables["VM_UUID_NAME_LIST"]);
+
             var CadFileStorageBucketName = ServInit.RequiredEnvironmentVariables["CAD_FILE_STORAGE_BUCKET"];
 
             var RootPath = "/";
@@ -169,13 +172,23 @@ namespace CADProcessService
                 RootPath = "/" + ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BRANCH_NAME"] + "/";
             }
 
+            var InitializerThread = new Thread(() =>
+            {
+                Thread.CurrentThread.IsBackground = true;
+
+                Controller_AtomicDBOperation.Get().StartTimeoutCheckOperation(WebServiceBaseTimeoutableProcessor.OnTimeoutNotificationReceived);
+            });
+            InitializerThread.Start();
+
+            var InternalCallPrivateKey = ServInit.RequiredEnvironmentVariables["INTERNAL_CALL_PRIVATE_KEY"];
+
             /*
             * Web-http service initialization
             */
             var WebServiceEndpoints = new List<BWebPrefixStructure>()
             {
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/start" }, () => new StartProcessRequest(ServInit.MemoryService, ServInit.DatabaseService, ServInit.VMService, VMList)),
-                new BWebPrefixStructure(new string[] { RootPath + "3d/process/stop" }, () => new StopProcessRequest(ServInit.DatabaseService)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/process/stop" }, () => new StopProcessRequest(ServInit.DatabaseService, ServInit.VMService, VirtualMachineDictionary)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/job-complete/*" }, () => new BatchJobCompleteRequest(ServInit.DatabaseService, ServInit.FileService, ServInit.MemoryService)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/fetch_task/*" }, () => new GetModelProcessTask( ServInit.FileService,ServInit.DatabaseService, ServInit.MemoryService, CadFileStorageBucketName)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/get_signed_upload_url_for_unreal_file/*" }, () => new GetSignedUploadUrlRequest(ServInit.FileService, CadFileStorageBucketName)),

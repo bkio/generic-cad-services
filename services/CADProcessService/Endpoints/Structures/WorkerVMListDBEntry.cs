@@ -1,9 +1,11 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using ServiceUtilities;
-using ServiceUtilities_All.Common;
+﻿/// MIT License, Copyright Burak Kara, burak@burak.io, https://en.wikipedia.org/wiki/MIT_License
+
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using ServiceUtilities;
+using ServiceUtilities.Common;
 
 namespace CADProcessService.Endpoints.Structures
 {
@@ -53,7 +55,7 @@ namespace CADProcessService.Endpoints.Structures
         public int VMStatus = (int)EVMStatus.Available;
 
         [JsonProperty(PROCESS_START_DATE_PROPERTY)]
-        public DateTime ProcessStartDate { get; set; }
+        public string ProcessStartDate = Methods.GetNowAsLongDateAndTimeString();
 
         [JsonProperty(MODEL_UNIQUE_NAME_PROPERTY)]
         public string ModelName { get; set; }
@@ -62,7 +64,7 @@ namespace CADProcessService.Endpoints.Structures
         public int RevisionIndex { get; set; }
 
         [JsonProperty(STAGE_PROCESS_START_DATES_PROPERTY)]
-        public List<DateTime> StageProcessStartDates = new List<DateTime>();
+        public List<string> StageProcessStartDates = new List<string>();
 
         [JsonProperty(CURRENT_PROCESS_STAGE_PROPERTY)]
         public int CurrentProcessStage = (int)EProcessStage.Stage0_FileUpload;
