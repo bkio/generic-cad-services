@@ -26,6 +26,7 @@ namespace CADProcessService.Endpoints
 
         public StartProcessRequest(IBMemoryServiceInterface _MemoryService, IBDatabaseServiceInterface _DatabaseService, IBVMServiceInterface _VMService, Dictionary<string, string> _VirtualMachines) : base()
         {
+            MemoryService = _MemoryService;
             DatabaseService = _DatabaseService;
             VMService = _VMService;
             VirtualMachines = _VirtualMachines;
@@ -224,16 +225,22 @@ namespace CADProcessService.Endpoints
             MemoryLocker.LockedAction("UpdateVmStatus", MemoryService, () =>
             {
                 WorkerVMListDBEntry VmEntry = GetAvailableVm(out string _VMID, out string _VMName, _ErrorMessageAction);
+                VmEntry.CurrentProcessStage = NewDBEntry.ConversionStage;
+
+                VmEntry.StageProcessStartDates.Clear();
+                VmEntry.StageProcessStartDates.Add(DateTime.Now);
+                VmEntry.ProcessStartDate = DateTime.Now;
 
                 StartVM(_VMName, VmEntry, () =>
                 {
 
                     VmEntry.VMStatus = (int)EVMStatus.Busy;
+
                     DatabaseService.UpdateItem(
                     WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
                     WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
                     new BPrimitiveType(_VMID),
-                    JObject.Parse(JsonConvert.SerializeObject(NewDBEntry)),
+                    JObject.Parse(JsonConvert.SerializeObject(VmEntry)),
                     out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
                     UpdateCondition,
                     _ErrorMessageAction);

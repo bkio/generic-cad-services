@@ -7,8 +7,8 @@ namespace CADProcessService.Endpoints.Structures
     public class FileConversionProgressData
     {
         public string ModelName { get; set; }
-        public int GlobalCurrentStage { get; set; }
         public int ModelRevision { get; set; }
+        public int GlobalCurrentStage { get; set; }
         public int NavisworksTriangleCount { get; set; }
         public int NavisworksTargetChunkCount { get; set; }
         public int NavisworksChunksComplete { get; set; }

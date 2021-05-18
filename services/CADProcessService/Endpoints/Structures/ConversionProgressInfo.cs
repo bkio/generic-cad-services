@@ -6,9 +6,11 @@ namespace CADProcessService.Endpoints.Structures
 {
     public class ConversionProgressInfo
     {
-        public string Info { get; set; }
+        public Guid ProcessId { get; set; }
+        public string VMId { get; set; }
         public int NotificationType { get; set; }
-
+        public int ProcessStatus { get; set; }
+        public string Info { get; set; }
         public bool ProcessFailed { get; set; }
 
         public FileConversionProgressData ProgressDetails;
