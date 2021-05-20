@@ -14,6 +14,7 @@ using CADProcessService.K8S;
 using ServiceUtilities;
 using ServiceUtilities.Common;
 using CADProcessService.Endpoints.Controllers;
+using CADProcessService.Endpoints.Common;
 
 namespace CADProcessService.Endpoints
 {
@@ -23,13 +24,10 @@ namespace CADProcessService.Endpoints
 
         private readonly IBVMServiceInterface VirtualMachineService;
 
-        private readonly Dictionary<string, string> VirtualMachineDictionary;
-
-        public StopProcessRequest(IBDatabaseServiceInterface _DatabaseService, IBVMServiceInterface _VirtualMachineService, Dictionary<string, string> _VirtualMachineDictionary) : base()
+        public StopProcessRequest(IBDatabaseServiceInterface _DatabaseService, IBVMServiceInterface _VirtualMachineService) : base()
         {
             DatabaseService = _DatabaseService;
             VirtualMachineService = _VirtualMachineService;
-            VirtualMachineDictionary = _VirtualMachineDictionary;
         }
 
         public override BWebServiceResponse OnRequest_Interruptable(HttpListenerContext _Context, Action<string> _ErrorMessageAction = null)
@@ -209,33 +207,16 @@ namespace CADProcessService.Endpoints
 
             if (VirtualMachineEntry != null)
             {
-                string VirtualMachineName = VirtualMachineDictionary[_RequestedVirtualMachineId];
-
-                if (!VirtualMachineService.StopInstances(new string[] { VirtualMachineName },
-                    () =>
-                    {
-                        if (!UpdateDBVirtualMachineAvailability(_RequestedVirtualMachineId, _ErrorMessageAction, VirtualMachineName, VirtualMachineEntry))
-                        {
-                            _ErrorMessageAction?.Invoke($"Failed to update worker-vm-list database for virtual machine [{VirtualMachineName}]");
-                        }
-
-                        if (!UpdateDBProcessHistory(_Context, VirtualMachineEntry, _ErrorMessageAction))
-                        {
-                            _ErrorMessageAction?.Invoke($"Failed to update process-history database for virtual machine [{VirtualMachineName}]");
-                        }
-
-                        Controller_BatchProcess.Get().BroadcastBatchProcessAction(new Action_BatchProcessFailed()
-                        {
-                            ModelName = VirtualMachineEntry.ModelName,
-                            RevisionIndex = VirtualMachineEntry.RevisionIndex
-                        },_ErrorMessageAction);
-                    },
-                    () =>
-                    {
-                        _ErrorMessageAction?.Invoke($"Failed to stop virtual machine [{VirtualMachineName}]");
-                    }, _ErrorMessageAction))
+                if (!CommonMethods.StopVirtualMachine(
+                    VirtualMachineService, 
+                    DatabaseService, 
+                    InnerProcessor, 
+                    VirtualMachineEntry, 
+                    _RequestedVirtualMachineId, 
+                    _ErrorMessageAction,
+                    out BWebServiceResponse _FailureResponse))
                 {
-                    FailureResponse = BWebResponse.InternalError($"Failed to stop virtual machine [{VirtualMachineName}]");
+                    FailureResponse = _FailureResponse;
                     return false;
                 }
             }
@@ -245,89 +226,6 @@ namespace CADProcessService.Endpoints
                 return false;
             }
 
-            return true;
-        }
-
-        private bool UpdateDBVirtualMachineAvailability(
-            string _RequestedVirtualMachineId,
-            Action<string> _ErrorMessageAction,
-            string VirtualMachineName,
-            WorkerVMListDBEntry _VirtualMachineEntry)
-        {
-            try
-            {
-                if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(), _RequestedVirtualMachineId, _ErrorMessageAction))
-                {
-                    _ErrorMessageAction?.Invoke($"Failed to update db for [{VirtualMachineName}] because atomic db operation has been failed.");
-                    return false;
-                }
-                _VirtualMachineEntry.VMStatus = (int)EVMStatus.Available;
-
-                if (!DatabaseService.UpdateItem(
-                WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
-                WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
-                new BPrimitiveType(_RequestedVirtualMachineId),
-                JObject.Parse(JsonConvert.SerializeObject(_VirtualMachineEntry)),
-                out JObject _, EBReturnItemBehaviour.DoNotReturn,
-                DatabaseService.BuildAttributeNotExistCondition(WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID),
-                _ErrorMessageAction))
-                {
-                    _ErrorMessageAction?.Invoke($"Failed to update worker-vm-list table for [{VirtualMachineName}]");
-                    return false;
-                }
-            }
-            catch (System.Exception ex)
-            {
-                _ErrorMessageAction?.Invoke($"Failed to update worker-vm-list table for [{VirtualMachineName}]. Error: {ex.Message}. Trace: {ex.StackTrace}");
-                return false;
-            }
-            finally
-            {
-                Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(InnerProcessor, WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(), _RequestedVirtualMachineId, _ErrorMessageAction);
-            }
-            return true;
-        }
-
-        private bool UpdateDBProcessHistory(
-            HttpListenerContext _Context,
-            WorkerVMListDBEntry _VirtualMachineEntry,
-            Action<string> _ErrorMessageAction)
-        {
-            try
-            {
-                if (!Methods.GenerateNonExistentUniqueID(this, DatabaseService, 
-                    ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(),
-                    ProcessHistoryDBEntry.KEY_NAME_PROCESS_ID,
-                    ProcessHistoryDBEntry.MustHaveProperties,
-                    EGetClearance.Yes,
-                    out string ProcessID,
-                    out BWebServiceResponse _,
-                    _ErrorMessageAction))
-                {
-                    _ErrorMessageAction?.Invoke("Failed to generate non-existent unique id for process-history table.");
-                    return false;
-                }
-
-                var NewProcessHistoryObject = new JObject() { 
-                    [ProcessHistoryDBEntry.MODEL_UNIQUE_NAME_PROPERTY] = _VirtualMachineEntry.ModelName,
-                    [ProcessHistoryDBEntry.MODEL_REVISION_INDEX_PROPERTY] = _VirtualMachineEntry.RevisionIndex,
-                    [ProcessHistoryDBEntry.CURRENT_PROCESS_STAGE_PROPERTY] = _VirtualMachineEntry.CurrentProcessStage,
-                    [ProcessHistoryDBEntry.HISTORY_RECORD_DATE_PROPERTY] = Methods.GetUtcNowShortDateAndLongTimeString(),
-                    [ProcessHistoryDBEntry.PROCESS_STATUS_PROPERTY] = (int)EProcessStatus.Canceled,
-                    [ProcessHistoryDBEntry.PROCESS_INFO_PROPERTY] = "Stop process has been called."
-                };
-                Controller_DeliveryEnsurer.Get().DB_PutItem_FireAndForget(
-                    _Context,
-                    ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(),
-                    ProcessHistoryDBEntry.KEY_NAME_PROCESS_ID,
-                    new BPrimitiveType(ProcessID),
-                    JObject.Parse(JsonConvert.SerializeObject(NewProcessHistoryObject)));
-            }
-            catch (System.Exception ex)
-            {
-                _ErrorMessageAction?.Invoke($"Failed to add process-history record. Error: {ex.Message}. Trace: {ex.StackTrace}");
-                return false;
-            }
             return true;
         }
     }

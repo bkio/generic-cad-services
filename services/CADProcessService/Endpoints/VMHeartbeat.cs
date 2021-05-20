@@ -87,46 +87,19 @@ namespace CADProcessService.Endpoints
 
                 if (VirtualMachineEntry != null)
                 {
-                    if (!DatabaseService.ScanTable(ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(), out List<JObject> ProcessHistoriesJO, _ErrorMessageAction))
+                    if(VirtualMachineEntry.LastKnownProcessStatus == (int)EProcessStatus.Canceled)
                     {
-                        return BWebResponse.InternalError("Scan-table operation has failed.");
-                    }
-
-                    string _LastHistoryObjectString = null;
-                    DateTime _LastHistoryDate = DateTime.MinValue;
-                    foreach (var CurrentHistory in ProcessHistoriesJO)
-                    {
-                        var History = JsonConvert.DeserializeObject<ProcessHistoryDBEntry>(CurrentHistory.ToString());
-                        if (History.ModelName.Equals(VirtualMachineEntry.ModelName) && History.RevisionIndex == VirtualMachineEntry.RevisionIndex)
+                        return BWebResponse.StatusOK("The current process is canceled", new JObject()
                         {
-                            if (Methods.TryParseDateTimeFromUtcNowString(History.HistoryRecordDate, out DateTime ParsedHistoryDate))
-                            {
-                                if (ParsedHistoryDate.Ticks > _LastHistoryDate.Ticks)
-                                {
-                                    _LastHistoryDate = new DateTime(ParsedHistoryDate.Ticks);
-                                    _LastHistoryObjectString = CurrentHistory.ToString();
-                                }
-                            }
-                        }
-                    }
-
-                    if (!string.IsNullOrEmpty(_LastHistoryObjectString))
-                    {
-                        var LastHistory = JsonConvert.DeserializeObject<ProcessHistoryDBEntry>(_LastHistoryObjectString);
-                        if (LastHistory.ProcessStatus == (int)EProcessStatus.Canceled
-                            || LastHistory.ProcessStatus == (int)EProcessStatus.Failed)
-                        {
-                            return BWebResponse.ServiceUnavailable("The current process is canceled or failed.");
-                        }
-                    }
-                    else
-                    {
-                        return BWebResponse.NotFound($"The current process is not found with RequestedVirtualMachineId:{_RequestedVirtualMachineId}.");
+                            ["modelUniqueName"] = VirtualMachineEntry.ModelName,
+                            ["revisionIndex"] = VirtualMachineEntry.RevisionIndex,
+                            ["processStatus"] = VirtualMachineEntry.LastKnownProcessStatus
+                        });
                     }
                 }
                 else
                 {
-                    return BWebResponse.NotFound($"The current process is not found with RequestedVirtualMachineId:{_RequestedVirtualMachineId}.");
+                    return BWebResponse.NotFound($"Virtual Machine ID could not be found. vmUniqueId: {_RequestedVirtualMachineId}.");
                 }
 
                 return BWebResponse.StatusOK("OK");
