@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ServiceUtilities;
 using ServiceUtilities.Common;
-using System;
+using System.Collections.Generic;
 
 namespace CADProcessService.Endpoints.Structures
 {
@@ -18,20 +18,18 @@ namespace CADProcessService.Endpoints.Structures
 
         public const string MODEL_UNIQUE_NAME_PROPERTY = "modelUniqueName";
         public const string MODEL_REVISION_INDEX_PROPERTY = "revisionIndex";
-        public const string HISTORY_RECORD_DATE_PROPERTY = "historyRecordDate";
         public const string CURRENT_PROCESS_STAGE_PROPERTY = "currentProcessStage";
         public const string PROCESS_STATUS_PROPERTY = "processStatus";
-        public const string PROCESS_INFO_PROPERTY = "processInfo";
+        public const string HISTORY_RECORDS_PROPERTY = "historyRecords";
 
         //All fields
         public static readonly string[] Properties =
         {
             MODEL_UNIQUE_NAME_PROPERTY,
             MODEL_REVISION_INDEX_PROPERTY,
-            HISTORY_RECORD_DATE_PROPERTY,
+            HISTORY_RECORDS_PROPERTY,
             CURRENT_PROCESS_STAGE_PROPERTY,
-            PROCESS_STATUS_PROPERTY,
-            PROCESS_INFO_PROPERTY
+            PROCESS_STATUS_PROPERTY
         };
 
         //For creating a new model; these properties should also exist in UpdatableProperties
@@ -40,7 +38,7 @@ namespace CADProcessService.Endpoints.Structures
             MODEL_UNIQUE_NAME_PROPERTY,
             MODEL_REVISION_INDEX_PROPERTY,
             CURRENT_PROCESS_STAGE_PROPERTY,
-            HISTORY_RECORD_DATE_PROPERTY,
+            HISTORY_RECORDS_PROPERTY,
             PROCESS_STATUS_PROPERTY
         };
 
@@ -53,14 +51,11 @@ namespace CADProcessService.Endpoints.Structures
         [JsonProperty(PROCESS_STATUS_PROPERTY)]
         public int ProcessStatus = (int)EProcessStatus.Idle;
 
-        [JsonProperty(HISTORY_RECORD_DATE_PROPERTY)]
-        public string HistoryRecordDate = Methods.GetNowAsLongDateAndTimeString();
+        [JsonProperty(HISTORY_RECORDS_PROPERTY)]
+        public List<HistoryRecord> HistoryRecords = new List<HistoryRecord>();
 
         [JsonProperty(CURRENT_PROCESS_STAGE_PROPERTY)]
         public int CurrentProcessStage = (int)EProcessStage.Stage0_FileUpload;
-
-        [JsonProperty(PROCESS_INFO_PROPERTY)]
-        public string ProcessInfo { get; set; }
 
         public void Merge(JObject _Content)
         {
@@ -70,14 +65,12 @@ namespace CADProcessService.Endpoints.Structures
                 ModelName = ContentObject.ModelName;
             if (_Content.ContainsKey(MODEL_REVISION_INDEX_PROPERTY))
                 RevisionIndex = ContentObject.RevisionIndex;
-            if (_Content.ContainsKey(HISTORY_RECORD_DATE_PROPERTY))
-                HistoryRecordDate = ContentObject.HistoryRecordDate;
+            if (_Content.ContainsKey(HISTORY_RECORDS_PROPERTY))
+                HistoryRecords = ContentObject.HistoryRecords;
             if (_Content.ContainsKey(CURRENT_PROCESS_STAGE_PROPERTY))
                 CurrentProcessStage = ContentObject.CurrentProcessStage;
             if (_Content.ContainsKey(PROCESS_STATUS_PROPERTY))
                 ProcessStatus = ContentObject.ProcessStatus;
-            if (_Content.ContainsKey(PROCESS_INFO_PROPERTY))
-                ProcessInfo = ContentObject.ProcessInfo;
         }
     }
 }

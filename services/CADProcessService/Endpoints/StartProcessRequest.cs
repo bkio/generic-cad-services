@@ -143,6 +143,7 @@ namespace CADProcessService.Endpoints
                         if (ParsedBody.ContainsKey("lodParameters"))
                         {
                             NewDBEntry.LodParameters = (string)ParsedBody["lodParameters"];
+                        }
                         if (ParsedBody.ContainsKey("cullingThresholds"))
                         {
                             NewDBEntry.CullingThresholds = (string)ParsedBody["cullingThresholds"];
