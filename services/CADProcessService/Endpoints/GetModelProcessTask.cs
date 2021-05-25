@@ -6,7 +6,9 @@ using CADProcessService.Endpoints.Utilities;
 using CADProcessService.K8S;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using ServiceUtilities;
 using ServiceUtilities.All;
+using ServiceUtilities.PubSubUsers.PubSubRelated;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -14,7 +16,7 @@ using System.Text;
 
 namespace CADProcessService.Endpoints
 {
-    public class GetModelProcessTask : BppWebServiceBase
+    public class GetModelProcessTask : WebServiceBaseTimeoutableDeliveryEnsurerUser
     {
         private const string UPLOAD_CONTENT_TYPE = "application/octet-stream";
         private const int UPLOAD_URL_VALIDITY_MINUTES = 1440;
@@ -36,7 +38,7 @@ namespace CADProcessService.Endpoints
             MemoryService = _MemoryService;
         }
 
-        protected override BWebServiceResponse OnRequestPP(HttpListenerContext _Context, Action<string> _ErrorMessageAction = null)
+        public override BWebServiceResponse OnRequest_Interruptable_DeliveryEnsurerUser(HttpListenerContext _Context, Action<string> _ErrorMessageAction = null)
         {
             GetTracingService()?.On_FromServiceToService_Received(_Context, _ErrorMessageAction);
 
@@ -47,67 +49,70 @@ namespace CADProcessService.Endpoints
             return Result;
         }
 
+
         private BWebServiceResponse OnRequest_Internal(HttpListenerContext _Context, Action<string> _ErrorMessageAction = null)
         {
             BWebServiceResponse Response = BWebResponse.NotFound("No task was found to process");
 
-            MemoryLocker.LockedAction("ProcessTaskCheck", MemoryService, () =>
+
+            if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(), "GETTASK", _ErrorMessageAction))
             {
-                if (DatabaseService.ScanTable(FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(), out List<JObject> ConversionItems, _ErrorMessageAction))
+                return BWebResponse.InternalError($"Failed to get access to database record");
+            }
+
+            if (DatabaseService.ScanTable(FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(), out List<JObject> ConversionItems, _ErrorMessageAction))
+            {
+                if (ConversionItems != null)
                 {
-                    if (ConversionItems != null)
+                    foreach (var ConvertItem in ConversionItems)
                     {
-                        foreach (var ConvertItem in ConversionItems)
+                        FileConversionDBEntry Entry = ConvertItem.ToObject<FileConversionDBEntry>();
+                        string Key = (string)ConvertItem[FileConversionDBEntry.KEY_NAME_CONVERSION_ID];
+                        int Stage = Entry.ConversionStage;
+
+                        if (Entry.ConversionStatus == (int)EInternalProcessStage.Queued)
                         {
-                            FileConversionDBEntry Entry = ConvertItem.ToObject<FileConversionDBEntry>();
-                            string Key = (string)ConvertItem[FileConversionDBEntry.KEY_NAME_CONVERSION_ID];
-                            int Stage = Entry.ConversionStage;
+                            Entry.ConversionStage = (int)EInternalProcessStage.Processing;
 
-                            if (Stage < 5 && Entry.ConversionStatus == (int)EInternalProcessStage.Queued)
+                            if (!DatabaseService.UpdateItem(
+                            FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
+                            FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
+                            new BPrimitiveType(Entry.BucketName),
+                            JObject.Parse(JsonConvert.SerializeObject(Entry)),
+                            out JObject _, EBReturnItemBehaviour.DoNotReturn,
+                            null,
+                            _ErrorMessageAction))
                             {
-                                Entry.ConversionStage = (int)EInternalProcessStage.Processing;
+                                Response = BWebResponse.InternalError("Experienced a Database error");
+                            }
+                            else
+                            {
+                                ModelProcessTask Task = new ModelProcessTask();
 
-                                if (!DatabaseService.UpdateItem(
-                                FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
-                                FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
-                                new BPrimitiveType(Entry.BucketName),
-                                JObject.Parse(JsonConvert.SerializeObject(Entry)),
-                                out JObject _, EBReturnItemBehaviour.DoNotReturn,
-                                null,
-                                _ErrorMessageAction))
-                                {
-                                    Response = BWebResponse.InternalError("Experienced a Database error");
-                                }
-                                else
-                                {
-                                    ModelProcessTask Task = new ModelProcessTask();
+                                Task.CullingThresholds = Entry.CullingThresholds;
+                                Task.GlobalScale = Entry.GlobalScale;
+                                Task.GlobalXOffset = Entry.GlobalXOffset;
+                                Task.GlobalXRotation = Entry.GlobalXRotation;
+                                Task.GlobalYOffset = Entry.GlobalYOffset;
+                                Task.GlobalYRotation = Entry.GlobalYRotation;
+                                Task.GlobalZOffset = Entry.GlobalZOffset;
+                                Task.GlobalZRotation = Entry.GlobalZRotation;
+                                Task.LevelThresholds = Entry.LevelThresholds;
+                                Task.LodParameters = Entry.LodParameters;
+                                Task.ModelName = Entry.ModelName;
+                                Task.ModelRevision = Entry.ModelRevision;
+                                Task.ProcessStep = Entry.ConversionStage;
 
-                                    Task.CullingThresholds = Entry.CullingThresholds;
-                                    Task.GlobalScale = Entry.GlobalScale;
-                                    Task.GlobalXOffset = Entry.GlobalXOffset;
-                                    Task.GlobalXRotation = Entry.GlobalXRotation;
-                                    Task.GlobalYOffset = Entry.GlobalYOffset;
-                                    Task.GlobalYRotation = Entry.GlobalYRotation;
-                                    Task.GlobalZOffset = Entry.GlobalZOffset;
-                                    Task.GlobalZRotation = Entry.GlobalZRotation;
-                                    Task.LevelThresholds = Entry.LevelThresholds;
-                                    Task.LodParameters = Entry.LodParameters;
-                                    Task.ModelName = Entry.ModelName;
-                                    Task.ModelRevision = Entry.ModelRevision;
-                                    Task.ProcessStep = Entry.ConversionStage;
+                                FileService.CreateSignedURLForDownload(out string _StageDownloadUrl, Entry.BucketName, $"raw/{Entry.ModelName}/{Entry.ModelRevision}/stages/{Entry.ConversionStage}/Files.zip", 60, _ErrorMessageAction);
+                                Task.StageDownloadUrl = _StageDownloadUrl;
 
-                                    FileService.CreateSignedURLForDownload(out string _StageDownloadUrl, Entry.BucketName, $"raw/{Entry.ModelName}/{Entry.ModelRevision}/stages/{Entry.ConversionStage}/Files.zip", 60, _ErrorMessageAction);
-                                    Task.StageDownloadUrl = _StageDownloadUrl;
-
-                                    Response = new BWebServiceResponse(200, new BStringOrStream(JsonConvert.SerializeObject(Task)));
-                                    return true;
-                                }
+                                Response = new BWebServiceResponse(200, new BStringOrStream(JsonConvert.SerializeObject(Task)));
                             }
                         }
                     }
                 }
-                return true;
-            });
+            }
+            Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(InnerProcessor, FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(), "GETTASK", _ErrorMessageAction);
 
             return Response;
         }

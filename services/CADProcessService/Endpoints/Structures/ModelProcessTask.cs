@@ -4,6 +4,12 @@ using System.Text;
 
 namespace CADProcessService.Endpoints.Structures
 {
+    public class FilterInfo
+    {
+        public int FilterType { get; set; }
+        public string FilterDefinition { get; set; }
+        public string FilterName { get; set; }
+    }
     public class ModelProcessTask
     {
         public string StageDownloadUrl { get; set; }
@@ -24,5 +30,6 @@ namespace CADProcessService.Endpoints.Structures
         public float[] LevelThresholds { get; set; }
         public string LodParameters { get; set; }
         public string CullingThresholds { get; set; }
+        public List<FilterInfo> Filters { get; set; }
     }
 }

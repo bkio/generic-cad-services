@@ -12,6 +12,7 @@ namespace CADProcessService.Endpoints.Structures
         public int ProcessStatus { get; set; }
         public string Info { get; set; }
         public bool ProcessFailed { get; set; }
+        public string ConversionId { get; set; }
 
         public FileConversionProgressData ProgressDetails;
     }

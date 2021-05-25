@@ -55,6 +55,7 @@ namespace CADProcessService.Endpoints
             {
                 FileTypeStageStr = _Context.Request.QueryString.Get("fileType").ToLower().Trim().TrimStart('.');
                 Revision = int.Parse(_Context.Request.QueryString.Get("revision").ToLower().Trim().TrimStart('.'));
+                modelName = _Context.Request.QueryString.Get("modelName").ToLower().Trim().TrimStart('.');
 
             }
             catch
@@ -97,13 +98,13 @@ namespace CADProcessService.Endpoints
                 return BWebResponse.BadRequest($"Expected parameters have not been provided");
             }
 
-            BatchProcessingCreationService.Instance.GetBucketAndFile(Podname, out string _Bucket, out string _Filename);
+            //BatchProcessingCreationService.Instance.GetBucketAndFile(Podname, out string _Bucket, out string _Filename);
 
-            if (!string.IsNullOrWhiteSpace(_Bucket) && !string.IsNullOrWhiteSpace(_Filename))
+            if (/*!string.IsNullOrWhiteSpace(_Bucket) &&*/ !string.IsNullOrWhiteSpace(Filename))
             {
-                string RawStrippedPath = _Filename.TrimStart("raw/");
-                int FilenameStripLength = RawStrippedPath.LastIndexOf('/');
-                RawStrippedPath = RawStrippedPath.Substring(0, FilenameStripLength);
+                //string RawStrippedPath = Filename.TrimStart("raw/");
+                //int FilenameStripLength = RawStrippedPath.LastIndexOf('/');
+                //RawStrippedPath = RawStrippedPath.Substring(0, FilenameStripLength);
 
                 if (!FileService.CreateSignedURLForUpload(out string SignedUploadUrl, CadFileStorageBucketName, $"raw/{modelName}/{Revision}/stages/{FileTypeStageStr}/{Filename}.zip", UPLOAD_CONTENT_TYPE, UPLOAD_URL_VALIDITY_MINUTES, _ErrorMessageAction))
                 {

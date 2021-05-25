@@ -137,7 +137,7 @@ namespace CADProcessService
                 }
                 catch (Exception) { }
 
-                BatchProcessingCreationService.Initialize(
+                /*BatchProcessingCreationService.Initialize(
                     ServInit.DatabaseService,
                     ServInit.FileService,
                     ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BRANCH_NAME"],
@@ -152,7 +152,7 @@ namespace CADProcessService
                     (string Message) =>
                     {
                         ServInit.LoggingService.WriteLogs(BLoggingServiceMessageUtility.Single(EBLoggingServiceLogType.Info, Message), ServInit.ProgramID, "WebService");
-                    });
+                    });*/
 
             }
             catch (Exception ex)
@@ -195,9 +195,12 @@ namespace CADProcessService
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/fetch_task/*" }, () => new GetModelProcessTask( ServInit.FileService,ServInit.DatabaseService, ServInit.MemoryService, CadFileStorageBucketName)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/get_signed_upload_url_for_unreal_file/*" }, () => new GetSignedUploadUrlRequest(ServInit.FileService, CadFileStorageBucketName)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/get_file_optimizer_parameters/*" }, () => new GetOptimizerParametersRequest(ServInit.DatabaseService)),
-                new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/notify-progress/*" }, () => new NotifyProgressRequest(ServInit.MemoryService, ServInit.DatabaseService, ServInit.PubSubService))
+                new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/notify-progress/*" }, () => new NotifyProgressRequest(ServInit.MemoryService, ServInit.DatabaseService, ServInit.PubSubService)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/notify-complete/*" }, () => new NotifyCompleteRequest(ServInit.MemoryService, ServInit.DatabaseService, ServInit.PubSubService))
             };
+
             var BWebService = new BWebService(WebServiceEndpoints.ToArray(), ServInit.ServerPort/*, ServInit.TracingService*/);
+
             BWebService.Run((string Message) =>
             {
                 ServInit.LoggingService.WriteLogs(BLoggingServiceMessageUtility.Single(EBLoggingServiceLogType.Info, Message), ServInit.ProgramID, "WebService");

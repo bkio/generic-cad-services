@@ -4,8 +4,10 @@ using BWebServiceUtilities;
 using CADProcessService.Endpoints.Structures;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using ServiceUtilities;
 using ServiceUtilities.All;
-using ServiceUtilities_All.Common;
+using ServiceUtilities.Common;
+using ServiceUtilities.PubSubUsers.PubSubRelated;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,7 +16,7 @@ using System.Text;
 
 namespace CADProcessService.Endpoints
 {
-    public class NotifyCompleteRequest : BppWebServiceBase
+    public class NotifyCompleteRequest : WebServiceBaseTimeoutableDeliveryEnsurerUser
     {
         private readonly IBDatabaseServiceInterface DatabaseService;
         private readonly IBMemoryServiceInterface MemoryService;
@@ -27,7 +29,7 @@ namespace CADProcessService.Endpoints
             PubSubService = _PubSubService;
         }
 
-        protected override BWebServiceResponse OnRequestPP(HttpListenerContext _Context, Action<string> _ErrorMessageAction = null)
+        public override BWebServiceResponse OnRequest_Interruptable_DeliveryEnsurerUser(HttpListenerContext _Context, Action<string> _ErrorMessageAction = null)
         {
             GetTracingService()?.On_FromServiceToService_Received(_Context, _ErrorMessageAction);
 
@@ -37,6 +39,7 @@ namespace CADProcessService.Endpoints
 
             return Result;
         }
+
         private BWebServiceResponse OnRequest_Internal(HttpListenerContext _Context, Action<string> _ErrorMessageAction)
         {
             if (_Context.Request.HttpMethod != "POST")
@@ -44,7 +47,7 @@ namespace CADProcessService.Endpoints
                 _ErrorMessageAction?.Invoke("StartProcessRequest: POST methods is accepted. But received request method:  " + _Context.Request.HttpMethod);
                 return BWebResponse.MethodNotAllowed("POST methods is accepted. But received request method: " + _Context.Request.HttpMethod);
             }
-            
+
             using (var InputStream = _Context.Request.InputStream)
             {
                 using (var ResponseReader = new StreamReader(InputStream))
@@ -61,19 +64,50 @@ namespace CADProcessService.Endpoints
                     {
                         ProcessHistoryDBEntry HistoryEntry = _HistoryObject.ToObject<ProcessHistoryDBEntry>();
                         HistoryEntry.ProcessStatus = ProgressInfo.ProcessStatus;
-                        HistoryEntry.ProcessInfo = ProgressInfo.Info;
+                        HistoryEntry.CurrentProcessStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
+                        HistoryEntry.HistoryRecords.Add(new HistoryRecord()
+                        {
+                            ProcessInfo = ProgressInfo.Info,
+                            RecordDate = DateTime.Now.ToString(),
+                            RecordProcessStage = ProgressInfo.ProgressDetails.GlobalCurrentStage
+                        });
+
+                        if (!DatabaseService.UpdateItem(
+                            ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(),
+                            ProcessHistoryDBEntry.KEY_NAME_PROCESS_ID,
+                            new BPrimitiveType(ProgressInfo.ProcessId.ToString()),
+                            JObject.Parse(JsonConvert.SerializeObject(HistoryEntry)),
+                            out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
+                            null,
+                            _ErrorMessageAction))
+                        {
+                            //Error?
+                        }
                     }
                     else
                     {
                         ProcessHistoryDBEntry NewEntry = new ProcessHistoryDBEntry
                         {
-                            HistoryRecordDate = DateTime.Now.ToString(),
+                            HistoryRecords = new List<HistoryRecord>()
+                            {
+                                new HistoryRecord()
+                                {
+                                    ProcessInfo = ProgressInfo.Info,
+                                    RecordDate = DateTime.Now.ToString(),
+                                    RecordProcessStage = ProgressInfo.ProgressDetails.GlobalCurrentStage
+                                }
+                            },
+                            
                             CurrentProcessStage = ProgressInfo.ProgressDetails.GlobalCurrentStage,
                             ModelName = ProgressInfo.ProgressDetails.ModelName,
                             RevisionIndex = ProgressInfo.ProgressDetails.ModelRevision,
-                            ProcessInfo = ProgressInfo.Info,
                             ProcessStatus = ProgressInfo.ProcessStatus
                         };
+
+                        if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(), ProgressInfo.ProcessId.ToString(), _ErrorMessageAction))
+                        {
+                            return BWebResponse.InternalError($"Failed to get access to database record");
+                        }
 
                         DatabaseService.UpdateItem(
                             FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
@@ -82,6 +116,12 @@ namespace CADProcessService.Endpoints
                             JObject.Parse(JsonConvert.SerializeObject(NewEntry)),
                             out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
                             null,
+                            _ErrorMessageAction);
+
+                        Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(
+                            InnerProcessor,
+                            ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(),
+                            ProgressInfo.ProcessId.ToString(),
                             _ErrorMessageAction);
                     }
 
@@ -97,7 +137,7 @@ namespace CADProcessService.Endpoints
                         if (ProgressInfo.ProgressDetails.GlobalCurrentStage != Entry.CurrentProcessStage)
                         {
                             Entry.CurrentProcessStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
-                            Entry.StageProcessStartDates.Add(DateTime.Now.ToString());
+                            Entry.ProcessStartDate = DateTime.Now.ToString();
                             Entry.VMStatus = (int)EVMStatus.Available;
 
                             DatabaseService.UpdateItem(
@@ -109,6 +149,75 @@ namespace CADProcessService.Endpoints
                             null,
                             _ErrorMessageAction);
                         }
+                    }
+
+                    if (ProgressInfo.ProcessFailed)
+                    {
+                        if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(), ProgressInfo.ProcessId.ToString(), _ErrorMessageAction))
+                        {
+                            return BWebResponse.InternalError($"Failed to get access to database record");
+                        }
+
+                        if (DatabaseService.GetItem(
+                            FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
+                            FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
+                            new BPrimitiveType(ProgressInfo.ConversionId),
+                            FileConversionDBEntry.Properties,
+                            out JObject ConversionObject))
+                        {
+                            FileConversionDBEntry ConversionEntry = ConversionObject.ToObject<FileConversionDBEntry>();
+
+                            ConversionEntry.ConversionStatus = (int)EInternalProcessStage.ProcessFailed;
+                            ConversionEntry.ConversionStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
+
+                            if (!DatabaseService.UpdateItem(
+                                FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
+                                FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
+                                new BPrimitiveType(ProgressInfo.ConversionId),
+                                JObject.Parse(JsonConvert.SerializeObject(ConversionEntry)),
+                                out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
+                                null,
+                                _ErrorMessageAction))
+                            {
+                                return BWebResponse.Conflict("Failed to update file conversion entry");
+                            }
+                        }
+
+                        Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(InnerProcessor, ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(), ProgressInfo.ProcessId.ToString(), _ErrorMessageAction);
+                        //Do cad service pubsub here
+                    }else
+                    {
+                        if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(), ProgressInfo.ProcessId.ToString(), _ErrorMessageAction))
+                        {
+                            return BWebResponse.InternalError($"Failed to get access to database record");
+                        }
+
+                        if (DatabaseService.GetItem(
+                            FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
+                            FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
+                            new BPrimitiveType(ProgressInfo.ConversionId),
+                            FileConversionDBEntry.Properties,
+                            out JObject ConversionObject))
+                        {
+                            FileConversionDBEntry ConversionEntry = ConversionObject.ToObject<FileConversionDBEntry>();
+
+                            ConversionEntry.ConversionStatus = (int)EInternalProcessStage.ProcessComplete;
+                            ConversionEntry.ConversionStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
+
+                            if (!DatabaseService.UpdateItem(
+                                FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
+                                FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
+                                new BPrimitiveType(ProgressInfo.ConversionId),
+                                JObject.Parse(JsonConvert.SerializeObject(ConversionEntry)),
+                                out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
+                                null,
+                                _ErrorMessageAction))
+                            {
+                                return BWebResponse.Conflict("Failed to update file conversion entry");
+                            }
+                        }
+
+                        Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(InnerProcessor, ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(), ProgressInfo.ProcessId.ToString(), _ErrorMessageAction);
                     }
                 }
             }

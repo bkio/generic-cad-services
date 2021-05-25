@@ -14,7 +14,6 @@ using ServiceUtilities;
 using ServiceUtilities.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using ServiceUtilities_All.Common;
 
 namespace CADFileService.Endpoints
 {
@@ -82,12 +81,12 @@ namespace CADFileService.Endpoints
             {
                 if (!CommonMethods.TryGettingModelID(
                     DatabaseService,
-                    _Action.ModelID,
+                    _Action.ModelName,
                     out string _ModelID,
                     out BWebServiceResponse FailureResponse,
                     _ErrorMessageAction))
                 {
-                    _ErrorMessageAction?.Invoke($"Error: PubSub_Handler->UpdateModelBatchProcessFailed: ModelID could not find with this ModelName: {_Action.ModelID}->{_Action.RevisionIndex}");
+                    _ErrorMessageAction?.Invoke($"Error: PubSub_Handler->UpdateModelBatchProcessFailed: ModelID could not find with this ModelName: {_Action.ModelName}->{_Action.RevisionIndex}");
                     return false;
                 }
 
@@ -109,7 +108,7 @@ namespace CADFileService.Endpoints
                     {
                         if (_FailureResponse.StatusCode == BWebResponse.Error_NotFound_Code)
                         {
-                            _ErrorMessageAction?.Invoke($"Error: PubSub_Handler->UpdateModelBatchProcessFailed: Model/revision does not exist: {_Action.ModelID}->{_Action.RevisionIndex}");
+                            _ErrorMessageAction?.Invoke($"Error: PubSub_Handler->UpdateModelBatchProcessFailed: Model/revision does not exist: {_Action.ModelName}->{_Action.RevisionIndex}");
                             return true; //Should return 200
                         }
                         return false; //DB Error - Retry

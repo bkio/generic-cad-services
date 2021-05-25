@@ -12,8 +12,8 @@ using ServiceUtilities.All;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
-using ServiceUtilities_All.Common;
 using CADProcessService.Endpoints.Utilities;
+using ServiceUtilities.Common;
 
 namespace CADProcessService.Endpoints
 {
@@ -225,9 +225,8 @@ namespace CADProcessService.Endpoints
                 WorkerVMListDBEntry VmEntry = GetAvailableVm(out string _VMID, out string _VMName, _ErrorMessageAction);
                 VmEntry.CurrentProcessStage = NewDBEntry.ConversionStage;
 
-                VmEntry.StageProcessStartDates.Clear();
-                VmEntry.StageProcessStartDates.Add(DateTime.Now);
-                VmEntry.ProcessStartDate = DateTime.Now;
+                VmEntry.LastKnownProcessStatus = NewDBEntry.ConversionStage;
+                VmEntry.ProcessStartDate = DateTime.Now.ToString();
 
                 StartVM(_VMName, VmEntry, () =>
                 {
