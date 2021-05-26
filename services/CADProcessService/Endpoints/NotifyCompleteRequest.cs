@@ -133,21 +133,27 @@ namespace CADProcessService.Endpoints
                     out JObject _VMEntry,
                     _ErrorMessageAction))
                     {
-                        WorkerVMListDBEntry Entry = _VMEntry.ToObject<WorkerVMListDBEntry>();
-                        if (ProgressInfo.ProgressDetails.GlobalCurrentStage != Entry.CurrentProcessStage)
+                        if (_VMEntry != null)
                         {
-                            Entry.CurrentProcessStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
-                            Entry.ProcessStartDate = DateTime.Now.ToString();
-                            Entry.VMStatus = (int)EVMStatus.Available;
+                            WorkerVMListDBEntry Entry = _VMEntry.ToObject<WorkerVMListDBEntry>();
+                            if (ProgressInfo.ProgressDetails.GlobalCurrentStage != Entry.CurrentProcessStage)
+                            {
+                                Entry.CurrentProcessStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
+                                Entry.ProcessStartDate = DateTime.Now.ToString();
+                                Entry.VMStatus = (int)EVMStatus.Available;
 
-                            DatabaseService.UpdateItem(
-                            WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
-                            WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
-                            new BPrimitiveType(ProgressInfo.VMId),
-                            JObject.Parse(JsonConvert.SerializeObject(Entry)),
-                            out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
-                            null,
-                            _ErrorMessageAction);
+                                DatabaseService.UpdateItem(
+                                WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
+                                WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
+                                new BPrimitiveType(ProgressInfo.VMId),
+                                JObject.Parse(JsonConvert.SerializeObject(Entry)),
+                                out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
+                                null,
+                                _ErrorMessageAction);
+                            }
+                        }else
+                        {
+                            return BWebResponse.InternalError($"Failed to get database record");
                         }
                     }
 

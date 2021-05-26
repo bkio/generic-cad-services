@@ -41,6 +41,7 @@ namespace CADProcessService.Endpoints.Structures
         public const string LEVEL_THRESHOLDS_PROPERTY = "levelThresholds";
         public const string LOD_PARAMETERS_PROPERTY = "lodParameters";
         public const string CULLNG_THRESHOLDS_PROPERTY = "cullingThresholds";
+        public const string FILTER_SETTINGS_PROPERTY = "filterSettings";
 
         //All fields
         public static readonly string[] Properties =
@@ -65,8 +66,6 @@ namespace CADProcessService.Endpoints.Structures
         public string ModelName { get; set; }
         [JsonProperty(MODEL_REVISION_PROPERTY)]
         public int ModelRevision { get; set; }
-
-
 
         [JsonProperty(CONVERSION_STAGE_PROPERTY)]
         public int ConversionStage = 0;
@@ -95,6 +94,8 @@ namespace CADProcessService.Endpoints.Structures
         public string LodParameters { get; set; }
         [JsonProperty(CULLNG_THRESHOLDS_PROPERTY)]
         public string CullingThresholds { get; set; }
+        [JsonProperty(FILTER_SETTINGS_PROPERTY)]
+        public string FilterSettings { get; set; }
 
     }
 }

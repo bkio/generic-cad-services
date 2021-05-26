@@ -42,20 +42,18 @@ namespace CADProcessService.Endpoints
 
         private BWebServiceResponse OnRequest_Internal(HttpListenerContext _Context, Action<string> _ErrorMessageAction)
         {
-
             if (_Context.Request.HttpMethod != "POST")
             {
                 _ErrorMessageAction?.Invoke("StartProcessRequest: POST methods is accepted. But received request method:  " + _Context.Request.HttpMethod);
                 return BWebResponse.MethodNotAllowed("POST methods is accepted. But received request method: " + _Context.Request.HttpMethod);
             }
 
-
-
             using (var InputStream = _Context.Request.InputStream)
             {
                 using (var ResponseReader = new StreamReader(InputStream))
                 {
-                    ConversionProgressInfo ProgressInfo = JsonConvert.DeserializeObject<ConversionProgressInfo>(ResponseReader.ReadToEnd());
+                    string Payload = ResponseReader.ReadToEnd();
+                    ConversionProgressInfo ProgressInfo = JsonConvert.DeserializeObject<ConversionProgressInfo>(Payload);
                     
                     ProcessHistoryDBEntry HistoryEntry = null;
 
@@ -175,19 +173,25 @@ namespace CADProcessService.Endpoints
                             FileConversionDBEntry.Properties,
                             out JObject ConversionObject))
                         {
-                            FileConversionDBEntry ConversionEntry = ConversionObject.ToObject<FileConversionDBEntry>();
+                            if (ConversionObject != null)
+                            {
+                                FileConversionDBEntry ConversionEntry = ConversionObject.ToObject<FileConversionDBEntry>();
 
-                            ConversionEntry.ConversionStatus = (int)EInternalProcessStage.ProcessFailed;
-                            ConversionEntry.ConversionStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
+                                ConversionEntry.ConversionStatus = (int)EInternalProcessStage.ProcessFailed;
+                                ConversionEntry.ConversionStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
 
-                            if (!DatabaseService.UpdateItem(
-                                FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
-                                FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
-                                new BPrimitiveType(ProgressInfo.ConversionId),
-                                JObject.Parse(JsonConvert.SerializeObject(ConversionEntry)),
-                                out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
-                                null,
-                                _ErrorMessageAction))
+                                if (!DatabaseService.UpdateItem(
+                                    FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
+                                    FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
+                                    new BPrimitiveType(ProgressInfo.ConversionId),
+                                    JObject.Parse(JsonConvert.SerializeObject(ConversionEntry)),
+                                    out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
+                                    null,
+                                    _ErrorMessageAction))
+                                {
+                                    return BWebResponse.Conflict("Failed to update file conversion entry");
+                                }
+                            }else
                             {
                                 return BWebResponse.Conflict("Failed to update file conversion entry");
                             }
