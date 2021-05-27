@@ -14,10 +14,12 @@ using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using CADProcessService.Endpoints.Utilities;
 using ServiceUtilities.Common;
+using ServiceUtilities.PubSubUsers.PubSubRelated;
+using ServiceUtilities;
 
 namespace CADProcessService.Endpoints
 {
-    internal class StartProcessRequest : BppWebServiceBase
+    internal class StartProcessRequest : WebServiceBaseTimeoutableDeliveryEnsurerUser
     {
         private readonly IBDatabaseServiceInterface DatabaseService;
         private readonly IBVMServiceInterface VMService;
@@ -32,7 +34,7 @@ namespace CADProcessService.Endpoints
             VirtualMachines = _VirtualMachines;
         }
 
-        protected override BWebServiceResponse OnRequestPP(HttpListenerContext _Context, Action<string> _ErrorMessageAction = null)
+        public override BWebServiceResponse OnRequest_Interruptable_DeliveryEnsurerUser(HttpListenerContext _Context, Action<string> _ErrorMessageAction = null)
         {
             GetTracingService()?.On_FromServiceToService_Received(_Context, _ErrorMessageAction);
 
@@ -60,7 +62,7 @@ namespace CADProcessService.Endpoints
             string BucketName = null;
             string RelativeFileName = null;
             string ZipMainAssembly = "";
-  
+
             using (var InputStream = _Context.Request.InputStream)
             {
                 var NewObjectJson = new JObject();
@@ -85,11 +87,11 @@ namespace CADProcessService.Endpoints
                             return BWebResponse.BadRequest("Request body contains invalid fields.");
                         }
 
-                        if(ParsedBody.ContainsKey("modelName"))
+                        if (ParsedBody.ContainsKey("modelName"))
                         {
                             NewDBEntry.ModelName = (string)ParsedBody["modelName"];
                         }
-                        
+
                         if (ParsedBody.ContainsKey("modelRevision"))
                         {
                             NewDBEntry.ModelRevision = (int)ParsedBody["modelRevision"];
@@ -148,8 +150,12 @@ namespace CADProcessService.Endpoints
                         {
                             NewDBEntry.CullingThresholds = (string)ParsedBody["cullingThresholds"];
                         }
+                        if (ParsedBody.ContainsKey("filters"))
+                        {
+                            NewDBEntry.FilterSettings = (string)ParsedBody["filters"];
+                        }
                         NewDBEntry.QueuedTime = DateTime.UtcNow.ToString();
-                        
+
                         if (ParsedBody.ContainsKey("zipTypeMainAssemblyFileNameIfAny"))
                         {
                             var ZipMainAssemblyToken = ParsedBody["zipTypeMainAssemblyFileNameIfAny"];
@@ -163,7 +169,8 @@ namespace CADProcessService.Endpoints
                         }
 
                         NewDBEntry.BucketName = (string)BucketNameToken;
-                        NewConversionID_FromRelativeUrl_UrlEncoded = WebUtility.UrlEncode((string)RawFileRelativeUrlToken);
+                        //NewConversionID_FromRelativeUrl_UrlEncoded = WebUtility.UrlEncode((string)RawFileRelativeUrlToken);
+                        NewConversionID_FromRelativeUrl_UrlEncoded = WebUtility.UrlEncode($"raw/{NewDBEntry.ModelName}/{NewDBEntry.ModelRevision}");
 
                         BucketName = (string)BucketNameToken;
                         RelativeFileName = (string)RawFileRelativeUrlToken;
@@ -182,48 +189,77 @@ namespace CADProcessService.Endpoints
                 return BWebResponse.InternalError("No BucketName or FileName");
             }
 
-            BDatabaseAttributeCondition UpdateCondition = DatabaseService.BuildAttributeNotExistCondition(FileConversionDBEntry.KEY_NAME_CONVERSION_ID);
+            //BDatabaseAttributeCondition UpdateCondition = DatabaseService.BuildAttributeNotExistCondition(FileConversionDBEntry.KEY_NAME_CONVERSION_ID);
 
-
-            //If a process was completed (success or failure) then allow reprocessing
-            //Only stop if a process is currently busy processing or already queued
-            if (DatabaseService.GetItem(
-                FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
-                FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
-                new BPrimitiveType(NewConversionID_FromRelativeUrl_UrlEncoded),
-                FileConversionDBEntry.Properties,
-                out JObject ConversionObject
-                ))
+            if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(), NewConversionID_FromRelativeUrl_UrlEncoded, _ErrorMessageAction))
             {
-                if (ConversionObject != null && ConversionObject.ContainsKey("conversionStatus"))
-                {
-                    EInternalProcessStage ExistingStatus = (EInternalProcessStage)(int)ConversionObject["conversionStatus"];
+                return BWebResponse.InternalError($"Failed to get access to database record");
+            }
 
-                    if (ExistingStatus == EInternalProcessStage.ProcessFailed || ExistingStatus == EInternalProcessStage.ProcessComplete)
+            try
+            {
+                //If a process was completed (success or failure) then allow reprocessing
+                //Only stop if a process is currently busy processing or already queued
+                if (DatabaseService.GetItem(
+                    FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
+                    FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
+                    new BPrimitiveType(NewConversionID_FromRelativeUrl_UrlEncoded),
+                    FileConversionDBEntry.Properties,
+                    out JObject ConversionObject
+                    ))
+                {
+                    if (ConversionObject != null && ConversionObject.ContainsKey("conversionStatus"))
                     {
-                        UpdateCondition = null;
+                        EInternalProcessStage ExistingStatus = (EInternalProcessStage)(int)ConversionObject["conversionStatus"];
+
+                        //if (ExistingStatus == EInternalProcessStage.ProcessFailed || ExistingStatus == EInternalProcessStage.ProcessComplete)
+                        //{
+                        //    UpdateCondition = null;
+
+                        //}
+                        if (ExistingStatus == EInternalProcessStage.Processing)
+                        {
+                            return BWebResponse.Conflict("File is already being processed/queued.");
+                        }
+
                     }
                 }
+
+                if (!DatabaseService.UpdateItem(
+                    FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
+                    FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
+                    new BPrimitiveType(NewConversionID_FromRelativeUrl_UrlEncoded),
+                    JObject.Parse(JsonConvert.SerializeObject(NewDBEntry)),
+                    out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
+                    null,
+                    _ErrorMessageAction))
+                {
+                    return BWebResponse.Conflict("File is already being processed/queued.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _ErrorMessageAction?.Invoke($"{ex.Message}\n{ex.StackTrace}");
+                return BWebResponse.InternalError($"Database Error");
+            }
+            finally
+            {
+                Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(InnerProcessor, FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(), NewConversionID_FromRelativeUrl_UrlEncoded, _ErrorMessageAction);
             }
 
-            if (!DatabaseService.UpdateItem(
-                FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
-                FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
-                new BPrimitiveType(NewConversionID_FromRelativeUrl_UrlEncoded),
-                JObject.Parse(JsonConvert.SerializeObject(NewDBEntry)),
-                out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
-                UpdateCondition,
-                _ErrorMessageAction))
-            {
-                return BWebResponse.Conflict("File is already being processed/queued.");
-            }
 
 
             //Lock to avoid race condition with deallocation
-            MemoryLocker.LockedAction("UpdateVmStatus", MemoryService, () =>
+            if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(), "VMLOCK", _ErrorMessageAction))
+            {
+                return BWebResponse.InternalError($"Failed to get access to database lock");
+            }
+
+            try
             {
                 WorkerVMListDBEntry VmEntry = GetAvailableVm(out string _VMID, out string _VMName, _ErrorMessageAction);
                 VmEntry.CurrentProcessStage = NewDBEntry.ConversionStage;
+
 
                 VmEntry.LastKnownProcessStatus = NewDBEntry.ConversionStage;
                 VmEntry.ProcessStartDate = DateTime.Now.ToString();
@@ -239,13 +275,20 @@ namespace CADProcessService.Endpoints
                     new BPrimitiveType(_VMID),
                     JObject.Parse(JsonConvert.SerializeObject(VmEntry)),
                     out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
-                    UpdateCondition,
+                    null,
                     _ErrorMessageAction);
 
                 }, _ErrorMessageAction);
-
-                return true;
-            });
+            }
+            catch (Exception ex)
+            {
+                _ErrorMessageAction?.Invoke($"{ex.Message}\n{ex.StackTrace}");
+                return BWebResponse.InternalError($"Database Error");
+            }
+            finally
+            {
+                Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(InnerProcessor, WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(), "VMLOCK", _ErrorMessageAction);
+            }
 
             return BWebResponse.StatusAccepted("Request has been accepted; process is now being started.");
 
@@ -329,9 +372,9 @@ namespace CADProcessService.Endpoints
         {
             //Fetch VM entries
             //Find VM that is available and return name.
-            foreach(var vm in VirtualMachines)
+            foreach (var vm in VirtualMachines)
             {
-                if(DatabaseService.GetItem(
+                if (DatabaseService.GetItem(
                 WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
                 WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
                 new BPrimitiveType(vm.Key),
@@ -354,7 +397,7 @@ namespace CADProcessService.Endpoints
             return null;
         }
 
-        private void StartVM(string _VMName, WorkerVMListDBEntry _vm, Action VMStartFailureAction, Action<string> _ErrorMessageAction)
+        private void StartVM(string _VMName, WorkerVMListDBEntry _vm, System.Action VMStartFailureAction, Action<string> _ErrorMessageAction)
         {
             if (_vm != null)
             {
@@ -369,11 +412,13 @@ namespace CADProcessService.Endpoints
                 },
                     _ErrorMessageAction
                 );
-            }else
+            }
+            else
             {
                 _ErrorMessageAction?.Invoke($"NO AVAILABLE VM WAS FOUND[{_VMName}]");
                 VMStartFailureAction();
             }
         }
+
     }
 }

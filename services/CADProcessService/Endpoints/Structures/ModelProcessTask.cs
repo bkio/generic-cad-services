@@ -12,6 +12,7 @@ namespace CADProcessService.Endpoints.Structures
     }
     public class ModelProcessTask
     {
+        public string ConversionId { get; set; }
         public string StageDownloadUrl { get; set; }
         public string ModelName { get; set; }
         public int ModelRevision { get; set; }
@@ -30,6 +31,7 @@ namespace CADProcessService.Endpoints.Structures
         public float[] LevelThresholds { get; set; }
         public string LodParameters { get; set; }
         public string CullingThresholds { get; set; }
-        public List<FilterInfo> Filters { get; set; }
+        //public List<FilterInfo> Filters { get; set; }
+        public string Filters { get; set; }
     }
 }

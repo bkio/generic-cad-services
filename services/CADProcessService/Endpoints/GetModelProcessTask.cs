@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
+using System.Web;
 
 namespace CADProcessService.Endpoints
 {
@@ -68,16 +69,15 @@ namespace CADProcessService.Endpoints
                     {
                         FileConversionDBEntry Entry = ConvertItem.ToObject<FileConversionDBEntry>();
                         string Key = (string)ConvertItem[FileConversionDBEntry.KEY_NAME_CONVERSION_ID];
-                        int Stage = Entry.ConversionStage;
 
                         if (Entry.ConversionStatus == (int)EInternalProcessStage.Queued)
                         {
-                            Entry.ConversionStage = (int)EInternalProcessStage.Processing;
+                            Entry.ConversionStatus = (int)EInternalProcessStage.Processing;
 
                             if (!DatabaseService.UpdateItem(
                             FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
                             FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
-                            new BPrimitiveType(Entry.BucketName),
+                            new BPrimitiveType(Key),
                             JObject.Parse(JsonConvert.SerializeObject(Entry)),
                             out JObject _, EBReturnItemBehaviour.DoNotReturn,
                             null,
@@ -103,7 +103,13 @@ namespace CADProcessService.Endpoints
                                 Task.ModelRevision = Entry.ModelRevision;
                                 Task.ProcessStep = Entry.ConversionStage;
 
-                                FileService.CreateSignedURLForDownload(out string _StageDownloadUrl, Entry.BucketName, $"raw/{Entry.ModelName}/{Entry.ModelRevision}/stages/{Entry.ConversionStage}/Files.zip", 60, _ErrorMessageAction);
+                                Task.Filters = Entry.FilterSettings;
+
+                                FileService.CreateSignedURLForDownload(out string _StageDownloadUrl, Entry.BucketName, $"raw/{Entry.ModelName}/{Entry.ModelRevision}/stages/{Entry.ConversionStage}/files.zip", 60, _ErrorMessageAction);
+
+                                //string[] Parts = _StageDownloadUrl.Split('?');
+                                //Task.StageDownloadUrl = $"{HttpUtility.UrlDecode(Parts[0])}?{Parts[1]}";
+
                                 Task.StageDownloadUrl = _StageDownloadUrl;
 
                                 Response = new BWebServiceResponse(200, new BStringOrStream(JsonConvert.SerializeObject(Task)));
