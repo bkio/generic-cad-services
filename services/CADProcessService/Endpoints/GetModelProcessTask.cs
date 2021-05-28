@@ -102,10 +102,11 @@ namespace CADProcessService.Endpoints
                                 Task.ModelName = Entry.ModelName;
                                 Task.ModelRevision = Entry.ModelRevision;
                                 Task.ProcessStep = Entry.ConversionStage;
+                                Task.ConversionId = Key;
 
                                 Task.Filters = Entry.FilterSettings;
 
-                                FileService.CreateSignedURLForDownload(out string _StageDownloadUrl, Entry.BucketName, $"raw/{Entry.ModelName}/{Entry.ModelRevision}/stages/{Entry.ConversionStage}/files.zip", 60, _ErrorMessageAction);
+                                FileService.CreateSignedURLForDownload(out string _StageDownloadUrl, Entry.BucketName, $"raw/{Entry.ModelName}/{Entry.ModelRevision}/stages/{Entry.ConversionStage}/files.zip", 180, _ErrorMessageAction);
 
                                 //string[] Parts = _StageDownloadUrl.Split('?');
                                 //Task.StageDownloadUrl = $"{HttpUtility.UrlDecode(Parts[0])}?{Parts[1]}";

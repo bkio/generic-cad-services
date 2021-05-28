@@ -97,7 +97,7 @@ namespace CADProcessService.Endpoints
                                     RecordProcessStage = ProgressInfo.ProgressDetails.GlobalCurrentStage
                                 }
                             },
-                            
+
                             CurrentProcessStage = ProgressInfo.ProgressDetails.GlobalCurrentStage,
                             ModelName = ProgressInfo.ProgressDetails.ModelName,
                             RevisionIndex = ProgressInfo.ProgressDetails.ModelRevision,
@@ -123,38 +123,6 @@ namespace CADProcessService.Endpoints
                             ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(),
                             ProgressInfo.ProcessId.ToString(),
                             _ErrorMessageAction);
-                    }
-
-                    if (DatabaseService.GetItem(
-                    WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
-                    WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
-                    new BPrimitiveType(ProgressInfo.VMId),
-                    WorkerVMListDBEntry.Properties,
-                    out JObject _VMEntry,
-                    _ErrorMessageAction))
-                    {
-                        if (_VMEntry != null)
-                        {
-                            WorkerVMListDBEntry Entry = _VMEntry.ToObject<WorkerVMListDBEntry>();
-                            if (ProgressInfo.ProgressDetails.GlobalCurrentStage != Entry.CurrentProcessStage)
-                            {
-                                Entry.CurrentProcessStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
-                                Entry.ProcessStartDate = DateTime.Now.ToString();
-                                Entry.VMStatus = (int)EVMStatus.Available;
-
-                                DatabaseService.UpdateItem(
-                                WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
-                                WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
-                                new BPrimitiveType(ProgressInfo.VMId),
-                                JObject.Parse(JsonConvert.SerializeObject(Entry)),
-                                out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
-                                null,
-                                _ErrorMessageAction);
-                            }
-                        }else
-                        {
-                            return BWebResponse.InternalError($"Failed to get database record");
-                        }
                     }
 
                     if (ProgressInfo.ProcessFailed)
@@ -191,7 +159,8 @@ namespace CADProcessService.Endpoints
 
                         Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(InnerProcessor, ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(), ProgressInfo.ProcessId.ToString(), _ErrorMessageAction);
                         //Do cad service pubsub here
-                    }else
+                    }
+                    else
                     {
                         if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(), ProgressInfo.ProcessId.ToString(), _ErrorMessageAction))
                         {
@@ -225,6 +194,41 @@ namespace CADProcessService.Endpoints
 
                         Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(InnerProcessor, ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(), ProgressInfo.ProcessId.ToString(), _ErrorMessageAction);
                     }
+
+                    if (DatabaseService.GetItem(
+                    WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
+                    WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
+                    new BPrimitiveType(ProgressInfo.VMId),
+                    WorkerVMListDBEntry.Properties,
+                    out JObject _VMEntry,
+                    _ErrorMessageAction))
+                    {
+                        if (_VMEntry != null)
+                        {
+                            WorkerVMListDBEntry Entry = _VMEntry.ToObject<WorkerVMListDBEntry>();
+                            if (ProgressInfo.ProgressDetails.GlobalCurrentStage != Entry.CurrentProcessStage)
+                            {
+                                Entry.CurrentProcessStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
+                                Entry.ProcessStartDate = DateTime.Now.ToString();
+                                Entry.VMStatus = (int)EVMStatus.Available;
+
+                                DatabaseService.UpdateItem(
+                                WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
+                                WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
+                                new BPrimitiveType(ProgressInfo.VMId),
+                                JObject.Parse(JsonConvert.SerializeObject(Entry)),
+                                out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
+                                null,
+                                _ErrorMessageAction);
+                            }
+                        }
+                        else
+                        {
+                            return BWebResponse.InternalError($"Failed to get database record");
+                        }
+                    }
+
+
                 }
             }
 

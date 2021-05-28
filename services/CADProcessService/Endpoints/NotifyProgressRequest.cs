@@ -199,6 +199,38 @@ namespace CADProcessService.Endpoints
 
                         Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(InnerProcessor, ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(), ProgressInfo.ProcessId.ToString(), _ErrorMessageAction);
                         //Do cad service pubsub here
+                    }else
+                    {
+                        if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(), ProgressInfo.ProcessId.ToString(), _ErrorMessageAction))
+                        {
+                            return BWebResponse.InternalError($"Failed to get access to database record");
+                        }
+
+                        if (DatabaseService.GetItem(
+                            FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
+                            FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
+                            new BPrimitiveType(ProgressInfo.ConversionId),
+                            FileConversionDBEntry.Properties,
+                            out JObject ConversionObject))
+                        {
+                            FileConversionDBEntry ConversionEntry = ConversionObject.ToObject<FileConversionDBEntry>();
+
+                            ConversionEntry.ConversionStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
+
+                            if (!DatabaseService.UpdateItem(
+                                FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
+                                FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
+                                new BPrimitiveType(ProgressInfo.ConversionId),
+                                JObject.Parse(JsonConvert.SerializeObject(ConversionEntry)),
+                                out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
+                                null,
+                                _ErrorMessageAction))
+                            {
+                                return BWebResponse.Conflict("Failed to update file conversion entry");
+                            }
+                        }
+
+                        Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(InnerProcessor, ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(), ProgressInfo.ProcessId.ToString(), _ErrorMessageAction);
                     }
                 }
             }
