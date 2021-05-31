@@ -227,10 +227,6 @@ namespace CADFileService
             }
 
             var PreviousProcessStage = RevisionObject.FileEntry.FileUploadProcessStage;
-            if (PreviousProcessStage == (int)EUploadProcessStage.NotUploaded)
-            {
-                return BWebResponse.NotFound("Raw files have not been uploaded.");
-            }
 
             //if (RevisionObject.FileEntry.FileUploadProcessStage == (int)EUploadProcessStage.Uploaded_Processing)
             //{

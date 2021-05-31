@@ -87,6 +87,10 @@ namespace CADFileService.Endpoints.Structures
             {
                 return _Parameter.Type == JTokenType.String && ((string)_Parameter).Length > 0;
             },
+            [CURRENT_PROCESS_STAGE_PROPERTY] = (JToken _Parameter) =>
+            {
+                return _Parameter.Type == JTokenType.Integer;
+            },
             [LAYERS_PROPERTY] = (JToken _Parameter) =>
             {
                 if (!(_Parameter is JArray)) return false;
@@ -97,6 +101,10 @@ namespace CADFileService.Endpoints.Structures
             {
                 if (!(_Parameter is JObject)) return false;
                 return true;
+            },
+            [OPTIMIZATION_PRESET_PROPERTY] = (JToken _Parameter) =>
+            {
+                return _Parameter.Type == JTokenType.Integer;
             },
             [MERGE_FINAL_LEVEL_PROPERTY] = (JToken _Parameter) =>
             {
