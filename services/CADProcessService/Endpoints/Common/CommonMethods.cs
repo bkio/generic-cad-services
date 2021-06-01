@@ -140,7 +140,7 @@ namespace CADProcessService.Endpoints.Common
                 ProcessHistoryObject.CurrentProcessStage = _VirtualMachineEntry.CurrentProcessStage;
 
                 var NewHistoryRecord = new HistoryRecord();
-                NewHistoryRecord.RecordDate = Methods.GetUtcNowShortDateAndLongTimeString();
+                NewHistoryRecord.RecordDate = Methods.ToISOString();
                 NewHistoryRecord.RecordProcessStage = _VirtualMachineEntry.CurrentProcessStage;
                 NewHistoryRecord.ProcessInfo = "Stop process has been called.";
                 ProcessHistoryObject.HistoryRecords.Add(NewHistoryRecord);

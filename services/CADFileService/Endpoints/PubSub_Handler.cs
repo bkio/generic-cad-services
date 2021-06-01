@@ -566,7 +566,7 @@ namespace CADFileService.Endpoints
                             RevisionObject.FileEntry.FileUploadProcessStage = (int)EUploadProcessStage.Uploaded_Processing;
                         }
                         RevisionObject.FileEntry.CurrentProcessStage = StageNumber;
-                        RevisionObject.FileEntry.FileProcessedAtTime = CommonMethods.GetTimeAsCreationTime();
+                        RevisionObject.FileEntry.FileProcessedAtTime = Methods.ToISOString();
                         ModelObject.MRVLastUpdateTime = RevisionObject.FileEntry.FileProcessedAtTime;
 
                         var FinalSerializedModelObject = JObject.Parse(JsonConvert.SerializeObject(ModelObject));

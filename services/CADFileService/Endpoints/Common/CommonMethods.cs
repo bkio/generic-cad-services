@@ -24,7 +24,7 @@ namespace CADFileService.Endpoints.Common
     {
         public static string GetTimeAsCreationTime()
         {
-            return DateTime.UtcNow.ToLongDateString() + " - " + DateTime.UtcNow.ToLongTimeString();
+            return Methods.ToISOString();
         }
 
         public static bool TryParsingRequestFor<T>(
