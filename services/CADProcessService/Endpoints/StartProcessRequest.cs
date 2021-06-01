@@ -154,6 +154,14 @@ namespace CADProcessService.Endpoints
                         {
                             NewDBEntry.FilterSettings = (string)ParsedBody["filters"];
                         }
+                        if (ParsedBody.ContainsKey("deleteDuplicates"))
+                        {
+                            NewDBEntry.DeleteDuplicates = (string)ParsedBody["deleteDuplicates"];
+                        }
+                        if (ParsedBody.ContainsKey("mergeFinalLevel"))
+                        {
+                            NewDBEntry.MergeFinalLevel = (string)ParsedBody["mergeFinalLevel"];
+                        }
                         NewDBEntry.QueuedTime = DateTime.UtcNow.ToString();
 
                         if (ParsedBody.ContainsKey("zipTypeMainAssemblyFileNameIfAny"))
@@ -259,16 +267,15 @@ namespace CADProcessService.Endpoints
             {
                 WorkerVMListDBEntry VmEntry = GetAvailableVm(out string _VMID, out string _VMName, _ErrorMessageAction);
                 VmEntry.CurrentProcessStage = NewDBEntry.ConversionStage;
-
-
                 VmEntry.LastKnownProcessStatus = NewDBEntry.ConversionStage;
                 VmEntry.ProcessStartDate = DateTime.Now.ToString();
+                VmEntry.VMStatus = (int)EVMStatus.Busy;
+                VmEntry.ModelName = NewDBEntry.ModelName;
+                VmEntry.ProcessId = NewConversionID_FromRelativeUrl_UrlEncoded;
+                VmEntry.RevisionIndex = NewDBEntry.ModelRevision;
 
                 StartVM(_VMName, VmEntry, () =>
                 {
-
-                    VmEntry.VMStatus = (int)EVMStatus.Busy;
-
                     DatabaseService.UpdateItem(
                     WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
                     WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,

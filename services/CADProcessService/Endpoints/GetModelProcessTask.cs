@@ -26,17 +26,19 @@ namespace CADProcessService.Endpoints
         private readonly IBFileServiceInterface FileService;
         private readonly IBMemoryServiceInterface MemoryService;
         private readonly string CadFileStorageBucketName;
+        private readonly string BranchName;
 
         public GetModelProcessTask(
             IBFileServiceInterface _FileService,
             IBDatabaseServiceInterface _DatabaseService,
             IBMemoryServiceInterface _MemoryService,
-            string _CadFileStorageBucketName) : base()
+            string _CadFileStorageBucketName, string _BranchName) : base()
         {
             FileService = _FileService;
             DatabaseService = _DatabaseService;
             CadFileStorageBucketName = _CadFileStorageBucketName;
             MemoryService = _MemoryService;
+            BranchName = _BranchName;
         }
 
         public override BWebServiceResponse OnRequest_Interruptable_DeliveryEnsurerUser(HttpListenerContext _Context, Action<string> _ErrorMessageAction = null)
@@ -54,7 +56,6 @@ namespace CADProcessService.Endpoints
         private BWebServiceResponse OnRequest_Internal(HttpListenerContext _Context, Action<string> _ErrorMessageAction = null)
         {
             BWebServiceResponse Response = BWebResponse.NotFound("No task was found to process");
-
 
             if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(), "GETTASK", _ErrorMessageAction))
             {
@@ -106,7 +107,7 @@ namespace CADProcessService.Endpoints
 
                                 Task.Filters = Entry.FilterSettings;
 
-                                FileService.CreateSignedURLForDownload(out string _StageDownloadUrl, Entry.BucketName, $"raw/{Entry.ModelName}/{Entry.ModelRevision}/stages/{Entry.ConversionStage}/files.zip", 180, _ErrorMessageAction);
+                                FileService.CreateSignedURLForDownload(out string _StageDownloadUrl, Entry.BucketName, $"{BranchName}/{Entry.ModelName}/{Entry.ModelRevision}/stages/{Entry.ConversionStage}/files.zip", 180, _ErrorMessageAction);
 
                                 //string[] Parts = _StageDownloadUrl.Split('?');
                                 //Task.StageDownloadUrl = $"{HttpUtility.UrlDecode(Parts[0])}?{Parts[1]}";

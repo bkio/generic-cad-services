@@ -42,6 +42,8 @@ namespace CADProcessService.Endpoints.Structures
         public const string LOD_PARAMETERS_PROPERTY = "lodParameters";
         public const string CULLNG_THRESHOLDS_PROPERTY = "cullingThresholds";
         public const string FILTER_SETTINGS_PROPERTY = "filterSettings";
+        public const string DELETE_DUPLICATES_PROPERTY = "deleteDuplicates";
+        public const string MERGE_FINAL_LEVEL_PROPERTY = "mergeFinalLevel";
 
         //All fields
         public static readonly string[] Properties =
@@ -96,6 +98,12 @@ namespace CADProcessService.Endpoints.Structures
         public string CullingThresholds { get; set; }
         [JsonProperty(FILTER_SETTINGS_PROPERTY)]
         public string FilterSettings { get; set; }
+
+        [JsonProperty(DELETE_DUPLICATES_PROPERTY)]
+        public string DeleteDuplicates { get; set; }
+
+        [JsonProperty(MERGE_FINAL_LEVEL_PROPERTY)]
+        public string MergeFinalLevel { get; set; }
 
     }
 }
