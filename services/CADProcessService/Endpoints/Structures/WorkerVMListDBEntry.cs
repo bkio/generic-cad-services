@@ -73,7 +73,7 @@ namespace CADProcessService.Endpoints.Structures
         public string ProcessId { get; set; }
 
         [JsonProperty(PROCESS_START_DATE_PROPERTY)]
-        public string ProcessStartDate = Methods.GetUtcNowShortDateAndLongTimeString();
+        public string ProcessStartDate = Methods.ToISOString();
 
         [JsonProperty(LAST_KNOWN_PROCESS_STATUS_PROPERTY)]
         public int LastKnownProcessStatus = (int)EProcessStatus.Idle;

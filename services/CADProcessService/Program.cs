@@ -192,7 +192,7 @@ namespace CADProcessService
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/start" }, () => new StartProcessRequest(ServInit.MemoryService, ServInit.DatabaseService, ServInit.VMService, VMList)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/vm_heartbeat*" }, () => new InternalCalls.VMHeartbeat(ServInit.DatabaseService, InternalCallPrivateKey)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/vm_health_check*" }, () => new InternalCalls.VMHealthCheck(ServInit.DatabaseService, ServInit.VMService, VirtualMachineDictionary, InternalCallPrivateKey)),
-                new BWebPrefixStructure(new string[] { RootPath + "3d/process/stop" }, () => new StopProcessRequest(ServInit.DatabaseService, ServInit.VMService)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/process/stop" }, () => new StopProcessRequest(ServInit.DatabaseService, ServInit.VMService, VirtualMachineDictionary)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/job-complete/*" }, () => new BatchJobCompleteRequest(ServInit.DatabaseService, ServInit.FileService, ServInit.MemoryService)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/fetch_task/*" }, () => new GetModelProcessTask(ServInit.FileService,ServInit.DatabaseService, ServInit.MemoryService, CadFileStorageBucketName, Branch)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/get_signed_upload_url_for_unreal_file/*" }, () => new GetSignedUploadUrlRequest(ServInit.FileService, CadFileStorageBucketName)),

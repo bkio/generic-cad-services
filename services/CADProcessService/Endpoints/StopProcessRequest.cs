@@ -15,6 +15,7 @@ using ServiceUtilities;
 using ServiceUtilities.Common;
 using CADProcessService.Endpoints.Controllers;
 using CADProcessService.Endpoints.Common;
+using System.Linq;
 
 namespace CADProcessService.Endpoints
 {
@@ -24,10 +25,17 @@ namespace CADProcessService.Endpoints
 
         private readonly IBVMServiceInterface VirtualMachineService;
 
-        public StopProcessRequest(IBDatabaseServiceInterface _DatabaseService, IBVMServiceInterface _VirtualMachineService) : base()
+        private readonly Dictionary<string, string> VirtualMachineDictionary;
+
+        private string RequestedVirtualMachineId = null;
+        private string RequestedModelUniqueName = null;
+        private int RequestedRevisionIndex = -1;
+
+        public StopProcessRequest(IBDatabaseServiceInterface _DatabaseService, IBVMServiceInterface _VirtualMachineService, Dictionary<string, string> _VirtualMachineDictionary) : base()
         {
             DatabaseService = _DatabaseService;
             VirtualMachineService = _VirtualMachineService;
+            VirtualMachineDictionary = _VirtualMachineDictionary;
         }
 
         public override BWebServiceResponse OnRequest_Interruptable(HttpListenerContext _Context, Action<string> _ErrorMessageAction = null)
@@ -53,12 +61,9 @@ namespace CADProcessService.Endpoints
             string RelativeFileUrl = null;
             string ConversionID_FromRelativeUrl_UrlEncoded = null;
             int ProcessMode = (int)EProcessMode.Undefined;
-            string RequestedVirtualMachineId = null;
 
             using (var InputStream = _Context.Request.InputStream)
             {
-                var NewObjectJson = new JObject();
-
                 using (var ResponseReader = new StreamReader(InputStream))
                 {
                     try
@@ -79,38 +84,62 @@ namespace CADProcessService.Endpoints
                         if (ProcessMode == (int)EProcessMode.Kubernetes)
                         {
                             if (!ParsedBody.ContainsKey("bucketName")
-                                || !ParsedBody.ContainsKey("rawFileRelativeUrl"))
+                                || !ParsedBody.ContainsKey("fileRelativeUrl"))
                             {
-                                return BWebResponse.BadRequest("Request body must contain all necessary fields. If the process mode is selected Kubernetes, request body has to have rawFileRelativeUrl and bucketName fields.");
+                                return BWebResponse.BadRequest("Request body must contain all necessary fields. If the process mode is selected Kubernetes, request body has to have fileRelativeUrl and bucketName fields.");
                             }
 
                             var BucketNameToken = ParsedBody["bucketName"];
-                            var RawFileRelativeUrlToken = ParsedBody["rawFileRelativeUrl"];
+                            var FileRelativeUrlToken = ParsedBody["fileRelativeUrl"];
                             if (BucketNameToken.Type != JTokenType.String
-                                || RawFileRelativeUrlToken.Type != JTokenType.String)
+                                || FileRelativeUrlToken.Type != JTokenType.String)
                             {
                                 return BWebResponse.BadRequest("Request body contains invalid fields.");
                             }
                         
                             BucketName = (string)BucketNameToken;
-                            RelativeFileUrl = (string)RawFileRelativeUrlToken;
-                            ConversionID_FromRelativeUrl_UrlEncoded = WebUtility.UrlEncode((string)RawFileRelativeUrlToken);
+                            RelativeFileUrl = (string)FileRelativeUrlToken;
+                            ConversionID_FromRelativeUrl_UrlEncoded = WebUtility.UrlEncode((string)FileRelativeUrlToken);
                         }
 
                         if (ProcessMode == (int)EProcessMode.VirtualMachine)
-                        { 
-                            if (!ParsedBody.ContainsKey("virtualMachineId"))
+                        {
+                            if (!ParsedBody.ContainsKey("virtualMachineId") 
+                                && !(ParsedBody.ContainsKey("modelUniqueName") && ParsedBody.ContainsKey("revisionIndex")))
                             {
-                                return BWebResponse.BadRequest("Request body must contain all necessary fields. If the process mode is selected VirtualMachine, request body has to have virtualMachineId field.");
+                                return BWebResponse.BadRequest("Request body must contain all necessary fields. If the process mode is selected VirtualMachine, request body has to have virtualMachineId field or (modelUniqueName and revisionIndex fields).");
                             }
 
-                            var RequestedVirtualMachineIdToken = ParsedBody["virtualMachineId"];
-                            if (RequestedVirtualMachineIdToken.Type != JTokenType.String)
+                            if (ParsedBody.ContainsKey("virtualMachineId"))
                             {
-                                return BWebResponse.BadRequest("Request body contains invalid fields.");
-                            }
+                                var RequestedVirtualMachineIdToken = ParsedBody["virtualMachineId"];
+                                if (RequestedVirtualMachineIdToken.Type != JTokenType.String)
+                                {
+                                    return BWebResponse.BadRequest("Request body contains invalid fields.");
+                                }
 
-                            RequestedVirtualMachineId = (string)RequestedVirtualMachineIdToken;   
+                                RequestedVirtualMachineId = (string)RequestedVirtualMachineIdToken;
+                            }
+                            if (ParsedBody.ContainsKey("modelUniqueName"))
+                            {
+                                var RequestedModelUniqueNameToken = ParsedBody["modelUniqueName"];
+                                if (RequestedModelUniqueNameToken.Type != JTokenType.String)
+                                {
+                                    return BWebResponse.BadRequest("Request body contains invalid fields.");
+                                }
+
+                                RequestedModelUniqueName = (string)RequestedModelUniqueNameToken;
+                            }
+                            if (ParsedBody.ContainsKey("revisionIndex"))
+                            {
+                                var RequestedRevisionIndexToken = ParsedBody["revisionIndex"];
+                                if (RequestedRevisionIndexToken.Type != JTokenType.Integer)
+                                {
+                                    return BWebResponse.BadRequest("Request body contains invalid fields.");
+                                }
+
+                                RequestedRevisionIndex = (int)RequestedRevisionIndexToken;
+                            }
                         }
                     }
                     catch (Exception e)
@@ -130,7 +159,7 @@ namespace CADProcessService.Endpoints
             }
             else if (ProcessMode == (int)EProcessMode.VirtualMachine)
             {
-                if (!ProcessVirtualMachine(_Context, RequestedVirtualMachineId, _ErrorMessageAction, out BWebServiceResponse FailureResponse))
+                if (!ProcessVirtualMachine(_ErrorMessageAction, out BWebServiceResponse FailureResponse))
                 {
                     return FailureResponse;
                 }
@@ -176,7 +205,7 @@ namespace CADProcessService.Endpoints
 
             if (!BatchProcessingCreationService.Instance.StopBatchProcess(BucketName, RelativeFileUrl, _ErrorMessageAction))
             {
-                _FailureResponse = BWebResponse.InternalError("Failed to stop pod or connect to kubernetess");
+                _FailureResponse = BWebResponse.InternalError("Failed to stop pod or connect to kubernetes");
                 return false;
             }
 
@@ -184,20 +213,42 @@ namespace CADProcessService.Endpoints
         }
 
         private bool ProcessVirtualMachine(
-            HttpListenerContext _Context,
-            string _RequestedVirtualMachineId,
+            Action<string> _ErrorMessageAction,
+            out BWebServiceResponse FailureResponse)
+        {
+            FailureResponse = BWebResponse.InternalError("");
+
+            if (RequestedVirtualMachineId == null)
+            {
+                if (!StopAllVirtualMachines(_ErrorMessageAction, out FailureResponse))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                if (!StopSingleVirtualMachineById(_ErrorMessageAction, out FailureResponse))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private bool StopSingleVirtualMachineById(
             Action<string> _ErrorMessageAction,
             out BWebServiceResponse FailureResponse)
         {
             FailureResponse = BWebResponse.InternalError("");
 
             if (!DatabaseService.GetItem(
-                WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
-                WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
-                new BPrimitiveType(_RequestedVirtualMachineId),
-                WorkerVMListDBEntry.Properties,
-                out JObject _ReturnObject, _ErrorMessageAction
-                ) || _ReturnObject == null)
+                    WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
+                    WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
+                    new BPrimitiveType(RequestedVirtualMachineId),
+                    WorkerVMListDBEntry.Properties,
+                    out JObject _ReturnObject, _ErrorMessageAction
+                    ) || _ReturnObject == null)
             {
                 FailureResponse = BWebResponse.InternalError("Database error.");
                 return false;
@@ -208,11 +259,11 @@ namespace CADProcessService.Endpoints
             if (VirtualMachineEntry != null)
             {
                 if (!CommonMethods.StopVirtualMachine(
-                    VirtualMachineService, 
-                    DatabaseService, 
-                    InnerProcessor, 
-                    VirtualMachineEntry, 
-                    _RequestedVirtualMachineId, 
+                    VirtualMachineService,
+                    DatabaseService,
+                    InnerProcessor,
+                    VirtualMachineEntry,
+                    RequestedVirtualMachineId,
                     _ErrorMessageAction,
                     out BWebServiceResponse _FailureResponse))
                 {
@@ -222,7 +273,75 @@ namespace CADProcessService.Endpoints
             }
             else
             {
-                FailureResponse = BWebResponse.InternalError("Database object is empty.");
+                FailureResponse = BWebResponse.InternalError("Database object is empty or given virtualMachineId is wrong!");
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool StopAllVirtualMachines(
+            Action<string> _ErrorMessageAction,
+            out BWebServiceResponse FailureResponse)
+        {
+            FailureResponse = BWebResponse.InternalError("");
+            if (!DatabaseService.ScanTable(WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(), out List<JObject> WorkerVMJList, _ErrorMessageAction))
+            {
+                _ErrorMessageAction?.Invoke("Scan-table operation has failed.");
+                FailureResponse = BWebResponse.InternalError("Scan-table operation has failed.");
+                return false;
+            }
+
+            if (WorkerVMJList.Count == 0)
+            {
+                _ErrorMessageAction?.Invoke("There is no virtual machine in db.");
+                FailureResponse = BWebResponse.InternalError("There is no virtual machine in db.");
+                return false;
+            }
+
+            var foundAtLeastOneRecord = false;
+            foreach (var CurrentWorkerVMJObject in WorkerVMJList)
+            {
+                var CurrentWorkerVM = JsonConvert.DeserializeObject<WorkerVMListDBEntry>(CurrentWorkerVMJObject.ToString());
+                var _RequestedVirtualMachineId = VirtualMachineDictionary.FirstOrDefault(x => x.Value.Equals(CurrentWorkerVM.VMName)).Key;
+
+                if (CurrentWorkerVM.VMStatus == (int)EVMStatus.Available)
+                {
+                    continue;
+                }
+
+                if (!(CurrentWorkerVM.ModelName.Equals(RequestedModelUniqueName) && CurrentWorkerVM.RevisionIndex == RequestedRevisionIndex))
+                {
+                    continue;
+                }
+
+                foundAtLeastOneRecord = true;
+
+                if (CurrentWorkerVM.LastKnownProcessStatus == (int)EProcessStatus.Idle
+                        || CurrentWorkerVM.LastKnownProcessStatus == (int)EProcessStatus.Failed
+                        || CurrentWorkerVM.LastKnownProcessStatus == (int)EProcessStatus.Completed)
+                {
+                    if (!CommonMethods.StopVirtualMachine(
+                        VirtualMachineService,
+                        DatabaseService,
+                        InnerProcessor,
+                        CurrentWorkerVM,
+                        _RequestedVirtualMachineId,
+                        _ErrorMessageAction,
+                        out FailureResponse))
+                    {
+                        if (FailureResponse.ResponseContent.Type == EBStringOrStreamEnum.String)
+                        {
+                            _ErrorMessageAction?.Invoke(FailureResponse.ResponseContent.String);
+                        }
+                        return false;
+                    }
+                }
+            }
+
+            if (!foundAtLeastOneRecord)
+            {
+                FailureResponse = BWebResponse.InternalError("Given modelUniqueName and revisionIndex are wrong!");
                 return false;
             }
 
