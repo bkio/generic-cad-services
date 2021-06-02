@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\BDotNetFramework\Utilities\BCloudServiceUtilities-BVMService-AZ\BCloudServiceUtilities-BVMService-AZ.csproj" />
+    <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BCloudServiceUtilities-BVMService-AZ\BCloudServiceUtilities-BVMService-AZ.csproj" />
     <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BCloudServiceUtilities-BDatabaseService-MongoDB\BCloudServiceUtilities-BDatabaseService-MongoDB.csproj" />
     <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BCloudServiceUtilities-BFileService-AZ\BCloudServiceUtilities-BFileService-AZ.csproj" />
     <ProjectReference Include="..\..\submodules\BDotNetFramework\Utilities\BCloudServiceUtilities-BLoggingService-Basic\BCloudServiceUtilities-BLoggingService-Basic.csproj" />
