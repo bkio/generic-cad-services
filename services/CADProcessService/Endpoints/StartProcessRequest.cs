@@ -65,7 +65,7 @@ namespace CADProcessService.Endpoints
             string NewConversionID_FromRelativeUrl_UrlEncoded = null;
             string BucketName = null;
             string RelativeFileName = null;
-            string ZipMainAssembly = "";
+            //string ZipMainAssembly = "";
 
             using (var InputStream = _Context.Request.InputStream)
             {
