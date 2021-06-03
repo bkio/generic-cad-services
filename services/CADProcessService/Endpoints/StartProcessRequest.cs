@@ -16,6 +16,7 @@ using CADProcessService.Endpoints.Utilities;
 using ServiceUtilities.Common;
 using ServiceUtilities.PubSubUsers.PubSubRelated;
 using ServiceUtilities;
+using System.Threading;
 
 namespace CADProcessService.Endpoints
 {
@@ -25,9 +26,11 @@ namespace CADProcessService.Endpoints
         private readonly IBVMServiceInterface VirtualMachineService;
         private readonly Dictionary<string, string> VirtualMachineDictionary;
         private readonly string CadProcessServiceUrl;
+        private readonly Dictionary<int, OptimizationPresetEntry> Presets = new Dictionary<int, OptimizationPresetEntry>();
 
         public StartProcessRequest(IBDatabaseServiceInterface _DatabaseService, IBVMServiceInterface _VirtualMachineService, Dictionary<string, string> _VirtualMachineDictionary, string _CadProcessServiceUrl) : base()
         {
+            CreateDefaultPresets();
             DatabaseService = _DatabaseService;
             VirtualMachineService = _VirtualMachineService;
             VirtualMachineDictionary = _VirtualMachineDictionary;
@@ -47,6 +50,7 @@ namespace CADProcessService.Endpoints
 
         private BWebServiceResponse OnRequest_Internal(HttpListenerContext _Context, Action<string> _ErrorMessageAction)
         {
+            //TestVMStart(_ErrorMessageAction);
             if (_Context.Request.HttpMethod != "POST")
             {
                 _ErrorMessageAction?.Invoke("StartProcessRequest: POST methods is accepted. But received request method:  " + _Context.Request.HttpMethod);
@@ -164,23 +168,37 @@ namespace CADProcessService.Endpoints
                         {
                             NewDBEntry.DeleteDuplicates = (string)ParsedBody["deleteDuplicates"];
                         }
+
                         if (ParsedBody.ContainsKey("mergeFinalLevel"))
                         {
                             NewDBEntry.MergeFinalLevel = (string)ParsedBody["mergeFinalLevel"];
                         }
+
+                        //If Preset is used then override optimization parameters
+                        if (ParsedBody.ContainsKey("optimizationPreset"))
+                        {
+                            int presetId = (int)ParsedBody["optimizationPreset"];
+
+                            OptimizationPresetEntry Preset = Presets[presetId];
+                            NewDBEntry.LodParameters = Preset.LodParameters;
+                            NewDBEntry.CullingThresholds = Preset.CullingThresholds;
+                            NewDBEntry.LevelThresholds = Preset.DistanceThresholds;
+                        }
+
+
                         NewDBEntry.QueuedTime = DateTime.UtcNow.ToString();
 
-                        if (ParsedBody.ContainsKey("zipTypeMainAssemblyFileNameIfAny"))
-                        {
-                            var ZipMainAssemblyToken = ParsedBody["zipTypeMainAssemblyFileNameIfAny"];
+                        //if (ParsedBody.ContainsKey("zipTypeMainAssemblyFileNameIfAny"))
+                        //{
+                        //    var ZipMainAssemblyToken = ParsedBody["zipTypeMainAssemblyFileNameIfAny"];
 
-                            if (ZipMainAssemblyToken.Type != JTokenType.String)
-                            {
-                                return BWebResponse.BadRequest("Request body contains invalid fields.");
-                            }
+                        //    if (ZipMainAssemblyToken.Type != JTokenType.String)
+                        //    {
+                        //        return BWebResponse.BadRequest("Request body contains invalid fields.");
+                        //    }
 
-                            ZipMainAssembly = (string)ZipMainAssemblyToken;
-                        }
+                        //    ZipMainAssembly = (string)ZipMainAssemblyToken;
+                        //}
 
                         NewDBEntry.BucketName = (string)BucketNameToken;
                         //NewConversionID_FromRelativeUrl_UrlEncoded = WebUtility.UrlEncode((string)RawFileRelativeUrlToken);
@@ -419,9 +437,7 @@ namespace CADProcessService.Endpoints
                     _ErrorMessageAction?.Invoke($"Virtual Machine has been started. Name: [{_VirtualMachineName}]");
                     VirtualMachineService.RunCommand(new string[] { _VirtualMachineName }, EBVMOSType.Windows,
                             new string[] {
-                                $"[System.Environment]::SetEnvironmentVariable('CadServiceUrl','{CadProcessServiceUrl}',[System.EnvironmentVariableTarget]::Machine)",
-                                $"[System.Environment]::SetEnvironmentVariable('VMID','{_VirtualMachineId}',[System.EnvironmentVariableTarget]::Machine)",
-                                $"Start-Process \"cmd.exe\" \"/c C:\\Applet\\LaunchUpdater.bat\"",
+                                $"Start-Process \"cmd.exe\" \"/c C:\\Applet\\LaunchUpdater.bat {_VirtualMachineId} {CadProcessServiceUrl}\"",
                             },
                             () => {
                                 _ErrorMessageAction?.Invoke($"Command has been executed. Name: [{_VirtualMachineName}]");
@@ -444,6 +460,89 @@ namespace CADProcessService.Endpoints
                 _ErrorMessageAction?.Invoke($"No available virtual machine was found. Name: [{_VirtualMachineName}]");
                 VMStartFailureAction();
             }
+        }
+
+        //private void TestVMStart(Action<string> _ErrorMessageAction)
+        //{
+        //    ManualResetEvent Wait = new ManualResetEvent(false);
+        //    string _VirtualMachineName = "cip-vm-development-0";
+        //    if (_VirtualMachineName != null)
+        //    {
+        //        VirtualMachineService.StartInstances(new string[] { _VirtualMachineName }, () =>
+        //        {
+        //            _ErrorMessageAction?.Invoke($"Virtual Machine has been started. Name: [{_VirtualMachineName}]");
+        //            VirtualMachineService.RunCommand(new string[] { _VirtualMachineName }, EBVMOSType.Windows,
+        //                    new string[] {
+        //                        $"Start-Process \"cmd.exe\" \"/c C:\\Applet\\Test.bat {_VirtualMachineName} {CadProcessServiceUrl}\"",
+        //                    },
+        //                    () => {
+        //                        _ErrorMessageAction?.Invoke($"Command has been executed. Name: [{_VirtualMachineName}]");
+        //                    },
+        //                    () => {
+        //                        _ErrorMessageAction?.Invoke($"Command execution has been failed. Name: [{_VirtualMachineName}]");
+        //                    }
+        //                );
+        //        },
+        //        () =>
+        //        {
+        //            _ErrorMessageAction?.Invoke($"Virtual Machine starting has been failed. Name: [{_VirtualMachineName}]");
+        //            Wait.Set();
+
+        //        },
+        //            _ErrorMessageAction
+        //        );
+        //    }
+        //    else
+        //    {
+        //        _ErrorMessageAction?.Invoke($"No available virtual machine was found. Name: [{_VirtualMachineName}]");
+                
+        //    }
+        //    Wait.WaitOne();
+        //}
+
+        private void CreateDefaultPresets()
+        {
+            Presets.Add(0, new OptimizationPresetEntry
+            {
+                CullingThresholds = "[0, 50, 200, 500, 1000, 4000, 10000]",
+                DistanceThresholds = new float[] { 1.0f, 4.0f, 8.0f, 15.0f, 30.0f, 60.0f, 90.0f },
+                LodParameters = "[[14.0, -1, 15, 100.0], [60.0, 50.0, -1, 80.0], [120.0, 100.0, -1, 60.0], [200.0, 200.0, -1, 50.0], [400.0, 400.0, -1, 30.0], [800.0, 800.0, -1, 20.0], [1000.0, 1000.0, 50.0, 10.0]]"
+            });
+
+            Presets.Add(1, new OptimizationPresetEntry
+            {
+                CullingThresholds = "[0, 50, 200, 500, 1000, 4000, 10000]",
+                DistanceThresholds = new float[] { 1.0f, 4.0f, 8.0f, 15.0f, 30.0f, 60.0f, 90.0f },
+                LodParameters = "[[14.0, -1, 15, 100.0], [60.0, 50.0, -1, 80.0], [120.0, 100.0, -1, 60.0], [200.0, 200.0, -1, 50.0], [400.0, 400.0, -1, 30.0], [800.0, 800.0, -1, 20.0], [1000.0, 1000.0, 50.0, 10.0]]"
+            });
+
+            Presets.Add(2, new OptimizationPresetEntry
+            {
+                CullingThresholds = "[0, 0, 1000, 3000, 6000, 9500]",
+                DistanceThresholds = new float[] { 2.0f, 6.0f, 20.0f, 100.0f, 150.0f, 300.0f },
+                LodParameters = "[[6.0, -1, 30.0, 100.0], [12.0, -1, 40.0, 50.0], [20.0, -1, 50.0, 30.0], [30.0, -1, 60.0, 16.0], [60.0 -1, 60.0, 10.0], [100.0, -1, 60.0, 5.0]]"
+            });
+
+            Presets.Add(3, new OptimizationPresetEntry
+            {
+                CullingThresholds = "[0, 0, 1000, 3000, 6000, 9500]",
+                DistanceThresholds = new float[] { 2.0f, 6.0f, 20.0f, 100.0f, 150.0f, 300.0f },
+                LodParameters = "[[6.0, -1, 30.0, 100.0], [12.0, -1, 40.0, 50.0], [20.0, -1, 50.0, 30.0], [30.0, -1, 60.0, 16.0], [60.0 -1, 60.0, 10.0], [100.0, -1, 60.0, 5.0]]"
+            });
+
+            Presets.Add(4, new OptimizationPresetEntry
+            {
+                CullingThresholds = "[0, 0, 1000, 3000, 6000, 9500]",
+                DistanceThresholds = new float[] { 2.0f, 6.0f, 20.0f, 100.0f, 150.0f, 300.0f },
+                LodParameters = "[[6.0, -1, 30.0, 100.0], [12.0, -1, 40.0, 50.0], [20.0, -1, 50.0, 30.0], [30.0, -1, 60.0, 16.0], [60.0 -1, 60.0, 10.0], [100.0, -1, 60.0, 5.0]]"
+            });
+
+            Presets.Add(5, new OptimizationPresetEntry
+            {
+                CullingThresholds = "[0, 0, 1000, 3000, 6000, 9500]",
+                DistanceThresholds = new float[] { 2.0f, 6.0f, 20.0f, 100.0f, 150.0f, 300.0f },
+                LodParameters = "[[6.0, -1, 30.0, 100.0], [12.0, -1, 40.0, 50.0], [20.0, -1, 50.0, 30.0], [30.0, -1, 60.0, 16.0], [60.0 -1, 60.0, 10.0], [100.0, -1, 60.0, 5.0]]"
+            });
         }
 
     }

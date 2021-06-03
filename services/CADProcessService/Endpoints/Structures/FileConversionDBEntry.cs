@@ -77,7 +77,7 @@ namespace CADProcessService.Endpoints.Structures
 
 
         [JsonProperty(GLOBAL_SCALE_PROPERTY)]
-        public float GlobalScale = 1;
+        public float GlobalScale = 0.01f;
         [JsonProperty(GLOBAL_X_OFFSET_PROPERTY)]
         public float GlobalXOffset { get; set; }
         [JsonProperty(GLOBAL_Y_OFFSET_PROPERTY)]
