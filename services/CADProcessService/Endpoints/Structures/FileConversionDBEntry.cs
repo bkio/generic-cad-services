@@ -44,6 +44,7 @@ namespace CADProcessService.Endpoints.Structures
         public const string FILTER_SETTINGS_PROPERTY = "filterSettings";
         public const string DELETE_DUPLICATES_PROPERTY = "deleteDuplicates";
         public const string MERGE_FINAL_LEVEL_PROPERTY = "mergeFinalLevel";
+        public const string ZIP_ASSEMBLY_FILENAME_PROPERTY = "zipMainAssemblyFileNameIfAny";
 
         //All fields
         public static readonly string[] Properties =
@@ -71,7 +72,8 @@ namespace CADProcessService.Endpoints.Structures
 
         [JsonProperty(CONVERSION_STAGE_PROPERTY)]
         public int ConversionStage = 0;
-
+        [JsonProperty(ZIP_ASSEMBLY_FILENAME_PROPERTY)]
+        public string ZipMainAssemblyFileNameIfAny { get; set; }
 
 
         [JsonProperty(GLOBAL_SCALE_PROPERTY)]

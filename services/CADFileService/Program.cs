@@ -46,10 +46,10 @@ namespace CADFileService
                     new string[] { "AZ_SERVICEBUS_NAMESPACE_CONNECTION_STRING" },
 
                     //new string[] { "MONGODB_CONNECTION_STRING" },
-                    new string[] { "MONGODB_CLIENT_CONFIG" },
-                    new string[] { "MONGODB_PASSWORD" },
-                    //new string[] { "MONGODB_HOST" },
-                    //new string[] { "MONGODB_PORT" },
+                    //new string[] { "MONGODB_CLIENT_CONFIG" },
+                    //new string[] { "MONGODB_PASSWORD" },
+                    new string[] { "MONGODB_HOST" },
+                    new string[] { "MONGODB_PORT" },
                     new string[] { "MONGODB_DATABASE" },
 
                     new string[] { "DEPLOYMENT_BRANCH_NAME" },

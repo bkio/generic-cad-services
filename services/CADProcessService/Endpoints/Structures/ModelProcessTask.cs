@@ -17,6 +17,7 @@ namespace CADProcessService.Endpoints.Structures
         public string ModelName { get; set; }
         public int ModelRevision { get; set; }
         public int ProcessStep { get; set; }
+        public string ZipMainAssemblyFileNameIfAny { get; set; }
 
 
         public float GlobalScale { get; set; }

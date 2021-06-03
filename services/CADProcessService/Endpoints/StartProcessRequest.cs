@@ -97,6 +97,11 @@ namespace CADProcessService.Endpoints
                             NewDBEntry.ModelRevision = (int)ParsedBody["modelRevision"];
                         }
 
+                        if (ParsedBody.ContainsKey("zipMainAssemblyFileNameIfAny"))
+                        {
+                            NewDBEntry.ZipMainAssemblyFileNameIfAny = (string)ParsedBody["zipMainAssemblyFileNameIfAny"];
+                        }
+
                         if (ParsedBody.ContainsKey("processStep"))
                         {
                             NewDBEntry.ConversionStage = (int)ParsedBody["processStep"];
@@ -121,6 +126,7 @@ namespace CADProcessService.Endpoints
                         {
                             NewDBEntry.GlobalZOffset = (float)ParsedBody["globalZOffset"];
                         }
+
 
                         if (ParsedBody.ContainsKey("globalXRotation"))
                         {
