@@ -516,14 +516,22 @@ namespace CADFileService.Endpoints
                             var RequestObject = new JObject()
                             {
                                 ["bucketName"] = CadFileStorageBucketName,
-                                ["fileRelativeUrl"] = _Action.RelativeUrl,
+                                ["rawFileRelativeUrl"] = _Action.RelativeUrl,
+                                ["modelName"] = ModelObject.ModelName,
+                                ["modelRevision"] = RevisionObject.RevisionIndex,
                                 ["zipTypeMainAssemblyFileNameIfAny"] = ZipMainAssembly,
-                                ["stageNumber"] = StageNumber,
-                                ["layers"] = JsonConvert.SerializeObject(RevisionObject.FileEntry.Layers),
-                                ["globalTransformOffset"] = JsonConvert.SerializeObject(RevisionObject.FileEntry.GlobalTransformOffset),
+                                ["processStep"] = StageNumber,
+                                ["filters"] = JsonConvert.SerializeObject(RevisionObject.FileEntry.Layers),
+                                ["globalScale"] = RevisionObject.FileEntry.GlobalTransformOffset.UniformScale,
+                                ["globalXOffset"] = RevisionObject.FileEntry.GlobalTransformOffset.LocationOffsetX,
+                                ["globalYOffset"] = RevisionObject.FileEntry.GlobalTransformOffset.LocationOffsetY,
+                                ["globalZOffset"] = RevisionObject.FileEntry.GlobalTransformOffset.LocationOffsetZ,
+                                ["globalXRotation"] = RevisionObject.FileEntry.GlobalTransformOffset.RotationOffsetX,
+                                ["globalYRotation"] = RevisionObject.FileEntry.GlobalTransformOffset.RotationOffsetY,
+                                ["globalZRotation"] = RevisionObject.FileEntry.GlobalTransformOffset.RotationOffsetZ,
                                 ["optimizationPreset"] = RevisionObject.FileEntry.OptimizationPreset,
                                 ["mergeFinalLevel"] = RevisionObject.FileEntry.bMergeFinalLevel,
-                                ["detectDuplicateMeshes"] = RevisionObject.FileEntry.bDetectDuplicateMeshes
+                                ["deleteDuplicates"] = RevisionObject.FileEntry.bDetectDuplicateMeshes
                             };
 
                             //TODO: Fix instabilities and uncomment below.

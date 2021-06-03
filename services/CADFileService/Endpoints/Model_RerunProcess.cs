@@ -138,10 +138,10 @@ namespace CADFileService.Endpoints
                 return FailureResponse;
             }
 
-            //if (RevisionObject.FileEntry.FileUploadProcessStage == (int)EUploadProcessStage.NotUploaded)
-            //{
-            //    return BWebResponse.StatusAccepted("File has not been uploaded yet.");
-            //}
+            if (RevisionObject.FileEntry.FileUploadProcessStage == (int)EUploadProcessStage.NotUploaded)
+            {
+                return BWebResponse.StatusAccepted("File has not been uploaded yet.");
+            }
 
             if (ProcessStage < 0)
             {
@@ -171,16 +171,17 @@ namespace CADFileService.Endpoints
             ),
             _ErrorMessageAction);
 
-            if (!SendStartProcessRequest(_Context, RevisionObject, _ErrorMessageAction))
+            if (!SendStartProcessRequest(_Context, ModelObject.ModelName, RevisionObject, _ErrorMessageAction))
             {
-                return BWebResponse.InternalError("Stop request sending has been failed.");
+                return BWebResponse.InternalError("Start request sending has been failed.");
             }
 
-            return BWebResponse.StatusAccepted("Stop request has been sent.");
+            return BWebResponse.StatusAccepted("Start request has been sent.");
         }
 
         private bool SendStartProcessRequest(
             HttpListenerContext _Context,
+            string _ModelUniqueName,
             Revision _RevisionObject,
             Action<string> _ErrorMessageAction)
         {
@@ -195,14 +196,22 @@ namespace CADFileService.Endpoints
             var RequestObject = new JObject()
             {
                 ["bucketName"] = CadFileStorageBucketName,
-                ["fileRelativeUrl"] = _RevisionObject.FileEntry.FileRelativeUrl,
+                ["rawFileRelativeUrl"] = _RevisionObject.FileEntry.FileRelativeUrl,
+                ["modelName"] = _ModelUniqueName,
+                ["modelRevision"] = _RevisionObject.RevisionIndex,
                 ["zipTypeMainAssemblyFileNameIfAny"] = ZipMainAssembly,
-                ["stageNumber"] = _RevisionObject.FileEntry.CurrentProcessStage,
-                ["layers"] = JsonConvert.SerializeObject(_RevisionObject.FileEntry.Layers),
-                ["globalTransformOffset"] = JsonConvert.SerializeObject(_RevisionObject.FileEntry.GlobalTransformOffset),
+                ["processStep"] = _RevisionObject.FileEntry.CurrentProcessStage,
+                ["filters"] = JsonConvert.SerializeObject(_RevisionObject.FileEntry.Layers),
+                ["globalScale"] = _RevisionObject.FileEntry.GlobalTransformOffset.UniformScale,
+                ["globalXOffset"] = _RevisionObject.FileEntry.GlobalTransformOffset.LocationOffsetX,
+                ["globalYOffset"] = _RevisionObject.FileEntry.GlobalTransformOffset.LocationOffsetY,
+                ["globalZOffset"] = _RevisionObject.FileEntry.GlobalTransformOffset.LocationOffsetZ,
+                ["globalXRotation"] = _RevisionObject.FileEntry.GlobalTransformOffset.RotationOffsetX,
+                ["globalYRotation"] = _RevisionObject.FileEntry.GlobalTransformOffset.RotationOffsetY,
+                ["globalZRotation"] = _RevisionObject.FileEntry.GlobalTransformOffset.RotationOffsetZ,
                 ["optimizationPreset"] = _RevisionObject.FileEntry.OptimizationPreset,
                 ["mergeFinalLevel"] = _RevisionObject.FileEntry.bMergeFinalLevel,
-                ["detectDuplicateMeshes"] = _RevisionObject.FileEntry.bDetectDuplicateMeshes
+                ["deleteDuplicates"] = _RevisionObject.FileEntry.bDetectDuplicateMeshes
             };
 
             int TryCount = 0;
