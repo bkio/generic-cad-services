@@ -19,13 +19,14 @@ namespace CADProcessService.Endpoints
 
         private readonly IBFileServiceInterface FileService;
         private readonly string CadFileStorageBucketName;
-
+        private readonly string BranchName;
         public GetSignedUploadUrlRequest(
             IBFileServiceInterface _FileService, 
-            string _CadFileStorageBucketName) : base()
+            string _CadFileStorageBucketName, string _BranchName) : base()
         {
             FileService = _FileService;
             CadFileStorageBucketName = _CadFileStorageBucketName;
+            BranchName = _BranchName;
         }
         protected override BWebServiceResponse OnRequestPP(HttpListenerContext _Context, Action<string> _ErrorMessageAction = null)
         {
@@ -106,7 +107,7 @@ namespace CADProcessService.Endpoints
                 //int FilenameStripLength = RawStrippedPath.LastIndexOf('/');
                 //RawStrippedPath = RawStrippedPath.Substring(0, FilenameStripLength);
 
-                if (!FileService.CreateSignedURLForUpload(out string SignedUploadUrl, CadFileStorageBucketName, $"raw/{modelName}/{Revision}/stages/{FileTypeStageStr}/{Filename}.zip", UPLOAD_CONTENT_TYPE, UPLOAD_URL_VALIDITY_MINUTES, _ErrorMessageAction))
+                if (!FileService.CreateSignedURLForUpload(out string SignedUploadUrl, CadFileStorageBucketName, $"{BranchName}/{modelName}/{Revision}/stages/{FileTypeStageStr}/{Filename}.zip", UPLOAD_CONTENT_TYPE, UPLOAD_URL_VALIDITY_MINUTES, _ErrorMessageAction))
                 {
                     return BWebResponse.InternalError("Failed to create Upload Url");
                 }
