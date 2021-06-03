@@ -170,8 +170,8 @@ namespace CADProcessService
             var CadProcessServiceUrl = "http://" + ServInit.RequiredEnvironmentVariables["CAD_PROCESS_SERVICE_NAME"] + "/";
             if (ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BRANCH_NAME"] != "master" && ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BRANCH_NAME"] != "development")
             {
-                RootPath = "/" + ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BUILD_NUMBER"] + "/";
-                CadProcessServiceUrl += ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BUILD_NUMBER"] + "/";
+                RootPath = "/" + ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BRANCH_NAME"] + "/";
+                CadProcessServiceUrl += ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BRANCH_NAME"] + "/";
             }
 
             var InitializerThread = new Thread(() =>
