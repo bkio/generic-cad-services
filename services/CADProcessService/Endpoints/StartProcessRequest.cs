@@ -22,16 +22,16 @@ namespace CADProcessService.Endpoints
     internal class StartProcessRequest : WebServiceBaseTimeoutableDeliveryEnsurerUser
     {
         private readonly IBDatabaseServiceInterface DatabaseService;
-        private readonly IBVMServiceInterface VMService;
-        private readonly IBMemoryServiceInterface MemoryService;
-        public Dictionary<string, string> VirtualMachines = new Dictionary<string, string>();
+        private readonly IBVMServiceInterface VirtualMachineService;
+        private readonly Dictionary<string, string> VirtualMachineDictionary;
+        private readonly string CadProcessServiceUrl;
 
-        public StartProcessRequest(IBMemoryServiceInterface _MemoryService, IBDatabaseServiceInterface _DatabaseService, IBVMServiceInterface _VMService, Dictionary<string, string> _VirtualMachines) : base()
+        public StartProcessRequest(IBDatabaseServiceInterface _DatabaseService, IBVMServiceInterface _VirtualMachineService, Dictionary<string, string> _VirtualMachineDictionary, string _CadProcessServiceUrl) : base()
         {
-            MemoryService = _MemoryService;
             DatabaseService = _DatabaseService;
-            VMService = _VMService;
-            VirtualMachines = _VirtualMachines;
+            VirtualMachineService = _VirtualMachineService;
+            VirtualMachineDictionary = _VirtualMachineDictionary;
+            CadProcessServiceUrl = _CadProcessServiceUrl;
         }
 
         public override BWebServiceResponse OnRequest_Interruptable_DeliveryEnsurerUser(HttpListenerContext _Context, Action<string> _ErrorMessageAction = null)
@@ -280,7 +280,7 @@ namespace CADProcessService.Endpoints
                 VmEntry.ProcessId = NewConversionID_FromRelativeUrl_UrlEncoded;
                 VmEntry.RevisionIndex = NewDBEntry.ModelRevision;
 
-                StartVM(_VMName, VmEntry, () =>
+                StartVirtualMachine(_VMID, _VMName, VmEntry, () =>
                 {
                     DatabaseService.UpdateItem(
                     WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
@@ -385,7 +385,7 @@ namespace CADProcessService.Endpoints
         {
             //Fetch VM entries
             //Find VM that is available and return name.
-            foreach (var vm in VirtualMachines)
+            foreach (var vm in VirtualMachineDictionary)
             {
                 if (DatabaseService.GetItem(
                 WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
@@ -410,17 +410,30 @@ namespace CADProcessService.Endpoints
             return null;
         }
 
-        private void StartVM(string _VMName, WorkerVMListDBEntry _vm, System.Action VMStartFailureAction, Action<string> _ErrorMessageAction)
+        private void StartVirtualMachine(string _VirtualMachineId, string _VirtualMachineName, WorkerVMListDBEntry _VirtualMachineEntry, System.Action VMStartFailureAction, Action<string> _ErrorMessageAction)
         {
-            if (_vm != null)
+            if (_VirtualMachineEntry != null)
             {
-                VMService.StartInstances(new string[] { }, () =>
+                VirtualMachineService.StartInstances(new string[] { _VirtualMachineName }, () =>
                 {
-
+                    _ErrorMessageAction?.Invoke($"Virtual Machine has been started. Name: [{_VirtualMachineName}]");
+                    VirtualMachineService.RunCommand(new string[] { _VirtualMachineName }, EBVMOSType.Windows,
+                            new string[] {
+                                $"[System.Environment]::SetEnvironmentVariable('CadServiceUrl','{CadProcessServiceUrl}',[System.EnvironmentVariableTarget]::Machine)",
+                                $"[System.Environment]::SetEnvironmentVariable('VMID','{_VirtualMachineId}',[System.EnvironmentVariableTarget]::Machine)",
+                                $"Start-Process \"cmd.exe\" \"/c C:\\Applet\\LaunchUpdater.bat\"",
+                            },
+                            () => {
+                                _ErrorMessageAction?.Invoke($"Command has been executed. Name: [{_VirtualMachineName}]");
+                            },
+                            () => {
+                                _ErrorMessageAction?.Invoke($"Command execution has been failed. Name: [{_VirtualMachineName}]");
+                            }
+                        );
                 },
                 () =>
                 {
-                    _ErrorMessageAction?.Invoke($"FAILED TO START VM [{_VMName}]");
+                    _ErrorMessageAction?.Invoke($"Virtual Machine starting has been failed. Name: [{_VirtualMachineName}]");
                     VMStartFailureAction();
                 },
                     _ErrorMessageAction
@@ -428,7 +441,7 @@ namespace CADProcessService.Endpoints
             }
             else
             {
-                _ErrorMessageAction?.Invoke($"NO AVAILABLE VM WAS FOUND[{_VMName}]");
+                _ErrorMessageAction?.Invoke($"No available virtual machine was found. Name: [{_VirtualMachineName}]");
                 VMStartFailureAction();
             }
         }
