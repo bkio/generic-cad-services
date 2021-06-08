@@ -302,7 +302,7 @@ namespace CADFileService.Endpoints.Structures
 
             if (!_bIsProcessed)
             {
-                var ExtensionSplit = Splitted[2].Split('.');
+                var ExtensionSplit = Splitted[4].Split('.');
                 if (ExtensionSplit.Length < 2) return false;
                 _RawExtension_IfRaw = ExtensionSplit[ExtensionSplit.Length - 1];
             }
