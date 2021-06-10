@@ -93,7 +93,7 @@ namespace CADProcessService.Endpoints.Structures
         public float GlobalZRotation { get; set; }
 
         [JsonProperty(LEVEL_THRESHOLDS_PROPERTY)]
-        public float[] LevelThresholds { get; set; }
+        public string LevelThresholds { get; set; }
         [JsonProperty(LOD_PARAMETERS_PROPERTY)]
         public string LodParameters { get; set; }
         [JsonProperty(CULLNG_THRESHOLDS_PROPERTY)]

@@ -8,6 +8,6 @@ namespace CADProcessService.Endpoints.Structures
     {
         public string LodParameters { get; set; }
         public string CullingThresholds { get; set; }
-        public float[] DistanceThresholds { get; set; }
+        public string DistanceThresholds { get; set; }
     }
 }
