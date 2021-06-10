@@ -218,14 +218,14 @@ namespace CADProcessService.Endpoints
 
             if (BucketName == null || RelativeFileName == null)
             {
-                return BWebResponse.InternalError("No BucketName or FileName");
+                return BWebResponse.InternalError("StartProcessRequest: No BucketName or FileName");
             }
 
             //BDatabaseAttributeCondition UpdateCondition = DatabaseService.BuildAttributeNotExistCondition(FileConversionDBEntry.KEY_NAME_CONVERSION_ID);
 
             if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(), NewConversionID_FromRelativeUrl_UrlEncoded, _ErrorMessageAction))
             {
-                return BWebResponse.InternalError($"Failed to get access to database record");
+                return BWebResponse.InternalError($"StartProcessRequest: Failed to get access to database record");
             }
 
             try
@@ -251,7 +251,7 @@ namespace CADProcessService.Endpoints
                         //}
                         if (ExistingStatus == EInternalProcessStage.Processing)
                         {
-                            return BWebResponse.Conflict("File is already being processed/queued.");
+                            return BWebResponse.Conflict("StartProcessRequest: File is already being processed/queued.");
                         }
 
                     }
@@ -266,13 +266,13 @@ namespace CADProcessService.Endpoints
                     null,
                     _ErrorMessageAction))
                 {
-                    return BWebResponse.Conflict("File is already being processed/queued.");
+                    return BWebResponse.Conflict("StartProcessRequest: File is already being processed/queued.");
                 }
             }
             catch (Exception ex)
             {
                 _ErrorMessageAction?.Invoke($"{ex.Message}\n{ex.StackTrace}");
-                return BWebResponse.InternalError($"Database Error");
+                return BWebResponse.InternalError($"StartProcessRequest->DBSERVICE_FILE_CONVERSIONS_TABLE: UpdateItem Database Error");
             }
             finally
             {
@@ -284,7 +284,7 @@ namespace CADProcessService.Endpoints
             //Lock to avoid race condition with deallocation
             if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(), "VMLOCK", _ErrorMessageAction))
             {
-                return BWebResponse.InternalError($"Failed to get access to database lock");
+                return BWebResponse.InternalError($"StartProcessRequest->DBSERVICE_WORKERS_VM_LIST_TABLE: Failed to get access to database lock");
             }
 
             try
@@ -314,7 +314,7 @@ namespace CADProcessService.Endpoints
             catch (Exception ex)
             {
                 _ErrorMessageAction?.Invoke($"{ex.Message}\n{ex.StackTrace}");
-                return BWebResponse.InternalError($"Database Error");
+                return BWebResponse.InternalError($"StartProcessRequest->GetAvailableVm: Database Error");
             }
             finally
             {
@@ -406,11 +406,11 @@ namespace CADProcessService.Endpoints
             foreach (var vm in VirtualMachineDictionary)
             {
                 if (DatabaseService.GetItem(
-                WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
-                WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
-                new BPrimitiveType(vm.Key),
-                FileConversionDBEntry.Properties,
-                out JObject VMEntry
+                    WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
+                    WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
+                    new BPrimitiveType(vm.Key),
+                    FileConversionDBEntry.Properties,
+                    out JObject VMEntry
                 ))
                 {
                     WorkerVMListDBEntry CurrentEntry = VMEntry.ToObject<WorkerVMListDBEntry>();

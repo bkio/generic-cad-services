@@ -14,6 +14,7 @@ using ServiceUtilities.All;
 using k8s.Models;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
+using CADProcessService.Endpoints.Common;
 
 namespace CADProcessService
 {
@@ -183,6 +184,8 @@ namespace CADProcessService
             InitializerThread.Start();
 
             var InternalCallPrivateKey = ServInit.RequiredEnvironmentVariables["INTERNAL_CALL_PRIVATE_KEY"];
+
+            CommonMethods.InitializeWorkerVMListTable(ServInit.DatabaseService, VirtualMachineDictionary, Console.WriteLine);
 
             /*
             * Web-http service initialization

@@ -10,6 +10,7 @@ using ServiceUtilities.Common;
 using Newtonsoft.Json;
 using BCommonUtilities;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 
 namespace CADProcessService.Endpoints.Common
 {
@@ -167,6 +168,56 @@ namespace CADProcessService.Endpoints.Common
             {
                 Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(_InnerProcessor, ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(), _VirtualMachineEntry.ProcessId, _ErrorMessageAction);
             }
+            return true;
+        }
+
+        public static bool InitializeWorkerVMListTable(
+            IBDatabaseServiceInterface _DatabaseService,
+            Dictionary<string, string> _VirtualMachineDictionary,
+            Action<string> _ErrorMessageAction)
+        {
+            foreach (var VirtualMachine in _VirtualMachineDictionary)
+            {
+                if (_DatabaseService.GetItem(
+                    WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
+                    WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
+                    new BPrimitiveType(VirtualMachine.Key),
+                    FileConversionDBEntry.Properties,
+                    out JObject _CurrentVMEntry
+                ) && _CurrentVMEntry == null)
+                {
+                    try
+                    {
+                        var _VirtualMachineEntry = new WorkerVMListDBEntry();
+                        _VirtualMachineEntry.VMName = VirtualMachine.Value;
+
+                        if (!_DatabaseService.UpdateItem(
+                            WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
+                            WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
+                            new BPrimitiveType(VirtualMachine.Key),
+                            JObject.Parse(JsonConvert.SerializeObject(_VirtualMachineEntry)),
+                            out JObject _, EBReturnItemBehaviour.DoNotReturn,
+                            _DatabaseService.BuildAttributeNotExistCondition(WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID),
+                            _ErrorMessageAction))
+                        {
+                            _ErrorMessageAction?.Invoke($"InitializeWorkerVMListTable: Failed to update worker-vm-list table for [{VirtualMachine.Value}]");
+                            return false;
+                        }
+                        _ErrorMessageAction?.Invoke($"InitializeWorkerVMListTable: Virtual Machine {VirtualMachine.Value} is saved with {VirtualMachine.Key} id in worker-vm-list table.");
+                    }
+                    catch (System.Exception ex)
+                    {
+                        _ErrorMessageAction?.Invoke($"InitializeWorkerVMListTable: Failed to update worker-vm-list table for [{VirtualMachine.Value}]. Error: {ex.Message}. Trace: {ex.StackTrace}");
+                        return false;
+                    }
+                }
+
+                if (_CurrentVMEntry != null)
+                {
+                    _ErrorMessageAction?.Invoke($"InitializeWorkerVMListTable: Virtual Machine {VirtualMachine.Value} is already in worker-vm-list table with {VirtualMachine.Key} id.");
+                }
+            }
+            
             return true;
         }
     }
