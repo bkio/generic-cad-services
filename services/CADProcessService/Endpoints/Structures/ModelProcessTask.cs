@@ -29,7 +29,7 @@ namespace CADProcessService.Endpoints.Structures
         public float GlobalYRotation { get; set; }
         public float GlobalZRotation { get; set; }
 
-        public float[] LevelThresholds { get; set; }
+        public string LevelThresholds { get; set; }
         public string LodParameters { get; set; }
         public string CullingThresholds { get; set; }
         //public List<FilterInfo> Filters { get; set; }
