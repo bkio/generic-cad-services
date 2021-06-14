@@ -104,6 +104,7 @@ namespace CADProcessService.Endpoints
                                 Task.ModelRevision = Entry.ModelRevision;
                                 Task.ProcessStep = Entry.ConversionStage;
                                 Task.ConversionId = Key;
+                                Task.ZipMainAssemblyFileNameIfAny = Entry.ZipMainAssemblyFileNameIfAny;
 
                                 Task.Filters = Entry.FilterSettings;
 
