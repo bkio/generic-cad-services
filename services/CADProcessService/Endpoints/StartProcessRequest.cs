@@ -201,8 +201,8 @@ namespace CADProcessService.Endpoints
                         //}
 
                         NewDBEntry.BucketName = (string)BucketNameToken;
-                        //NewConversionID_FromRelativeUrl_UrlEncoded = WebUtility.UrlEncode((string)RawFileRelativeUrlToken);
-                        NewConversionID_FromRelativeUrl_UrlEncoded = WebUtility.UrlEncode($"raw/{NewDBEntry.ModelName}/{NewDBEntry.ModelRevision}");
+                        var DeploymentBranchName = Resources_DeploymentManager.Get().GetDeploymentBranchName();
+                        NewConversionID_FromRelativeUrl_UrlEncoded = WebUtility.UrlEncode($"{DeploymentBranchName}/{NewDBEntry.ModelName}/{NewDBEntry.ModelRevision}");
 
                         BucketName = (string)BucketNameToken;
                         RelativeFileName = (string)RawFileRelativeUrlToken;
