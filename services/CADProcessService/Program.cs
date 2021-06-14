@@ -69,6 +69,8 @@ namespace CADProcessService
 
                     new string[] { "CAD_FILE_STORAGE_BUCKET" },
 
+                    new string[] { "API_GATEWAY_PUBLIC_URL" },
+
                     new string[] { "CAD_PROCESS_SERVICE_NAME" },
                     new string[] { "CAD_PROCESS_POD_NAME" },
                     new string[] { "CAD_PROCESS_PORT" },
@@ -166,13 +168,12 @@ namespace CADProcessService
             Dictionary<string, string> VirtualMachineDictionary = JsonConvert.DeserializeObject<Dictionary<string, string>>(ServInit.RequiredEnvironmentVariables["VM_UUID_NAME_LIST"]);
 
             var CadFileStorageBucketName = ServInit.RequiredEnvironmentVariables["CAD_FILE_STORAGE_BUCKET"];
+            var ApiGatewayPublicUrl = ServInit.RequiredEnvironmentVariables["API_GATEWAY_PUBLIC_URL"];
 
             var RootPath = "/";
-            var CadProcessServiceUrl = "http://" + ServInit.RequiredEnvironmentVariables["CAD_PROCESS_SERVICE_NAME"] + "/";
             if (ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BRANCH_NAME"] != "master" && ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BRANCH_NAME"] != "development")
             {
                 RootPath = "/" + ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BRANCH_NAME"] + "/";
-                CadProcessServiceUrl += ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BRANCH_NAME"] + "/";
             }
 
             var InitializerThread = new Thread(() =>
@@ -192,7 +193,7 @@ namespace CADProcessService
             */
             var WebServiceEndpoints = new List<BWebPrefixStructure>()
             {
-                new BWebPrefixStructure(new string[] { RootPath + "3d/process/start" }, () => new StartProcessRequest(ServInit.DatabaseService, ServInit.VMService, VirtualMachineDictionary, CadProcessServiceUrl)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/process/start" }, () => new StartProcessRequest(ServInit.DatabaseService, ServInit.VMService, VirtualMachineDictionary, ApiGatewayPublicUrl)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/vm_heartbeat*" }, () => new InternalCalls.VMHeartbeat(ServInit.DatabaseService, InternalCallPrivateKey)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/vm_health_check*" }, () => new InternalCalls.VMHealthCheck(ServInit.DatabaseService, ServInit.VMService, VirtualMachineDictionary, InternalCallPrivateKey)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/stop" }, () => new StopProcessRequest(ServInit.DatabaseService, ServInit.VMService, VirtualMachineDictionary)),
