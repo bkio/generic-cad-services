@@ -428,32 +428,56 @@ namespace CADProcessService.Endpoints
             return null;
         }
 
+        private void RunCommandOnVirtualMachine(string _VirtualMachineName, string _VirtualMachineId, Action<string> _ErrorMessageAction)
+        {
+            VirtualMachineService.RunCommand(new string[] { _VirtualMachineName }, EBVMOSType.Windows,
+                new string[] {
+                    $"Start-Process \"cmd.exe\" \"/c C:\\Applet\\LaunchUpdater.bat {_VirtualMachineId} {CadProcessServiceUrl}\"",
+                },
+                () =>
+                {
+                    _ErrorMessageAction?.Invoke($"Command has been executed. Name: [{_VirtualMachineName}]");
+                },
+                () =>
+                {
+                    _ErrorMessageAction?.Invoke($"Command execution has been failed. Name: [{_VirtualMachineName}]");
+                }
+            );
+        }
+
         private void StartVirtualMachine(string _VirtualMachineId, string _VirtualMachineName, WorkerVMListDBEntry _VirtualMachineEntry, System.Action VMStartFailureAction, Action<string> _ErrorMessageAction)
         {
             if (_VirtualMachineEntry != null)
             {
-                VirtualMachineService.StartInstances(new string[] { _VirtualMachineName }, () =>
+                if (VirtualMachineService.GetInstanceStatus(_VirtualMachineName, out EBVMInstanceStatus VMStatus, _ErrorMessageAction))
                 {
-                    _ErrorMessageAction?.Invoke($"Virtual Machine has been started. Name: [{_VirtualMachineName}]");
-                    VirtualMachineService.RunCommand(new string[] { _VirtualMachineName }, EBVMOSType.Windows,
-                            new string[] {
-                                $"Start-Process \"cmd.exe\" \"/c C:\\Applet\\LaunchUpdater.bat {_VirtualMachineId} {CadProcessServiceUrl}\"",
-                            },
-                            () => {
-                                _ErrorMessageAction?.Invoke($"Command has been executed. Name: [{_VirtualMachineName}]");
-                            },
-                            () => {
-                                _ErrorMessageAction?.Invoke($"Command execution has been failed. Name: [{_VirtualMachineName}]");
-                            }
+                    _ErrorMessageAction?.Invoke($"VM Status has been received. Name: [{_VirtualMachineName}] - Status: [{VMStatus.ToString()}]");
+
+                    if (VMStatus == EBVMInstanceStatus.Running)
+                    {
+                        RunCommandOnVirtualMachine(_VirtualMachineName, _VirtualMachineId, _ErrorMessageAction);
+                    }
+                    else
+                    {
+                        VirtualMachineService.StartInstances(new string[] { _VirtualMachineName },
+                        () =>
+                        {
+                            _ErrorMessageAction?.Invoke($"Virtual Machine has been started. Name: [{_VirtualMachineName}]");
+                            RunCommandOnVirtualMachine(_VirtualMachineName, _VirtualMachineId, _ErrorMessageAction);
+                        },
+                        () =>
+                        {
+                            _ErrorMessageAction?.Invoke($"Virtual Machine starting has been failed. Name: [{_VirtualMachineName}]");
+                            VMStartFailureAction();
+                        },
+                            _ErrorMessageAction
                         );
-                },
-                () =>
+                    }
+                }
+                else
                 {
-                    _ErrorMessageAction?.Invoke($"Virtual Machine starting has been failed. Name: [{_VirtualMachineName}]");
-                    VMStartFailureAction();
-                },
-                    _ErrorMessageAction
-                );
+                    _ErrorMessageAction?.Invoke($"VM Status receiving has been failed. Name: [{_VirtualMachineName}]");
+                }
             }
             else
             {
