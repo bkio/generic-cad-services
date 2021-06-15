@@ -165,7 +165,7 @@ namespace CADFileService
             RevisionObject.FileEntry.Merge(UpdatedFileEntryJson);
 
             RevisionObject.FileEntry.FileEntryFileType = RevisionObject.FileEntry.FileEntryFileType.ToLower().TrimStart('.');
-            RevisionObject.FileEntry.FileRelativeUrl = RevisionObject.FileEntry.GetFileRelativeUrl(ModelObject.ModelName, RequestedRevisionIndex);
+            RevisionObject.FileEntry.FileRelativeUrl = RevisionObject.FileEntry.GetFileRelativeUrl(RequestedModelID, RequestedRevisionIndex);
             RevisionObject.FileEntry.FileEntryCreationTime = CommonMethods.GetTimeAsCreationTime();
             ModelObject.MRVLastUpdateTime = RevisionObject.FileEntry.FileEntryCreationTime;
 
@@ -324,13 +324,13 @@ namespace CADFileService
                 return BWebResponse.NotFound("Raw file has not been uploaded yet.");
             }
 
-            var GivenRelativeUrl = RevisionObject.FileEntry.GetFileRelativeUrl(ModelObject.ModelName, RequestedRevisionIndex, RevisionObject.FileEntry.CurrentProcessStage);
+            var GivenRelativeUrl = RevisionObject.FileEntry.GetFileRelativeUrl(RequestedModelID, RequestedRevisionIndex, RevisionObject.FileEntry.CurrentProcessStage);
 
             if (RestfulUrlParameters.ContainsKey("raw"))
             {
                 if (int.TryParse(RestfulUrlParameters["raw"], out int RequestedProcessStage))
                 {
-                    GivenRelativeUrl = RevisionObject.FileEntry.GetFileRelativeUrl(ModelObject.ModelName, RequestedRevisionIndex, RequestedProcessStage);
+                    GivenRelativeUrl = RevisionObject.FileEntry.GetFileRelativeUrl(RequestedModelID, RequestedRevisionIndex, RequestedProcessStage);
                 }
             }
 

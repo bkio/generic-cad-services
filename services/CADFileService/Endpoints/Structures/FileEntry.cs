@@ -247,7 +247,7 @@ namespace CADFileService.Endpoints.Structures
                     {
                         if(SplitRelativeUrl(
                             FileRelativeUrl, 
-                            out string _OwnerModelName,
+                            out string _OwnerModelID,
                             out int _OwnerRevisionIndex,
                             out int _,
                             out bool _,
@@ -255,7 +255,7 @@ namespace CADFileService.Endpoints.Structures
                         {
                             for (int CurrentStage = 0; CurrentStage <= (int)EProcessStage.Stage6_UnrealEngineConvertion; CurrentStage++)
                             {
-                                var _FileRelativeUrl = GetFileRelativeUrl(_OwnerModelName, _OwnerRevisionIndex, CurrentStage);
+                                var _FileRelativeUrl = GetFileRelativeUrl(_OwnerModelID, _OwnerRevisionIndex, CurrentStage);
 
                                 Controller_DeliveryEnsurer.Get().FS_DeleteFile_FireAndForget(
                                     _Context,
@@ -272,7 +272,7 @@ namespace CADFileService.Endpoints.Structures
 
         public static bool SplitRelativeUrl(
             string _RelativeUrl, 
-            out string _OwnerModelName, 
+            out string _OwnerModelID, 
             out int _OwnerRevisionIndex, 
             out int _StageNumber,
             out bool _bIsProcessed,
@@ -280,7 +280,7 @@ namespace CADFileService.Endpoints.Structures
         {
             var DeploymentBranchName = Resources_DeploymentManager.Get().GetDeploymentBranchNameEscapedLoweredWithUnderscore();
 
-            _OwnerModelName = null;
+            _OwnerModelID = null;
             _OwnerRevisionIndex = -1;
             _RawExtension_IfRaw = null;
             _StageNumber = -1;
@@ -295,7 +295,7 @@ namespace CADFileService.Endpoints.Structures
             var Splitted = _RelativeUrl.Split('/');
             if (Splitted.Length < 5) return false;
 
-            _OwnerModelName = Splitted[0];
+            _OwnerModelID = Splitted[0];
             if (!int.TryParse(Splitted[1], out _OwnerRevisionIndex)) return false;
 
             if (!int.TryParse(Splitted[3], out _StageNumber)) return false;
@@ -309,46 +309,46 @@ namespace CADFileService.Endpoints.Structures
 
             return true;
         }
-        public string GetFileRelativeUrl(string _OwnerModelName, int _OwnerRevisionIndex)
+        public string GetFileRelativeUrl(string _OwnerModelID, int _OwnerRevisionIndex)
         {
             var DeploymentBranchName = Resources_DeploymentManager.Get().GetDeploymentBranchNameEscapedLoweredWithUnderscore();
 
             if (CurrentProcessStage == (int)EProcessStage.Stage0_FileUpload)
             {
-                return $"{DeploymentBranchName}/{_OwnerModelName}/{_OwnerRevisionIndex}/stages/{CurrentProcessStage}/files.{FileEntryFileType}";
+                return $"{DeploymentBranchName}/{_OwnerModelID}/{_OwnerRevisionIndex}/stages/{CurrentProcessStage}/files.{FileEntryFileType}";
             }
             else
             {
-                return $"{DeploymentBranchName}/{_OwnerModelName}/{_OwnerRevisionIndex}/stages/{CurrentProcessStage}/files.zip";
+                return $"{DeploymentBranchName}/{_OwnerModelID}/{_OwnerRevisionIndex}/stages/{CurrentProcessStage}/files.zip";
             }
         }
 
-        public string GetFileRelativeUrl(string _OwnerModelName, int _OwnerRevisionIndex, int _CurrentProcessStage)
+        public string GetFileRelativeUrl(string _OwnerModelID, int _OwnerRevisionIndex, int _CurrentProcessStage)
         {
             var DeploymentBranchName = Resources_DeploymentManager.Get().GetDeploymentBranchNameEscapedLoweredWithUnderscore();
 
             if (CurrentProcessStage == (int)EProcessStage.Stage0_FileUpload)
             {
-                return $"{DeploymentBranchName}/{_OwnerModelName}/{_OwnerRevisionIndex}/stages/{_CurrentProcessStage}/files.{FileEntryFileType}";
+                return $"{DeploymentBranchName}/{_OwnerModelID}/{_OwnerRevisionIndex}/stages/{_CurrentProcessStage}/files.{FileEntryFileType}";
             }
             else
             {
-                return $"{DeploymentBranchName}/{_OwnerModelName}/{_OwnerRevisionIndex}/stages/{_CurrentProcessStage}/files.zip";
+                return $"{DeploymentBranchName}/{_OwnerModelID}/{_OwnerRevisionIndex}/stages/{_CurrentProcessStage}/files.zip";
             }
         }
 
-        public string GetFileRelativeUrl(string _OwnerModelName, int _OwnerRevisionIndex, int _CurrentProcessStage, string _Extension)
+        public string GetFileRelativeUrl(string _OwnerModelID, int _OwnerRevisionIndex, int _CurrentProcessStage, string _Extension)
         {
             var DeploymentBranchName = Resources_DeploymentManager.Get().GetDeploymentBranchNameEscapedLoweredWithUnderscore();
 
-            return $"{DeploymentBranchName}/{_OwnerModelName}/{_OwnerRevisionIndex}/stages/{_CurrentProcessStage}/files.{_Extension}";
+            return $"{DeploymentBranchName}/{_OwnerModelID}/{_OwnerRevisionIndex}/stages/{_CurrentProcessStage}/files.{_Extension}";
         }
 
-        public string GetFileRelativeUrl(string _OwnerModelName, int _OwnerRevisionIndex, int _CurrentProcessStage, string _Extension, string _GeometryId)
+        public string GetFileRelativeUrl(string _OwnerModelID, int _OwnerRevisionIndex, int _CurrentProcessStage, string _Extension, string _GeometryId)
         {
             var DeploymentBranchName = Resources_DeploymentManager.Get().GetDeploymentBranchNameEscapedLoweredWithUnderscore();
 
-            return $"{DeploymentBranchName}/{_OwnerModelName}/{_OwnerRevisionIndex}/stages/{_CurrentProcessStage}/{_GeometryId}.{_Extension}";
+            return $"{DeploymentBranchName}/{_OwnerModelID}/{_OwnerRevisionIndex}/stages/{_CurrentProcessStage}/{_GeometryId}.{_Extension}";
         }
     }
 }

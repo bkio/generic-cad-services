@@ -443,7 +443,7 @@ namespace CADFileService.Endpoints
                 Func<string, int, ModelDBEntry, Revision, int, bool> _SuccessCallback)
             {
                 if (!FileEntry.SplitRelativeUrl(_Action.RelativeUrl,
-                    out string OwnerModelName,
+                    out string OwnerModelID,
                     out int OwnerRevisionIndex,
                     out int StageNumber,
                     out bool bIsAProcessedFile,
@@ -453,15 +453,15 @@ namespace CADFileService.Endpoints
                     return true; //It should return 200 anyways.
                 }
 
-                if (!CommonMethods.TryGettingModelID(
-                        DatabaseService,
-                        OwnerModelName,
-                        out string OwnerModelID,
-                        out BWebServiceResponse _FailureResponse,
-                        _ErrorMessageAction))
-                {
-                    return false;
-                }
+                //if (!CommonMethods.TryGettingModelID(
+                //        DatabaseService,
+                //        OwnerModelName,
+                //        out string OwnerModelID,
+                //        out BWebServiceResponse _FailureResponse,
+                //        _ErrorMessageAction))
+                //{
+                //    return false;
+                //}
 
                 if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, ModelDBEntry.DBSERVICE_MODELS_TABLE(), OwnerModelID, _ErrorMessageAction))
                 {
@@ -476,7 +476,7 @@ namespace CADFileService.Endpoints
                         out ModelDBEntry ModelObject,
                         out Revision RevisionObject,
                         out int _,
-                        out _FailureResponse,
+                        out BWebServiceResponse _FailureResponse,
                         _ErrorMessageAction))
                     {
                         if (_FailureResponse.StatusCode == BWebResponse.Error_NotFound_Code)
@@ -517,7 +517,7 @@ namespace CADFileService.Endpoints
                             {
                                 ["bucketName"] = CadFileStorageBucketName,
                                 ["rawFileRelativeUrl"] = _Action.RelativeUrl,
-                                ["modelName"] = ModelObject.ModelName,
+                                ["modelId"] = ModelID,
                                 ["modelRevision"] = RevisionObject.RevisionIndex,
                                 ["zipTypeMainAssemblyFileNameIfAny"] = ZipMainAssembly,
                                 ["processStep"] = StageNumber,

@@ -305,13 +305,13 @@ namespace CADFileService.Endpoints.Common
             switch (_FileType)
             {
                 case EProcessedFileType.UNREAL_HGM:
-                    _RelativeFileUrl = RevisionObject.FileEntry.GetFileRelativeUrl(_ModelUniqueName, _RevisionIndex, (int)EProcessStage.Stage6_UnrealEngineConvertion, Constants.ProcessedFileType_Extension_Map[EProcessedFileType.UNREAL_HGM]);
+                    _RelativeFileUrl = RevisionObject.FileEntry.GetFileRelativeUrl(_ModelID, _RevisionIndex, (int)EProcessStage.Stage6_UnrealEngineConvertion, Constants.ProcessedFileType_Extension_Map[EProcessedFileType.UNREAL_HGM]);
                     break;
                 case EProcessedFileType.UNREAL_HG:
-                    _RelativeFileUrl = RevisionObject.FileEntry.GetFileRelativeUrl(_ModelUniqueName, _RevisionIndex, (int)EProcessStage.Stage6_UnrealEngineConvertion, Constants.ProcessedFileType_Extension_Map[EProcessedFileType.UNREAL_HG]);
+                    _RelativeFileUrl = RevisionObject.FileEntry.GetFileRelativeUrl(_ModelID, _RevisionIndex, (int)EProcessStage.Stage6_UnrealEngineConvertion, Constants.ProcessedFileType_Extension_Map[EProcessedFileType.UNREAL_HG]);
                     break;
                 case EProcessedFileType.UNREAL_H:
-                    _RelativeFileUrl = RevisionObject.FileEntry.GetFileRelativeUrl(_ModelUniqueName, _RevisionIndex, (int)EProcessStage.Stage6_UnrealEngineConvertion, Constants.ProcessedFileType_Extension_Map[EProcessedFileType.UNREAL_H]);
+                    _RelativeFileUrl = RevisionObject.FileEntry.GetFileRelativeUrl(_ModelID, _RevisionIndex, (int)EProcessStage.Stage6_UnrealEngineConvertion, Constants.ProcessedFileType_Extension_Map[EProcessedFileType.UNREAL_H]);
                     break;
                 case EProcessedFileType.UNREAL_G:
                     if (_GeometryId == null)
@@ -320,7 +320,7 @@ namespace CADFileService.Endpoints.Common
                         _FailureResponse = BWebResponse.InternalError("GeometryId was not provided.");
                     }
 
-                    _RelativeFileUrl = RevisionObject.FileEntry.GetFileRelativeUrl(_ModelUniqueName, _RevisionIndex, (int)EProcessStage.Stage6_UnrealEngineConvertion, Constants.ProcessedFileType_Extension_Map[EProcessedFileType.UNREAL_G], _GeometryId);
+                    _RelativeFileUrl = RevisionObject.FileEntry.GetFileRelativeUrl(_ModelID, _RevisionIndex, (int)EProcessStage.Stage6_UnrealEngineConvertion, Constants.ProcessedFileType_Extension_Map[EProcessedFileType.UNREAL_G], _GeometryId);
                     break;
             }
 

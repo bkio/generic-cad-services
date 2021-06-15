@@ -149,7 +149,7 @@ namespace CADFileService.Endpoints
             }
 
             RevisionObject.FileEntry.FileUploadProcessStage = (int)EUploadProcessStage.Uploaded_Processing;
-            RevisionObject.FileEntry.FileRelativeUrl = RevisionObject.FileEntry.GetFileRelativeUrl(ModelObject.ModelName, RevisionObject.RevisionIndex);
+            RevisionObject.FileEntry.FileRelativeUrl = RevisionObject.FileEntry.GetFileRelativeUrl(RequestedModelID, RevisionObject.RevisionIndex);
             RevisionObject.FileEntry.FileProcessedAtTime = Methods.ToISOString();
             ModelObject.MRVLastUpdateTime = RevisionObject.FileEntry.FileProcessedAtTime;
 
@@ -171,7 +171,7 @@ namespace CADFileService.Endpoints
             ),
             _ErrorMessageAction);
 
-            if (!SendStartProcessRequest(_Context, ModelObject.ModelName, RevisionObject, _ErrorMessageAction))
+            if (!SendStartProcessRequest(_Context, RequestedModelID, RevisionObject, _ErrorMessageAction))
             {
                 return BWebResponse.InternalError("Start request sending has been failed.");
             }
@@ -181,7 +181,7 @@ namespace CADFileService.Endpoints
 
         private bool SendStartProcessRequest(
             HttpListenerContext _Context,
-            string _ModelUniqueName,
+            string _ModelID,
             Revision _RevisionObject,
             Action<string> _ErrorMessageAction)
         {
@@ -197,7 +197,7 @@ namespace CADFileService.Endpoints
             {
                 ["bucketName"] = CadFileStorageBucketName,
                 ["rawFileRelativeUrl"] = _RevisionObject.FileEntry.FileRelativeUrl,
-                ["modelName"] = _ModelUniqueName,
+                ["modelId"] = _ModelID,
                 ["modelRevision"] = _RevisionObject.RevisionIndex,
                 ["zipTypeMainAssemblyFileNameIfAny"] = ZipMainAssembly,
                 ["processStep"] = _RevisionObject.FileEntry.CurrentProcessStage,

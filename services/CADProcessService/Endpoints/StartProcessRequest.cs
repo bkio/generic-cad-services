@@ -91,9 +91,9 @@ namespace CADProcessService.Endpoints
                             return BWebResponse.BadRequest("Request body contains invalid fields.");
                         }
 
-                        if (ParsedBody.ContainsKey("modelName"))
+                        if (ParsedBody.ContainsKey("modelId"))
                         {
-                            NewDBEntry.ModelName = (string)ParsedBody["modelName"];
+                            NewDBEntry.ModelName = (string)ParsedBody["modelId"];
                         }
 
                         if (ParsedBody.ContainsKey("modelRevision"))
