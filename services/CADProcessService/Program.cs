@@ -168,7 +168,7 @@ namespace CADProcessService
             Dictionary<string, string> VirtualMachineDictionary = JsonConvert.DeserializeObject<Dictionary<string, string>>(ServInit.RequiredEnvironmentVariables["VM_UUID_NAME_LIST"]);
 
             var CadFileStorageBucketName = ServInit.RequiredEnvironmentVariables["CAD_FILE_STORAGE_BUCKET"];
-            var ApiGatewayPublicUrl = ServInit.RequiredEnvironmentVariables["API_GATEWAY_PUBLIC_URL"];
+            var ApiGatewayPublicUrl = ServInit.RequiredEnvironmentVariables["API_GATEWAY_PUBLIC_URL"] + "/";
 
             var RootPath = "/";
             if (ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BRANCH_NAME"] != "master" && ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BRANCH_NAME"] != "development")
