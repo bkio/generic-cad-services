@@ -577,6 +577,12 @@ namespace CADFileService.Endpoints
                         RevisionObject.FileEntry.FileProcessedAtTime = Methods.ToISOString();
                         ModelObject.MRVLastUpdateTime = RevisionObject.FileEntry.FileProcessedAtTime;
 
+                        var index = ModelObject.ModelRevisions.FindIndex(x => x.RevisionIndex == RevisionObject.RevisionIndex);
+                        if (index >= 0)
+                        {
+                            ModelObject.ModelRevisions[index] = RevisionObject;
+                        }
+
                         var FinalSerializedModelObject = JObject.Parse(JsonConvert.SerializeObject(ModelObject));
 
                         Controller_DeliveryEnsurer.Get().DB_UpdateItem_FireAndForget(
