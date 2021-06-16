@@ -19,7 +19,7 @@ namespace CADFileService.Endpoints
 {
     partial class InternalCalls
     {
-        internal class PubSub_To_CadFileService : PubSubServiceBaseWebhookTimeoutableDeliveryEnsurerUser
+        internal class PubSub_To_CadFileService : PubSubServiceBaseTimeoutableDeliveryEnsurerUser
         {
             private readonly IBDatabaseServiceInterface DatabaseService;
             private readonly IBFileServiceInterface FileService;
@@ -45,7 +45,7 @@ namespace CADFileService.Endpoints
 
             protected override bool Handle(HttpListenerContext _Context, ServiceUtilities.Action _Action, Action<string> _ErrorMessageAction = null)
             {
-                _ErrorMessageAction?.Invoke($"Info: PubSub_To_CadFileService->Handle: {_Action.GetActionType().ToString()}");
+                _ErrorMessageAction?.Invoke($"Info: PubSub_To_CadFileService->Handle: Received Action: {_Action.GetActionType().ToString()}");
                 if (_Action.GetActionType() == Actions.EAction.ACTION_CAD_FILE_SERVICE_DELIVERY_ENSURER)
                 {
                     Controller_DeliveryEnsurer.Get().Retry_FireAndForget_Operation(_Context, (Action_DeliveryEnsurer)_Action, _ErrorMessageAction);
@@ -442,6 +442,7 @@ namespace CADFileService.Endpoints
                 Action<string> _ErrorMessageAction,
                 Func<string, int, ModelDBEntry, Revision, int, bool> _SuccessCallback)
             {
+                _ErrorMessageAction?.Invoke("PubSub_Handler->FileUploaded: Received Action.RelativeUrl : " + _Action.RelativeUrl);
                 if (!FileEntry.SplitRelativeUrl(_Action.RelativeUrl,
                     out string OwnerModelID,
                     out int OwnerRevisionIndex,
@@ -452,16 +453,6 @@ namespace CADFileService.Endpoints
                     _ErrorMessageAction?.Invoke("Error: PubSub_Handler->FileUploaded: SplitRelativeUrl has failed, url is: " + _Action.RelativeUrl);
                     return true; //It should return 200 anyways.
                 }
-
-                //if (!CommonMethods.TryGettingModelID(
-                //        DatabaseService,
-                //        OwnerModelName,
-                //        out string OwnerModelID,
-                //        out BWebServiceResponse _FailureResponse,
-                //        _ErrorMessageAction))
-                //{
-                //    return false;
-                //}
 
                 if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, ModelDBEntry.DBSERVICE_MODELS_TABLE(), OwnerModelID, _ErrorMessageAction))
                 {
@@ -577,6 +568,8 @@ namespace CADFileService.Endpoints
                         RevisionObject.FileEntry.FileProcessedAtTime = Methods.ToISOString();
                         ModelObject.MRVLastUpdateTime = RevisionObject.FileEntry.FileProcessedAtTime;
 
+                        _ErrorMessageAction?.Invoke($"PubSub_Handler->FileUploadedOnSuccess: FinalSerializedModelObject Before: {JObject.Parse(JsonConvert.SerializeObject(ModelObject))}");
+
                         var index = ModelObject.ModelRevisions.FindIndex(x => x.RevisionIndex == RevisionObject.RevisionIndex);
                         if (index >= 0)
                         {
@@ -584,6 +577,8 @@ namespace CADFileService.Endpoints
                         }
 
                         var FinalSerializedModelObject = JObject.Parse(JsonConvert.SerializeObject(ModelObject));
+
+                        _ErrorMessageAction?.Invoke($"PubSub_Handler->FileUploadedOnSuccess: FinalSerializedModelObject After: {FinalSerializedModelObject}");
 
                         Controller_DeliveryEnsurer.Get().DB_UpdateItem_FireAndForget(
                             _Context,
