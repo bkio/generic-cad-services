@@ -62,7 +62,7 @@ namespace CADProcessService.Endpoints
                 ConversionStatus = (int)EInternalProcessStage.Queued
             };
 
-            string NewConversionID_FromRelativeUrl_UrlEncoded = null;
+            string ModelId = null;
             string BucketName = null;
             string RelativeFileName = null;
             //string ZipMainAssembly = "";
@@ -91,9 +91,9 @@ namespace CADProcessService.Endpoints
                             return BWebResponse.BadRequest("Request body contains invalid fields.");
                         }
 
-                        if (ParsedBody.ContainsKey("modelId"))
+                        if (ParsedBody.ContainsKey("modelName"))
                         {
-                            NewDBEntry.ModelName = (string)ParsedBody["modelId"];
+                            NewDBEntry.ModelName = (string)ParsedBody["modelName"];
                         }
 
                         if (ParsedBody.ContainsKey("modelRevision"))
@@ -202,7 +202,8 @@ namespace CADProcessService.Endpoints
 
                         NewDBEntry.BucketName = (string)BucketNameToken;
                         var DeploymentBranchName = Resources_DeploymentManager.Get().GetDeploymentBranchName();
-                        NewConversionID_FromRelativeUrl_UrlEncoded = WebUtility.UrlEncode($"{DeploymentBranchName}/{NewDBEntry.ModelName}/{NewDBEntry.ModelRevision}");
+                        //NewConversionID_FromRelativeUrl_UrlEncoded = WebUtility.UrlEncode($"{DeploymentBranchName}/{NewDBEntry.ModelName}/{NewDBEntry.ModelRevision}");
+                        ModelId = (string)ParsedBody["modelId"];
 
                         BucketName = (string)BucketNameToken;
                         RelativeFileName = (string)RawFileRelativeUrlToken;
@@ -223,7 +224,7 @@ namespace CADProcessService.Endpoints
 
             //BDatabaseAttributeCondition UpdateCondition = DatabaseService.BuildAttributeNotExistCondition(FileConversionDBEntry.KEY_NAME_CONVERSION_ID);
 
-            if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(), NewConversionID_FromRelativeUrl_UrlEncoded, _ErrorMessageAction))
+            if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(), ModelId, _ErrorMessageAction))
             {
                 return BWebResponse.InternalError($"StartProcessRequest: Failed to get access to database record");
             }
@@ -235,7 +236,7 @@ namespace CADProcessService.Endpoints
                 if (DatabaseService.GetItem(
                     FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
                     FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
-                    new BPrimitiveType(NewConversionID_FromRelativeUrl_UrlEncoded),
+                    new BPrimitiveType(ModelId),
                     FileConversionDBEntry.Properties,
                     out JObject ConversionObject
                     ))
@@ -260,7 +261,7 @@ namespace CADProcessService.Endpoints
                 if (!DatabaseService.UpdateItem(
                     FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
                     FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
-                    new BPrimitiveType(NewConversionID_FromRelativeUrl_UrlEncoded),
+                    new BPrimitiveType(ModelId),
                     JObject.Parse(JsonConvert.SerializeObject(NewDBEntry)),
                     out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
                     null,
@@ -276,7 +277,7 @@ namespace CADProcessService.Endpoints
             }
             finally
             {
-                Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(InnerProcessor, FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(), NewConversionID_FromRelativeUrl_UrlEncoded, _ErrorMessageAction);
+                Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(InnerProcessor, FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(), ModelId, _ErrorMessageAction);
             }
 
 
@@ -295,7 +296,7 @@ namespace CADProcessService.Endpoints
                 VmEntry.ProcessStartDate = DateTime.Now.ToString();
                 VmEntry.VMStatus = (int)EVMStatus.Busy;
                 VmEntry.ModelName = NewDBEntry.ModelName;
-                VmEntry.ProcessId = NewConversionID_FromRelativeUrl_UrlEncoded;
+                VmEntry.ProcessId = ModelId;
                 VmEntry.RevisionIndex = NewDBEntry.ModelRevision;
 
                 StartVirtualMachine(_VMID, _VMName, VmEntry, () =>
@@ -486,43 +487,75 @@ namespace CADProcessService.Endpoints
             }
         }
 
-        //private void TestVMStart(Action<string> _ErrorMessageAction)
-        //{
-        //    ManualResetEvent Wait = new ManualResetEvent(false);
-        //    string _VirtualMachineName = "cip-vm-development-0";
-        //    if (_VirtualMachineName != null)
-        //    {
-        //        VirtualMachineService.StartInstances(new string[] { _VirtualMachineName }, () =>
-        //        {
-        //            _ErrorMessageAction?.Invoke($"Virtual Machine has been started. Name: [{_VirtualMachineName}]");
-        //            VirtualMachineService.RunCommand(new string[] { _VirtualMachineName }, EBVMOSType.Windows,
-        //                    new string[] {
-        //                        $"Start-Process \"cmd.exe\" \"/c C:\\Applet\\Test.bat {_VirtualMachineName} {CadProcessServiceUrl}\"",
-        //                    },
-        //                    () => {
-        //                        _ErrorMessageAction?.Invoke($"Command has been executed. Name: [{_VirtualMachineName}]");
-        //                    },
-        //                    () => {
-        //                        _ErrorMessageAction?.Invoke($"Command execution has been failed. Name: [{_VirtualMachineName}]");
-        //                    }
-        //                );
-        //        },
-        //        () =>
-        //        {
-        //            _ErrorMessageAction?.Invoke($"Virtual Machine starting has been failed. Name: [{_VirtualMachineName}]");
-        //            Wait.Set();
+        private void TestVMStart(Action<string> _ErrorMessageAction)
+        {
+            ManualResetEvent Wait = new ManualResetEvent(false);
+            string _VirtualMachineName = "cip-vm-f027aa53-2";
 
-        //        },
-        //            _ErrorMessageAction
-        //        );
-        //    }
-        //    else
-        //    {
-        //        _ErrorMessageAction?.Invoke($"No available virtual machine was found. Name: [{_VirtualMachineName}]");
-                
-        //    }
-        //    Wait.WaitOne();
-        //}
+            
+                if (VirtualMachineService.GetInstanceStatus(_VirtualMachineName, out EBVMInstanceStatus VMStatus, _ErrorMessageAction))
+                {
+                    _ErrorMessageAction?.Invoke($"VM Status has been received. Name: [{_VirtualMachineName}] - Status: [{VMStatus.ToString()}]");
+
+                    if (VMStatus == EBVMInstanceStatus.Running)
+                    {
+                        _ErrorMessageAction?.Invoke($"Virtual Machine has been started. Name: [{_VirtualMachineName}]");
+                        VirtualMachineService.RunCommand(new string[] { _VirtualMachineName }, EBVMOSType.Windows,
+                        new string[] {
+                                    $"Start-Process \"cmd.exe\" \"/c C:\\Applet\\LaunchUpdater.bat 03598d72-251c-4a61-90a1-8493c46e7419 https://api-cip-dev.kognitwin.com/f027aa53/\"",
+                                    //$"Start-Process \"cmd.exe\" \"/c C:\\Applet\\Test.bat {_VirtualMachineName} {CadProcessServiceUrl}\"",
+                                },
+                        () =>
+                        {
+                            _ErrorMessageAction?.Invoke($"Command has been executed. Name: [{_VirtualMachineName}]");
+                            Wait.Set();
+                        },
+                        () =>
+                        {
+                            _ErrorMessageAction?.Invoke($"Command execution has been failed. Name: [{_VirtualMachineName}]");
+                            Wait.Set();
+                        }
+                    );
+                }
+                    else
+                    {
+                        VirtualMachineService.StartInstances(new string[] { _VirtualMachineName },
+                        () =>
+                        {
+                            _ErrorMessageAction?.Invoke($"Virtual Machine has been started. Name: [{_VirtualMachineName}]");
+                            VirtualMachineService.RunCommand(new string[] { _VirtualMachineName }, EBVMOSType.Windows,
+                                new string[] {
+                                    $"Start-Process \"cmd.exe\" \"/c C:\\Applet\\LaunchUpdater.bat 03598d72-251c-4a61-90a1-8493c46e7419 {CadProcessServiceUrl}\"",
+                                    //$"Start-Process \"cmd.exe\" \"/c C:\\Applet\\Test.bat {_VirtualMachineName} {CadProcessServiceUrl}\"",
+                                },
+                                () =>
+                                {
+                                    _ErrorMessageAction?.Invoke($"Command has been executed. Name: [{_VirtualMachineName}]");
+                                    Wait.Set();
+                                },
+                                () =>
+                                {
+                                    _ErrorMessageAction?.Invoke($"Command execution has been failed. Name: [{_VirtualMachineName}]");
+                                    Wait.Set();
+                                }
+                            );
+                        },
+                        () =>
+                        {
+                            _ErrorMessageAction?.Invoke($"Virtual Machine starting has been failed. Name: [{_VirtualMachineName}]");
+                            
+                        },
+                            _ErrorMessageAction
+                        );
+                    }
+                }
+                else
+                {
+                    _ErrorMessageAction?.Invoke($"VM Status receiving has been failed. Name: [{_VirtualMachineName}]");
+                }
+            
+            Wait.WaitOne();
+        }
 
         private void CreateDefaultPresets()
         {

@@ -518,6 +518,7 @@ namespace CADFileService.Endpoints
                                 ["bucketName"] = CadFileStorageBucketName,
                                 ["rawFileRelativeUrl"] = _Action.RelativeUrl,
                                 ["modelId"] = ModelID,
+                                ["modelName"] = ModelObject.ModelName,
                                 ["modelRevision"] = RevisionObject.RevisionIndex,
                                 ["zipTypeMainAssemblyFileNameIfAny"] = ZipMainAssembly,
                                 ["processStep"] = StageNumber,

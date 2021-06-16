@@ -20,7 +20,7 @@ namespace CADProcessService.Endpoints.Structures
     {
         public static string DBSERVICE_FILE_CONVERSIONS_TABLE() { return "file-conversions-" + Resources_DeploymentManager.Get().GetDeploymentBranchNameEscapedLoweredWithDash(); }
 
-        public const string KEY_NAME_CONVERSION_ID = "conversionRawRelativeUrl";
+        public const string KEY_NAME_CONVERSION_ID = "conversionModelId";
 
         public const string CONVERSION_BUCKET_NAME_PROPERTY = "conversionBucketName";
 
