@@ -570,14 +570,14 @@ namespace CADProcessService.Endpoints
             {
                 CullingThresholds = "[0, 50, 200, 500, 1000, 4000, 10000]",
                 DistanceThresholds = JsonConvert.SerializeObject(new float[] { 1.0f, 4.0f, 8.0f, 15.0f, 30.0f, 60.0f, 90.0f }),
-                LodParameters = "[[14.0, -1, 15, 100.0], [60.0, 50.0, -1, 80.0], [120.0, 100.0, -1, 60.0], [200.0, 200.0, -1, 50.0], [400.0, 400.0, -1, 30.0], [800.0, 800.0, -1, 20.0], [1000.0, 1000.0, 50.0, 10.0]]"
+                LodParameters = "[[14.0, -1, 15.0, 100.0], [60.0, 50.0, -1, 80.0], [120.0, 100.0, -1, 60.0], [200.0, 200.0, -1, 50.0], [400.0, 400.0, -1, 30.0], [800.0, 800.0, -1, 20.0], [1000.0, 1000.0, 50.0, 10.0]]"
             });
 
             Presets.Add(2, new OptimizationPresetEntry
             {
                 CullingThresholds = "[0, 0, 1000, 3000, 6000, 9500]",
                 DistanceThresholds = JsonConvert.SerializeObject(new float[] { 2.0f, 6.0f, 20.0f, 100.0f, 150.0f, 300.0f }),
-                LodParameters = "[[6.0, -1, 30.0, 100.0], [12.0, -1, 40.0, 50.0], [20.0, -1, 50.0, 30.0], [30.0, -1, 60.0, 16.0], [60.0 -1, 60.0, 10.0], [100.0, -1, 60.0, 5.0]]"
+                LodParameters = "[[6.0, -1, 15.0, 100.0], [12.0, -1, 30.0, 50.0], [20.0, -1, 50.0, 30.0], [30.0, -1, 60.0, 16.0], [60.0 -1, 60.0, 10.0], [100.0, -1, 60.0, 5.0]]"
             });
 
             Presets.Add(3, new OptimizationPresetEntry
@@ -589,16 +589,16 @@ namespace CADProcessService.Endpoints
 
             Presets.Add(4, new OptimizationPresetEntry
             {
-                CullingThresholds = "[0, 0, 1000, 3000, 6000, 9500]",
+                CullingThresholds = "[0, 0, 1000, 3000, 6000, 8000]",
                 DistanceThresholds = JsonConvert.SerializeObject(new float[] { 2.0f, 6.0f, 20.0f, 100.0f, 150.0f, 300.0f }),
-                LodParameters = "[[6.0, -1, 30.0, 100.0], [12.0, -1, 40.0, 50.0], [20.0, -1, 50.0, 30.0], [30.0, -1, 60.0, 16.0], [60.0 -1, 60.0, 10.0], [100.0, -1, 60.0, 5.0]]"
+                LodParameters = "[[6.0, -1, 15.0, 100.0], [12.0, -1, 30.0, 60.0], [20.0, -1, 40.0, 40.0], [30.0, -1, 60.0, 20.0], [60.0 -1, 60.0, 10.0], [100.0, -1, 60.0, 5.0]]"
             });
 
             Presets.Add(5, new OptimizationPresetEntry
             {
                 CullingThresholds = "[0, 0, 1000, 3000, 6000, 9500]",
                 DistanceThresholds = JsonConvert.SerializeObject(new float[] { 2.0f, 6.0f, 20.0f, 100.0f, 150.0f, 300.0f }),
-                LodParameters = "[[6.0, -1, 30.0, 100.0], [12.0, -1, 40.0, 50.0], [20.0, -1, 50.0, 30.0], [30.0, -1, 60.0, 16.0], [60.0 -1, 60.0, 10.0], [100.0, -1, 60.0, 5.0]]"
+                LodParameters = "[[6.0, -1, 15.0, 100.0], [12.0, -1, 30.0, 60.0], [20.0, -1, 40.0, 40.0], [30.0, -1, 60.0, 20.0], [60.0 -1, 60.0, 10.0], [100.0, -1, 60.0, 5.0]]"
             });
         }
 
