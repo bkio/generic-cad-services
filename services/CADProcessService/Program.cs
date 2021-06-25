@@ -50,6 +50,8 @@ namespace CADProcessService
 
                     new string[] { "AZ_SERVICEBUS_NAMESPACE_ID" },
                     new string[] { "AZ_SERVICEBUS_NAMESPACE_CONNECTION_STRING" },
+                    new string[] { "AZ_EVENTGRID_DOMAIN_ENDPOINT" },
+                    new string[] { "AZ_EVENTGRID_DOMAIN_ACCESS_KEY" },
 
                     //new string[] { "MONGODB_CONNECTION_STRING" },
                     new string[] { "MONGODB_CLIENT_CONFIG" },

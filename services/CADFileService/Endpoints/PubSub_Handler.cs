@@ -511,7 +511,7 @@ namespace CADFileService.Endpoints
                                 ["modelId"] = ModelID,
                                 ["modelName"] = ModelObject.ModelName,
                                 ["modelRevision"] = RevisionObject.RevisionIndex,
-                                ["zipTypeMainAssemblyFileNameIfAny"] = ZipMainAssembly,
+                                ["zipMainAssemblyFileNameIfAny"] = ZipMainAssembly,
                                 ["processStep"] = StageNumber,
                                 ["filters"] = JsonConvert.SerializeObject(RevisionObject.FileEntry.Layers),
                                 ["globalScale"] = RevisionObject.FileEntry.GlobalTransformOffset.UniformScale,
@@ -523,7 +523,8 @@ namespace CADFileService.Endpoints
                                 ["globalZRotation"] = RevisionObject.FileEntry.GlobalTransformOffset.RotationOffsetZ,
                                 ["optimizationPreset"] = RevisionObject.FileEntry.OptimizationPreset,
                                 ["mergeFinalLevel"] = RevisionObject.FileEntry.bMergeFinalLevel,
-                                ["deleteDuplicates"] = RevisionObject.FileEntry.bDetectDuplicateMeshes
+                                ["deleteDuplicates"] = RevisionObject.FileEntry.bDetectDuplicateMeshes,
+                                ["customPythonScript"] = RevisionObject.FileEntry.CustomPythonScript
                             };
 
                             //TODO: Fix instabilities and uncomment below.
@@ -557,7 +558,7 @@ namespace CADFileService.Endpoints
                             }
                         }
 
-                        if (StageNumber == (int)EProcessStage.Stage6_UnrealEngineConvertion)
+                        if (StageNumber > (int)EProcessStage.Stage4_FilteringModel)
                         {
                             RevisionObject.FileEntry.FileUploadProcessStage = (int)EUploadProcessStage.Uploaded_Processed;
                         }
@@ -569,8 +570,6 @@ namespace CADFileService.Endpoints
                         RevisionObject.FileEntry.FileProcessedAtTime = Methods.ToISOString();
                         ModelObject.MRVLastUpdateTime = RevisionObject.FileEntry.FileProcessedAtTime;
 
-                        _ErrorMessageAction?.Invoke($"PubSub_Handler->FileUploadedOnSuccess: FinalSerializedModelObject Before: {JObject.Parse(JsonConvert.SerializeObject(ModelObject))}");
-
                         var index = ModelObject.ModelRevisions.FindIndex(x => x.RevisionIndex == RevisionObject.RevisionIndex);
                         if (index >= 0)
                         {
@@ -578,8 +577,6 @@ namespace CADFileService.Endpoints
                         }
 
                         var FinalSerializedModelObject = JObject.Parse(JsonConvert.SerializeObject(ModelObject));
-
-                        _ErrorMessageAction?.Invoke($"PubSub_Handler->FileUploadedOnSuccess: FinalSerializedModelObject After: {FinalSerializedModelObject}");
 
                         Controller_DeliveryEnsurer.Get().DB_UpdateItem_FireAndForget(
                             _Context,
