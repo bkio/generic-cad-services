@@ -211,7 +211,8 @@ namespace CADFileService.Endpoints
                 ["globalZRotation"] = _RevisionObject.FileEntry.GlobalTransformOffset.RotationOffsetZ,
                 ["optimizationPreset"] = _RevisionObject.FileEntry.OptimizationPreset,
                 ["mergeFinalLevel"] = _RevisionObject.FileEntry.bMergeFinalLevel,
-                ["deleteDuplicates"] = _RevisionObject.FileEntry.bDetectDuplicateMeshes
+                ["deleteDuplicates"] = _RevisionObject.FileEntry.bDetectDuplicateMeshes,
+                ["customPythonScript"] = _RevisionObject.FileEntry.CustomPythonScript
             };
 
             int TryCount = 0;

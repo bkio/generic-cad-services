@@ -44,6 +44,7 @@ namespace CADProcessService.Endpoints.Structures
         public const string FILTER_SETTINGS_PROPERTY = "filterSettings";
         public const string DELETE_DUPLICATES_PROPERTY = "deleteDuplicates";
         public const string MERGE_FINAL_LEVEL_PROPERTY = "mergeFinalLevel";
+        public const string CUSTOM_PYTHON_SCRIPT_PROPERTY = "customPythonScript";
         public const string ZIP_ASSEMBLY_FILENAME_PROPERTY = "zipMainAssemblyFileNameIfAny";
 
         //All fields
@@ -106,6 +107,9 @@ namespace CADProcessService.Endpoints.Structures
 
         [JsonProperty(MERGE_FINAL_LEVEL_PROPERTY)]
         public string MergeFinalLevel { get; set; }
+
+        [JsonProperty(CUSTOM_PYTHON_SCRIPT_PROPERTY)]
+        public string CustomPythonScript { get; set; }
 
     }
 }

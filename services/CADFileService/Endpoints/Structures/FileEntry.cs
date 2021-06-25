@@ -32,6 +32,7 @@ namespace CADFileService.Endpoints.Structures
         public const string OPTIMIZATION_PRESET_PROPERTY = "optimizationPreset";
         public const string MERGE_FINAL_LEVEL_PROPERTY = "mergeFinalLevel";
         public const string DETECT_DUPLICATE_MESHES_PROPERTY = "detectDuplicateMeshes";
+        public const string CUSTOM_PYTHON_SCRIPT_PROPERTY = "customPythonScript";
 
         //Not properties, but being sent in responses
         public const string FILE_DOWNLOAD_URL_PROPERTY = "fileDownloadUrl";
@@ -56,7 +57,8 @@ namespace CADFileService.Endpoints.Structures
             GLOBAL_TRANSFORM_OFFSET_PROPERTY,
             OPTIMIZATION_PRESET_PROPERTY,
             MERGE_FINAL_LEVEL_PROPERTY,
-            DETECT_DUPLICATE_MESHES_PROPERTY
+            DETECT_DUPLICATE_MESHES_PROPERTY,
+            CUSTOM_PYTHON_SCRIPT_PROPERTY
         };
 
         public static readonly Dictionary<string, Func<JToken, bool>> UpdatablePropertiesValidityCheck = new Dictionary<string, Func<JToken, bool>>()
@@ -114,6 +116,10 @@ namespace CADFileService.Endpoints.Structures
             {
                 return _Parameter.Type == JTokenType.Boolean;
             },
+            [CUSTOM_PYTHON_SCRIPT_PROPERTY] = (JToken _Parameter) =>
+            {
+                return _Parameter.Type == JTokenType.String && ((string)_Parameter).Length > 0;
+            },
         };
 
         [JsonProperty(FILE_ENTRY_NAME_PROPERTY)]
@@ -167,6 +173,9 @@ namespace CADFileService.Endpoints.Structures
         [JsonProperty(DETECT_DUPLICATE_MESHES_PROPERTY)]
         public bool bDetectDuplicateMeshes = false;
 
+        [JsonProperty(CUSTOM_PYTHON_SCRIPT_PROPERTY)]
+        public string CustomPythonScript = "";
+
         public void Merge(JObject _Content)
         {
             var ContentObject = JsonConvert.DeserializeObject<FileEntry>(_Content.ToString());
@@ -206,6 +215,8 @@ namespace CADFileService.Endpoints.Structures
                 bMergeFinalLevel = ContentObject.bMergeFinalLevel;
             if (_Content.ContainsKey(DETECT_DUPLICATE_MESHES_PROPERTY))
                 bDetectDuplicateMeshes = ContentObject.bDetectDuplicateMeshes;
+            if (_Content.ContainsKey(CUSTOM_PYTHON_SCRIPT_PROPERTY))
+                CustomPythonScript = ContentObject.CustomPythonScript;
         }
 
         public override bool Equals(object _Other)

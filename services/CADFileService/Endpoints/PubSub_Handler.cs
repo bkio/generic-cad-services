@@ -523,7 +523,8 @@ namespace CADFileService.Endpoints
                                 ["globalZRotation"] = RevisionObject.FileEntry.GlobalTransformOffset.RotationOffsetZ,
                                 ["optimizationPreset"] = RevisionObject.FileEntry.OptimizationPreset,
                                 ["mergeFinalLevel"] = RevisionObject.FileEntry.bMergeFinalLevel,
-                                ["deleteDuplicates"] = RevisionObject.FileEntry.bDetectDuplicateMeshes
+                                ["deleteDuplicates"] = RevisionObject.FileEntry.bDetectDuplicateMeshes,
+                                ["customPythonScript"] = RevisionObject.FileEntry.CustomPythonScript
                             };
 
                             //TODO: Fix instabilities and uncomment below.
@@ -557,7 +558,7 @@ namespace CADFileService.Endpoints
                             }
                         }
 
-                        if (StageNumber == (int)EProcessStage.Stage6_UnrealEngineConvertion)
+                        if (StageNumber > (int)EProcessStage.Stage4_FilteringModel)
                         {
                             RevisionObject.FileEntry.FileUploadProcessStage = (int)EUploadProcessStage.Uploaded_Processed;
                         }

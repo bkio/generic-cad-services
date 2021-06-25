@@ -168,6 +168,10 @@ namespace CADProcessService.Endpoints
                         {
                             NewDBEntry.DeleteDuplicates = (string)ParsedBody["deleteDuplicates"];
                         }
+                        if (ParsedBody.ContainsKey("customPythonScript"))
+                        {
+                            NewDBEntry.CustomPythonScript = (string)ParsedBody["customPythonScript"];
+                        }
 
                         if (ParsedBody.ContainsKey("mergeFinalLevel"))
                         {
@@ -185,20 +189,7 @@ namespace CADProcessService.Endpoints
                             NewDBEntry.LevelThresholds = Preset.DistanceThresholds;
                         }
 
-
                         NewDBEntry.QueuedTime = DateTime.UtcNow.ToString();
-
-                        //if (ParsedBody.ContainsKey("zipTypeMainAssemblyFileNameIfAny"))
-                        //{
-                        //    var ZipMainAssemblyToken = ParsedBody["zipTypeMainAssemblyFileNameIfAny"];
-
-                        //    if (ZipMainAssemblyToken.Type != JTokenType.String)
-                        //    {
-                        //        return BWebResponse.BadRequest("Request body contains invalid fields.");
-                        //    }
-
-                        //    ZipMainAssembly = (string)ZipMainAssemblyToken;
-                        //}
 
                         NewDBEntry.BucketName = (string)BucketNameToken;
                         var DeploymentBranchName = Resources_DeploymentManager.Get().GetDeploymentBranchName();
