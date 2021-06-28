@@ -105,6 +105,7 @@ namespace CADProcessService.Endpoints
                                 Task.ProcessStep = Entry.ConversionStage;
                                 Task.ConversionId = Key;
                                 Task.ZipMainAssemblyFileNameIfAny = Entry.ZipMainAssemblyFileNameIfAny;
+                                Task.CustomPythonScript = Entry.CustomPythonScript;
 
                                 Task.Filters = Entry.FilterSettings;
 
