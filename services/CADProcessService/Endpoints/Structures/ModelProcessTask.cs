@@ -28,6 +28,7 @@ namespace CADProcessService.Endpoints.Structures
         public float GlobalXRotation { get; set; }
         public float GlobalYRotation { get; set; }
         public float GlobalZRotation { get; set; }
+        public string CustomPythonScript { get; set; }
 
         public string LevelThresholds { get; set; }
         public string LodParameters { get; set; }
