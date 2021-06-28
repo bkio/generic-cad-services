@@ -149,6 +149,7 @@ namespace CADProcessService.Endpoints
                         {
                             Entry.CurrentProcessStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
                             Entry.LastKnownProcessStatus = ProgressInfo.ProcessStatus;
+                            Entry.LastKnownProcessStatusInfo = ProgressInfo.Info;
 
                             DatabaseService.UpdateItem(
                             WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),

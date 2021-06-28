@@ -283,7 +283,8 @@ namespace CADProcessService.Endpoints
             {
                 WorkerVMListDBEntry VmEntry = GetAvailableVm(out string _VMID, out string _VMName, _ErrorMessageAction);
                 VmEntry.CurrentProcessStage = NewDBEntry.ConversionStage;
-                VmEntry.LastKnownProcessStatus = NewDBEntry.ConversionStage;
+                VmEntry.LastKnownProcessStatus = 0;
+                VmEntry.LastKnownProcessStatusInfo = "Init";
                 VmEntry.ProcessStartDate = DateTime.Now.ToString();
                 VmEntry.VMStatus = (int)EVMStatus.Busy;
                 VmEntry.ModelName = NewDBEntry.ModelName;
