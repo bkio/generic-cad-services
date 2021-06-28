@@ -147,7 +147,7 @@ namespace CADProcessService.Endpoints
                         if (_VMEntry != null && ProgressInfo.ProgressDetails.GlobalCurrentStage != Entry.CurrentProcessStage)
                         {
                             Entry.CurrentProcessStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
-                            Entry.LastKnownProcessStatus = ProgressInfo.ProgressDetails.GlobalCurrentStage;
+                            Entry.LastKnownProcessStatus = ProgressInfo.ProcessStatus;
 
                             DatabaseService.UpdateItem(
                             WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
@@ -217,7 +217,9 @@ namespace CADProcessService.Endpoints
                         {
                             FileConversionDBEntry ConversionEntry = ConversionObject.ToObject<FileConversionDBEntry>();
 
+                            ConversionEntry.ConversionStatus = ProgressInfo.ProcessStatus;
                             ConversionEntry.ConversionStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
+                            ConversionEntry.Error = ProgressInfo.Error;
 
                             if (!DatabaseService.UpdateItem(
                                 FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),

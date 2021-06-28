@@ -143,6 +143,7 @@ namespace CADProcessService.Endpoints
 
                             ConversionEntry.ConversionStatus = (int)EInternalProcessStage.ProcessFailed;
                             ConversionEntry.ConversionStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
+                            ConversionEntry.Error = ProgressInfo.Error;
 
                             if (!DatabaseService.UpdateItem(
                                 FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
@@ -207,21 +208,19 @@ namespace CADProcessService.Endpoints
                         if (_VMEntry != null)
                         {
                             WorkerVMListDBEntry Entry = _VMEntry.ToObject<WorkerVMListDBEntry>();
-                            if (ProgressInfo.ProgressDetails.GlobalCurrentStage != Entry.CurrentProcessStage)
-                            {
-                                Entry.CurrentProcessStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
-                                Entry.ProcessStartDate = DateTime.Now.ToString();
-                                Entry.VMStatus = (int)EVMStatus.Available;
-                                
-                                DatabaseService.UpdateItem(
-                                WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
-                                WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
-                                new BPrimitiveType(ProgressInfo.VMId),
-                                JObject.Parse(JsonConvert.SerializeObject(Entry)),
-                                out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
-                                null,
-                                _ErrorMessageAction);
-                            }
+                            Entry.CurrentProcessStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
+                            Entry.ProcessStartDate = DateTime.Now.ToString();
+                            Entry.VMStatus = (int)EVMStatus.Available;
+                            Entry.LastKnownProcessStatus = ProgressInfo.ProcessStatus;
+
+                            DatabaseService.UpdateItem(
+                            WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
+                            WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
+                            new BPrimitiveType(ProgressInfo.VMId),
+                            JObject.Parse(JsonConvert.SerializeObject(Entry)),
+                            out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
+                            null,
+                            _ErrorMessageAction);
                         }
                         else
                         {
