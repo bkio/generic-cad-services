@@ -19,7 +19,8 @@ namespace CADFileService.Endpoints.Structures
         public const string FILE_ENTRY_COMMENTS_PROPERTY = "fileEntryComments";
         public const string FILE_ENTRY_CREATION_TIME_PROPERTY = "fileEntryCreationTime";
         public const string FILE_RELATIVE_URL_PROPERTY = "fileRelativeUrl";
-        public const string FILE_UPLOAD_PROCESS_STAGE_PROPERTY = "fileUploadProcessStage";
+        public const string FILE_PROCESS_STATUS_PROPERTY = "fileProcessStatus";
+        public const string FILE_PROCESS_STATUS_INFO_PROPERTY = "fileProcessStatusInfo";
         public const string FILE_PROCESSED_AT_TIME_PROPERTY = "fileProcessedAtTime";
         public const string CURRENT_PROCESS_STAGE_PROPERTY = "currentProcessStage";
         public const string PROCESSED_FILES_ROOT_NODE_ID = "processedFilesRootNodeId";
@@ -140,8 +141,11 @@ namespace CADFileService.Endpoints.Structures
         [JsonProperty(FILE_RELATIVE_URL_PROPERTY)]
         public string FileRelativeUrl = "";
 
-        [JsonProperty(FILE_UPLOAD_PROCESS_STAGE_PROPERTY)]
-        public int FileUploadProcessStage = (int)EUploadProcessStage.NotUploaded;
+        [JsonProperty(FILE_PROCESS_STATUS_PROPERTY)]
+        public int FileProcessStatus = (int)EFileProcessStatus.NotUploaded;
+        
+        [JsonProperty(FILE_PROCESS_STATUS_INFO_PROPERTY)]
+        public string FileProcessStatusInfo = "";
 
         [JsonProperty(FILE_PROCESSED_AT_TIME_PROPERTY)]
         public string FileProcessedAtTime = "";
@@ -192,8 +196,10 @@ namespace CADFileService.Endpoints.Structures
                 FileEntryCreationTime = ContentObject.FileEntryCreationTime;
             if (_Content.ContainsKey(FILE_RELATIVE_URL_PROPERTY))
                 FileRelativeUrl = ContentObject.FileRelativeUrl;
-            if (_Content.ContainsKey(FILE_UPLOAD_PROCESS_STAGE_PROPERTY))
-                FileUploadProcessStage = ContentObject.FileUploadProcessStage;
+            if (_Content.ContainsKey(FILE_PROCESS_STATUS_PROPERTY))
+                FileProcessStatus = ContentObject.FileProcessStatus;
+            if (_Content.ContainsKey(FILE_PROCESS_STATUS_INFO_PROPERTY))
+                FileProcessStatusInfo = ContentObject.FileProcessStatusInfo;
             if (_Content.ContainsKey(FILE_PROCESSED_AT_TIME_PROPERTY))
                 FileProcessedAtTime = ContentObject.FileProcessedAtTime;
             if (_Content.ContainsKey(PROCESSED_FILES_ROOT_NODE_ID))
@@ -250,11 +256,12 @@ namespace CADFileService.Endpoints.Structures
 
         public void DeleteAllFiles(HttpListenerContext _Context, string _BucketName, Action<string> _ErrorMessageAction = null)
         {
-            switch (FileUploadProcessStage)
+            switch (FileProcessStatus)
             {
-                case (int)EUploadProcessStage.Uploaded_ProcessFailed:
-                case (int)EUploadProcessStage.Uploaded_Processed:
-                case (int)EUploadProcessStage.Uploaded_Processing:
+                case (int)EFileProcessStatus.ProcessCanceled:
+                case (int)EFileProcessStatus.ProcessFailed:
+                case (int)EFileProcessStatus.Processed:
+                case (int)EFileProcessStatus.Processing:
                     {
                         if(SplitRelativeUrl(
                             FileRelativeUrl, 

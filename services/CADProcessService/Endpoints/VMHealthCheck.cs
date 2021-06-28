@@ -69,9 +69,7 @@ namespace CADProcessService.Endpoints
                         continue;
                     }
 
-                    if (CurrentWorkerVM.LastKnownProcessStatus == (int)EProcessStatus.Idle
-                            || CurrentWorkerVM.LastKnownProcessStatus == (int)EProcessStatus.Failed
-                            || CurrentWorkerVM.LastKnownProcessStatus == (int)EProcessStatus.Completed)
+                    if (CurrentWorkerVM.LastKnownProcessStatus != (int)EProcessStatus.Processing)
                     {
                         if (!CommonMethods.StopVirtualMachine(
                             VirtualMachineService,
@@ -79,6 +77,7 @@ namespace CADProcessService.Endpoints
                             InnerProcessor,
                             CurrentWorkerVM,
                             _RequestedVirtualMachineId,
+                            true,
                             _ErrorMessageAction,
                             out BWebServiceResponse _FailureResponse))
                         {

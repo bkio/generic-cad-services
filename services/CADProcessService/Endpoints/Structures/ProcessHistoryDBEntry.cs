@@ -20,6 +20,7 @@ namespace CADProcessService.Endpoints.Structures
         public const string MODEL_REVISION_INDEX_PROPERTY = "revisionIndex";
         public const string CURRENT_PROCESS_STAGE_PROPERTY = "currentProcessStage";
         public const string PROCESS_STATUS_PROPERTY = "processStatus";
+        public const string PROCESS_STATUS_INFO_PROPERTY = "processStatusInfo";
         public const string HISTORY_RECORDS_PROPERTY = "historyRecords";
 
         //All fields
@@ -29,7 +30,8 @@ namespace CADProcessService.Endpoints.Structures
             MODEL_REVISION_INDEX_PROPERTY,
             HISTORY_RECORDS_PROPERTY,
             CURRENT_PROCESS_STAGE_PROPERTY,
-            PROCESS_STATUS_PROPERTY
+            PROCESS_STATUS_PROPERTY,
+            PROCESS_STATUS_INFO_PROPERTY
         };
 
         //For creating a new model; these properties should also exist in UpdatableProperties
@@ -39,7 +41,8 @@ namespace CADProcessService.Endpoints.Structures
             MODEL_REVISION_INDEX_PROPERTY,
             CURRENT_PROCESS_STAGE_PROPERTY,
             HISTORY_RECORDS_PROPERTY,
-            PROCESS_STATUS_PROPERTY
+            PROCESS_STATUS_PROPERTY,
+            PROCESS_STATUS_INFO_PROPERTY
         };
 
         [JsonProperty(MODEL_UNIQUE_NAME_PROPERTY)]
@@ -50,6 +53,9 @@ namespace CADProcessService.Endpoints.Structures
 
         [JsonProperty(PROCESS_STATUS_PROPERTY)]
         public int ProcessStatus = (int)EProcessStatus.Idle;
+
+        [JsonProperty(PROCESS_STATUS_INFO_PROPERTY)]
+        public string ProcessStatusInfo = "";
 
         [JsonProperty(HISTORY_RECORDS_PROPERTY)]
         public List<HistoryRecord> HistoryRecords = new List<HistoryRecord>();
@@ -71,6 +77,8 @@ namespace CADProcessService.Endpoints.Structures
                 CurrentProcessStage = ContentObject.CurrentProcessStage;
             if (_Content.ContainsKey(PROCESS_STATUS_PROPERTY))
                 ProcessStatus = ContentObject.ProcessStatus;
+            if (_Content.ContainsKey(PROCESS_STATUS_INFO_PROPERTY))
+                ProcessStatusInfo = ContentObject.ProcessStatusInfo;
         }
     }
 }

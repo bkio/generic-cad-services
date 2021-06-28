@@ -107,22 +107,23 @@ namespace CADFileService.Endpoints
                 return FailureResponse;
             }
 
-            //if (RevisionObject.FileEntry.FileUploadProcessStage == (int)EUploadProcessStage.NotUploaded)
-            //{
-            //    return BWebResponse.StatusAccepted("File has not been uploaded yet.");
-            //}
+            if (RevisionObject.FileEntry.FileProcessStatus == (int)EFileProcessStatus.NotUploaded)
+            {
+                return BWebResponse.StatusAccepted("File has not been uploaded yet.");
+            }
 
-            //if (RevisionObject.FileEntry.FileUploadProcessStage == (int)EUploadProcessStage.Uploaded_Processed)
-            //{
-            //    return BWebResponse.StatusAccepted("File has been already processed.");
-            //}
+            if (RevisionObject.FileEntry.FileProcessStatus == (int)EFileProcessStatus.Processed)
+            {
+                return BWebResponse.StatusAccepted("File has been already processed.");
+            }
 
-            //if (RevisionObject.FileEntry.FileUploadProcessStage == (int)EUploadProcessStage.Uploaded_ProcessFailed)
-            //{
-            //    return BWebResponse.StatusAccepted("File process has been already failed.");
-            //}
+            if (RevisionObject.FileEntry.FileProcessStatus == (int)EFileProcessStatus.ProcessFailed || RevisionObject.FileEntry.FileProcessStatus == (int)EFileProcessStatus.ProcessCanceled)
+            {
+                return BWebResponse.StatusAccepted("File process has been already failed or canceled.");
+            }
 
-            RevisionObject.FileEntry.FileUploadProcessStage = (int)EUploadProcessStage.Uploaded_ProcessFailed;
+            RevisionObject.FileEntry.FileProcessStatus = (int)EFileProcessStatus.ProcessCanceled;
+            RevisionObject.FileEntry.FileProcessStatusInfo = "Process has been canceled by the user";
             RevisionObject.FileEntry.FileProcessedAtTime = Methods.ToISOString();
             ModelObject.MRVLastUpdateTime = RevisionObject.FileEntry.FileProcessedAtTime;
 

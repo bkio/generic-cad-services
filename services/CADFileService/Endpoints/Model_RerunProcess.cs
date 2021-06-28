@@ -138,7 +138,7 @@ namespace CADFileService.Endpoints
                 return FailureResponse;
             }
 
-            if (RevisionObject.FileEntry.FileUploadProcessStage == (int)EUploadProcessStage.NotUploaded)
+            if (RevisionObject.FileEntry.FileProcessStatus == (int)EFileProcessStatus.NotUploaded)
             {
                 return BWebResponse.StatusAccepted("File has not been uploaded yet.");
             }
@@ -148,7 +148,8 @@ namespace CADFileService.Endpoints
                 RevisionObject.FileEntry.CurrentProcessStage = (int)EProcessStage.Stage0_FileUpload;
             }
 
-            RevisionObject.FileEntry.FileUploadProcessStage = (int)EUploadProcessStage.Uploaded_Processing;
+            RevisionObject.FileEntry.FileProcessStatus = (int)EFileProcessStatus.Processing;
+            RevisionObject.FileEntry.FileProcessStatusInfo = "";
             RevisionObject.FileEntry.FileRelativeUrl = RevisionObject.FileEntry.GetFileRelativeUrl(RequestedModelID, RevisionObject.RevisionIndex);
             RevisionObject.FileEntry.FileProcessedAtTime = Methods.ToISOString();
             ModelObject.MRVLastUpdateTime = RevisionObject.FileEntry.FileProcessedAtTime;
