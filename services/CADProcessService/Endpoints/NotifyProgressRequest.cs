@@ -180,6 +180,7 @@ namespace CADProcessService.Endpoints
 
                                 ConversionEntry.ConversionStatus = (int)EInternalProcessStage.ProcessFailed;
                                 ConversionEntry.ConversionStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
+                                ConversionEntry.Error = ProgressInfo.Error;
 
                                 if (!DatabaseService.UpdateItem(
                                     FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),

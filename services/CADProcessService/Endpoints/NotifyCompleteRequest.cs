@@ -178,6 +178,7 @@ namespace CADProcessService.Endpoints
 
                             ConversionEntry.ConversionStatus = (int)EInternalProcessStage.ProcessComplete;
                             ConversionEntry.ConversionStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
+                            ConversionEntry.Error = ProgressInfo.Error;
 
                             if (!DatabaseService.UpdateItem(
                                 FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
@@ -211,7 +212,7 @@ namespace CADProcessService.Endpoints
                                 Entry.CurrentProcessStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
                                 Entry.ProcessStartDate = DateTime.Now.ToString();
                                 Entry.VMStatus = (int)EVMStatus.Available;
-
+                                
                                 DatabaseService.UpdateItem(
                                 WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
                                 WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
