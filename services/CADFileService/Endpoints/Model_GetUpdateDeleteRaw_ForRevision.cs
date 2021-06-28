@@ -227,9 +227,9 @@ namespace CADFileService
                 return _FailureResponse;
             }
 
-            var PreviousProcessStage = RevisionObject.FileEntry.FileUploadProcessStage;
+            var PreviousProcessStage = RevisionObject.FileEntry.FileProcessStatus;
 
-            //if (RevisionObject.FileEntry.FileUploadProcessStage == (int)EUploadProcessStage.Uploaded_Processing)
+            //if (RevisionObject.FileEntry.FileProcessStatus == (int)EFileProcessStatus.Processing)
             //{
             //    var RequestObject = new JObject()
             //    {
@@ -276,7 +276,7 @@ namespace CADFileService
             {
                 FileEntryFileType = FileType,
                 CurrentProcessStage = (int)EProcessStage.Stage0_FileUpload,
-                FileUploadProcessStage = (int)EUploadProcessStage.NotUploaded
+                FileProcessStatus = (int)EFileProcessStatus.NotUploaded
             };
             RevisionObject.FileEntry.FileRelativeUrl = RevisionObject.FileEntry.GetFileRelativeUrl(RequestedModelID, RequestedRevisionIndex);
 
@@ -300,7 +300,7 @@ namespace CADFileService
             _ErrorMessageAction);
 
             return BWebResponse.StatusOK("Raw " 
-                + (PreviousProcessStage == (int)EUploadProcessStage.Uploaded_Processed ? "and processed models have " : "model has ")
+                + (PreviousProcessStage == (int)EFileProcessStatus.Processed ? "and processed models have " : "model has ")
                 + "been deleted.");
         }
 
@@ -319,7 +319,7 @@ namespace CADFileService
                 return _FailureResponse;
             }
 
-            if (RevisionObject.FileEntry.FileUploadProcessStage == (int)EUploadProcessStage.NotUploaded)
+            if (RevisionObject.FileEntry.FileProcessStatus == (int)EFileProcessStatus.NotUploaded)
             {
                 return BWebResponse.NotFound("Raw file has not been uploaded yet.");
             }

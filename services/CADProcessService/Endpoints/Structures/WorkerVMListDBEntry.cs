@@ -24,6 +24,7 @@ namespace CADProcessService.Endpoints.Structures
         public const string PROCESS_ID_PROPERTY = "processId";
         public const string PROCESS_START_DATE_PROPERTY = "processStartDate";
         public const string LAST_KNOWN_PROCESS_STATUS_PROPERTY = "lastKnownProcessStatus";
+        public const string LAST_KNOWN_PROCESS_STATUS_INFO_PROPERTY = "lastKnownProcessStatusInfo";
         public const string CURRENT_PROCESS_STAGE_PROPERTY = "currentProcessStage";
 
         //All fields
@@ -36,6 +37,7 @@ namespace CADProcessService.Endpoints.Structures
             PROCESS_ID_PROPERTY,
             PROCESS_START_DATE_PROPERTY,
             LAST_KNOWN_PROCESS_STATUS_PROPERTY,
+            LAST_KNOWN_PROCESS_STATUS_INFO_PROPERTY,
             CURRENT_PROCESS_STAGE_PROPERTY
         };
 
@@ -47,6 +49,7 @@ namespace CADProcessService.Endpoints.Structures
             PROCESS_ID_PROPERTY,
             PROCESS_START_DATE_PROPERTY,
             LAST_KNOWN_PROCESS_STATUS_PROPERTY,
+            LAST_KNOWN_PROCESS_STATUS_INFO_PROPERTY,
             VM_STATUS_PROPERTY,
             VM_NAME_PROPERTY
         };
@@ -59,6 +62,7 @@ namespace CADProcessService.Endpoints.Structures
             PROCESS_ID_PROPERTY,
             PROCESS_START_DATE_PROPERTY,
             LAST_KNOWN_PROCESS_STATUS_PROPERTY,
+            LAST_KNOWN_PROCESS_STATUS_INFO_PROPERTY,
             VM_STATUS_PROPERTY,
             VM_NAME_PROPERTY
         };
@@ -77,6 +81,9 @@ namespace CADProcessService.Endpoints.Structures
 
         [JsonProperty(LAST_KNOWN_PROCESS_STATUS_PROPERTY)]
         public int LastKnownProcessStatus = (int)EProcessStatus.Idle;
+
+        [JsonProperty(LAST_KNOWN_PROCESS_STATUS_INFO_PROPERTY)]
+        public string LastKnownProcessStatusInfo = "";
 
         [JsonProperty(MODEL_UNIQUE_NAME_PROPERTY)]
         public string ModelName { get; set; }
@@ -105,6 +112,8 @@ namespace CADProcessService.Endpoints.Structures
                 ProcessStartDate = ContentObject.ProcessStartDate;
             if (_Content.ContainsKey(CURRENT_PROCESS_STAGE_PROPERTY))
                 CurrentProcessStage = ContentObject.CurrentProcessStage;
+            if (_Content.ContainsKey(LAST_KNOWN_PROCESS_STATUS_INFO_PROPERTY))
+                LastKnownProcessStatusInfo = ContentObject.LastKnownProcessStatusInfo;
         }
     }
 }

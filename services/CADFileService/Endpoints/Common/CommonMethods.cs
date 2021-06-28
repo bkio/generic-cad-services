@@ -295,7 +295,7 @@ namespace CADFileService.Endpoints.Common
                 return false;
             }
 
-            if (RevisionObject.FileEntry.FileUploadProcessStage != (int)EUploadProcessStage.Uploaded_Processed)
+            if (RevisionObject.FileEntry.FileProcessStatus != (int)EFileProcessStatus.Processed)
             {
                 _FailureResponse = BWebResponse.NotFound("Raw file has not been processed yet.");
                 return false;

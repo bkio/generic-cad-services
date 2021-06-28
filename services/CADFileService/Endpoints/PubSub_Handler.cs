@@ -114,7 +114,8 @@ namespace CADFileService.Endpoints
                         return false; //DB Error - Retry
                     }
 
-                    RevisionObject.FileEntry.FileUploadProcessStage = (int)EUploadProcessStage.Uploaded_ProcessFailed;
+                    RevisionObject.FileEntry.FileProcessStatus = (int)EFileProcessStatus.ProcessFailed;
+                    RevisionObject.FileEntry.FileProcessStatusInfo = _Action.StatusMessage;
                     ModelObject.MRVLastUpdateTime = CommonMethods.GetTimeAsCreationTime();
 
                     Controller_DeliveryEnsurer.Get().DB_UpdateItem_FireAndForget(
@@ -560,12 +561,13 @@ namespace CADFileService.Endpoints
 
                         if (StageNumber > (int)EProcessStage.Stage4_FilteringModel)
                         {
-                            RevisionObject.FileEntry.FileUploadProcessStage = (int)EUploadProcessStage.Uploaded_Processed;
+                            RevisionObject.FileEntry.FileProcessStatus = (int)EFileProcessStatus.Processed;
                         }
                         else
                         {
-                            RevisionObject.FileEntry.FileUploadProcessStage = (int)EUploadProcessStage.Uploaded_Processing;
+                            RevisionObject.FileEntry.FileProcessStatus = (int)EFileProcessStatus.Processing;
                         }
+                        RevisionObject.FileEntry.FileProcessStatusInfo = "";
                         RevisionObject.FileEntry.CurrentProcessStage = StageNumber;
                         RevisionObject.FileEntry.FileProcessedAtTime = Methods.ToISOString();
                         ModelObject.MRVLastUpdateTime = RevisionObject.FileEntry.FileProcessedAtTime;

@@ -263,6 +263,7 @@ namespace CADProcessService.Endpoints
                     InnerProcessor,
                     VirtualMachineEntry,
                     RequestedVirtualMachineId,
+                    false,
                     _ErrorMessageAction,
                     out BWebServiceResponse _FailureResponse))
                 {
@@ -316,25 +317,21 @@ namespace CADProcessService.Endpoints
 
                 foundAtLeastOneRecord = true;
 
-                if (CurrentWorkerVM.LastKnownProcessStatus == (int)EProcessStatus.Idle
-                        || CurrentWorkerVM.LastKnownProcessStatus == (int)EProcessStatus.Failed
-                        || CurrentWorkerVM.LastKnownProcessStatus == (int)EProcessStatus.Completed)
-                {
-                    if (!CommonMethods.StopVirtualMachine(
+                if (!CommonMethods.StopVirtualMachine(
                         VirtualMachineService,
                         DatabaseService,
                         InnerProcessor,
                         CurrentWorkerVM,
                         _RequestedVirtualMachineId,
+                        false,
                         _ErrorMessageAction,
                         out FailureResponse))
+                {
+                    if (FailureResponse.ResponseContent.Type == EBStringOrStreamEnum.String)
                     {
-                        if (FailureResponse.ResponseContent.Type == EBStringOrStreamEnum.String)
-                        {
-                            _ErrorMessageAction?.Invoke(FailureResponse.ResponseContent.String);
-                        }
-                        return false;
+                        _ErrorMessageAction?.Invoke(FailureResponse.ResponseContent.String);
                     }
+                    return false;
                 }
             }
 

@@ -69,6 +69,7 @@ namespace CADProcessService.Endpoints
                         {
                             HistoryEntry = _HistoryObject.ToObject<ProcessHistoryDBEntry>();
                             HistoryEntry.ProcessStatus = ProgressInfo.ProcessStatus;
+                            HistoryEntry.ProcessStatusInfo = ProgressInfo.Info;
                             HistoryEntry.CurrentProcessStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
                             HistoryEntry.ModelName =  ProgressInfo.ProgressDetails.ModelName;
 

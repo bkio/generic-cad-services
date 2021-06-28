@@ -21,7 +21,8 @@ namespace CADProcessService.Endpoints.Common
             IBDatabaseServiceInterface _DatabaseService,
             WebServiceBaseTimeoutableProcessor _InnerProcessor,
             WorkerVMListDBEntry _VirtualMachineEntry,
-            string _RequestedVirtualMachineId, 
+            string _RequestedVirtualMachineId,
+            bool _bHealthCheckCall,
             Action<string> _ErrorMessageAction, 
             out BWebServiceResponse _FailureResponse)
         {
@@ -31,21 +32,25 @@ namespace CADProcessService.Endpoints.Common
             if (!_VirtualMachineService.StopInstances(new string[] { VirtualMachineName },
                 () =>
                 {
-                    if (!UpdateDBVirtualMachineAvailability(_DatabaseService, _InnerProcessor, _RequestedVirtualMachineId, _ErrorMessageAction, VirtualMachineName, _VirtualMachineEntry))
+                    if (!UpdateDBVirtualMachineAvailability(_DatabaseService, _InnerProcessor, _RequestedVirtualMachineId, _ErrorMessageAction, VirtualMachineName, _VirtualMachineEntry, _bHealthCheckCall))
                     {
                         _ErrorMessageAction?.Invoke($"Failed to update worker-vm-list database for virtual machine [{VirtualMachineName}]");
                     }
 
-                    if (!UpdateDBProcessHistory(_DatabaseService, _InnerProcessor, _VirtualMachineEntry, _ErrorMessageAction))
+                    if (!UpdateDBProcessHistory(_DatabaseService, _InnerProcessor, _VirtualMachineEntry, _bHealthCheckCall, _ErrorMessageAction))
                     {
                         _ErrorMessageAction?.Invoke($"Failed to update process-history database for virtual machine [{VirtualMachineName}]");
                     }
 
-                    Controller_BatchProcess.Get().BroadcastBatchProcessAction(new Action_BatchProcessFailed()
+                    if (_VirtualMachineEntry.LastKnownProcessStatus == (int)EProcessStatus.Failed)
                     {
-                        ModelName = _VirtualMachineEntry.ModelName,
-                        RevisionIndex = _VirtualMachineEntry.RevisionIndex
-                    }, _ErrorMessageAction);
+                        Controller_BatchProcess.Get().BroadcastBatchProcessAction(new Action_BatchProcessFailed()
+                        {
+                            ModelName = _VirtualMachineEntry.ModelName,
+                            RevisionIndex = _VirtualMachineEntry.RevisionIndex,
+                            StatusMessage = _VirtualMachineEntry.LastKnownProcessStatusInfo
+                        }, _ErrorMessageAction);
+                    }
                 },
                 () =>
                 {
@@ -65,7 +70,8 @@ namespace CADProcessService.Endpoints.Common
             string _RequestedVirtualMachineId,
             Action<string> _ErrorMessageAction,
             string VirtualMachineName,
-            WorkerVMListDBEntry _VirtualMachineEntry)
+            WorkerVMListDBEntry _VirtualMachineEntry,
+            bool _bHealthCheckCall)
         {
             try
             {
@@ -76,7 +82,14 @@ namespace CADProcessService.Endpoints.Common
                 }
 
                 _VirtualMachineEntry.VMStatus = (int)EVMStatus.Available;
-                _VirtualMachineEntry.LastKnownProcessStatus = (int)EProcessStatus.Canceled;
+                if (_bHealthCheckCall)
+                {
+                    _VirtualMachineEntry.LastKnownProcessStatusInfo = "Health check has been called.";
+                }
+                else
+                {
+                    _VirtualMachineEntry.LastKnownProcessStatusInfo = "Stop process has been called.";
+                }
 
                 if (!_DatabaseService.UpdateItem(
                     WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
@@ -107,6 +120,7 @@ namespace CADProcessService.Endpoints.Common
             IBDatabaseServiceInterface _DatabaseService,
             WebServiceBaseTimeoutableProcessor _InnerProcessor, 
             WorkerVMListDBEntry _VirtualMachineEntry,
+            bool _bHealthCheckCall,
             Action<string> _ErrorMessageAction)
         {
             try
@@ -137,13 +151,28 @@ namespace CADProcessService.Endpoints.Common
                     return false;
                 }
 
-                ProcessHistoryObject.ProcessStatus = (int)EProcessStatus.Canceled;
+                ProcessHistoryObject.ProcessStatus = _VirtualMachineEntry.LastKnownProcessStatus;
+                if (_bHealthCheckCall)
+                {
+                    ProcessHistoryObject.ProcessStatusInfo = "Health check has been called.";
+                }
+                else
+                {
+                    ProcessHistoryObject.ProcessStatusInfo = "Stop process has been called.";
+                }
                 ProcessHistoryObject.CurrentProcessStage = _VirtualMachineEntry.CurrentProcessStage;
 
                 var NewHistoryRecord = new HistoryRecord();
                 NewHistoryRecord.RecordDate = Methods.ToISOString();
                 NewHistoryRecord.RecordProcessStage = _VirtualMachineEntry.CurrentProcessStage;
-                NewHistoryRecord.ProcessInfo = "Stop process has been called.";
+                if (_bHealthCheckCall)
+                {
+                    NewHistoryRecord.ProcessInfo = "Health check has been called.";
+                }
+                else
+                {
+                    NewHistoryRecord.ProcessInfo = "Stop process has been called.";
+                }
                 ProcessHistoryObject.HistoryRecords.Add(NewHistoryRecord);
 
                 if (!_DatabaseService.UpdateItem(
