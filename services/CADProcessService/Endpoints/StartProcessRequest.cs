@@ -420,7 +420,7 @@ namespace CADProcessService.Endpoints
             return null;
         }
 
-        private void RunCommandOnVirtualMachine(string _VirtualMachineName, string _VirtualMachineId, Action<string> _ErrorMessageAction)
+        private void RunCommandOnVirtualMachine(WorkerVMListDBEntry _VirtualMachineEntry, string _VirtualMachineName, string _VirtualMachineId, Action<string> _ErrorMessageAction)
         {
             VirtualMachineService.RunCommand(new string[] { _VirtualMachineName }, EBVMOSType.Windows,
                 new string[] {
@@ -428,11 +428,11 @@ namespace CADProcessService.Endpoints
                 },
                 () =>
                 {
-                    _ErrorMessageAction?.Invoke($"Command has been executed. Name: [{_VirtualMachineName}]");
+                    _ErrorMessageAction?.Invoke($"Command has been executed. VM Name: [{_VirtualMachineName}] - Model Name: [{_VirtualMachineEntry.ModelName}] - Revision Index: [{_VirtualMachineEntry.RevisionIndex}]");
                 },
                 () =>
                 {
-                    _ErrorMessageAction?.Invoke($"Command execution has been failed. Name: [{_VirtualMachineName}]");
+                    _ErrorMessageAction?.Invoke($"Command execution has been failed. VM Name: [{_VirtualMachineName}] - Model Name: [{_VirtualMachineEntry.ModelName}] - Revision Index: [{_VirtualMachineEntry.RevisionIndex}]");
                 }
             );
         }
@@ -443,23 +443,23 @@ namespace CADProcessService.Endpoints
             {
                 if (VirtualMachineService.GetInstanceStatus(_VirtualMachineName, out EBVMInstanceStatus VMStatus, _ErrorMessageAction))
                 {
-                    _ErrorMessageAction?.Invoke($"VM Status has been received. Name: [{_VirtualMachineName}] - Status: [{VMStatus.ToString()}]");
+                    _ErrorMessageAction?.Invoke($"VM Status has been received. VM Name: [{_VirtualMachineName}] - Model Name: [{_VirtualMachineEntry.ModelName}] - Revision Index: [{_VirtualMachineEntry.RevisionIndex}] - Status: [{VMStatus.ToString()}]");
 
                     if (VMStatus == EBVMInstanceStatus.Running)
                     {
-                        RunCommandOnVirtualMachine(_VirtualMachineName, _VirtualMachineId, _ErrorMessageAction);
+                        RunCommandOnVirtualMachine(_VirtualMachineEntry, _VirtualMachineName, _VirtualMachineId, _ErrorMessageAction);
                     }
                     else
                     {
                         VirtualMachineService.StartInstances(new string[] { _VirtualMachineName },
                         () =>
                         {
-                            _ErrorMessageAction?.Invoke($"Virtual Machine has been started. Name: [{_VirtualMachineName}]");
-                            RunCommandOnVirtualMachine(_VirtualMachineName, _VirtualMachineId, _ErrorMessageAction);
+                            _ErrorMessageAction?.Invoke($"Virtual Machine has been started. VM Name: [{_VirtualMachineName}] - Model Name: [{_VirtualMachineEntry.ModelName}] - Revision Index: [{_VirtualMachineEntry.RevisionIndex}]");
+                            RunCommandOnVirtualMachine(_VirtualMachineEntry, _VirtualMachineName, _VirtualMachineId, _ErrorMessageAction);
                         },
                         () =>
                         {
-                            _ErrorMessageAction?.Invoke($"Virtual Machine starting has been failed. Name: [{_VirtualMachineName}]");
+                            _ErrorMessageAction?.Invoke($"Virtual Machine starting has been failed. VM Name: [{_VirtualMachineName}] - Model Name: [{_VirtualMachineEntry.ModelName}] - Revision Index: [{_VirtualMachineEntry.RevisionIndex}]");
                             VMStartFailureAction();
                         },
                             _ErrorMessageAction
@@ -468,12 +468,12 @@ namespace CADProcessService.Endpoints
                 }
                 else
                 {
-                    _ErrorMessageAction?.Invoke($"VM Status receiving has been failed. Name: [{_VirtualMachineName}]");
+                    _ErrorMessageAction?.Invoke($"VM Status receiving has been failed. VM Name: [{_VirtualMachineName}] - Model Name: [{_VirtualMachineEntry.ModelName}] - Revision Index: [{_VirtualMachineEntry.RevisionIndex}]");
                 }
             }
             else
             {
-                _ErrorMessageAction?.Invoke($"No available virtual machine was found. Name: [{_VirtualMachineName}]");
+                _ErrorMessageAction?.Invoke($"No available virtual machine was found. VM Name: [{_VirtualMachineName}] - Model Name: [{_VirtualMachineEntry.ModelName}] - Revision Index: [{_VirtualMachineEntry.RevisionIndex}]");
                 VMStartFailureAction();
             }
         }
