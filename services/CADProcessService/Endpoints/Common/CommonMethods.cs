@@ -81,7 +81,7 @@ namespace CADProcessService.Endpoints.Common
                     return false;
                 }
 
-                _VirtualMachineEntry.VMStatus = (int)EVMStatus.Available;
+                _VirtualMachineEntry.VMStatus = (int)EVMStatus.Stopped;
                 if (_bHealthCheckCall)
                 {
                     _VirtualMachineEntry.LastKnownProcessStatusInfo = "Health check has been called.";
