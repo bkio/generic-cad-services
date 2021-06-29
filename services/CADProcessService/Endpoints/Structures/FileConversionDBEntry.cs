@@ -30,6 +30,7 @@ namespace CADProcessService.Endpoints.Structures
         public const string UPDATED_TIME_PROPERTY = "updatedTime";
         public const string MODEL_NAME_PROPERTY = "modelName";
         public const string MODEL_REVISION_PROPERTY = "modelRevision";
+        public const string ERROR_PROPERTY = "error";
         public const string CONVERSION_STAGE_PROPERTY = "conversionStage";
         public const string GLOBAL_SCALE_PROPERTY = "globalScale";
         public const string GLOBAL_X_OFFSET_PROPERTY = "globalXOffset";
@@ -110,6 +111,8 @@ namespace CADProcessService.Endpoints.Structures
 
         [JsonProperty(CUSTOM_PYTHON_SCRIPT_PROPERTY)]
         public string CustomPythonScript { get; set; }
+        [JsonProperty(ERROR_PROPERTY)]
+        public string Error { get; set; }
 
     }
 }

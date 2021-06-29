@@ -11,6 +11,7 @@ namespace CADProcessService.Endpoints.Structures
         public int NotificationType { get; set; }
         public int ProcessStatus { get; set; }
         public string Info { get; set; }
+        public string Error { get; set; }
         public bool ProcessFailed { get; set; }
         public string ConversionId { get; set; }
 
