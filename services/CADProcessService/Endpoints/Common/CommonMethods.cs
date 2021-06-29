@@ -32,25 +32,17 @@ namespace CADProcessService.Endpoints.Common
             if (!_VirtualMachineService.StopInstances(new string[] { VirtualMachineName },
                 () =>
                 {
-                    if (!UpdateDBVirtualMachineAvailability(_DatabaseService, _InnerProcessor, _RequestedVirtualMachineId, _ErrorMessageAction, VirtualMachineName, _VirtualMachineEntry, _bHealthCheckCall))
+                    _ErrorMessageAction?.Invoke($"VirtualMachineService.StopInstances: OnComplete-> Virtual machine [{VirtualMachineName}]: [{_RequestedVirtualMachineId}] stopped.");
+
+                    if (!UpdateDBVirtualMachineAvailability(_DatabaseService, _InnerProcessor, _RequestedVirtualMachineId, VirtualMachineName, _VirtualMachineEntry, _bHealthCheckCall, _ErrorMessageAction))
                     {
-                        _ErrorMessageAction?.Invoke($"Failed to update worker-vm-list database for virtual machine [{VirtualMachineName}]");
+                        _ErrorMessageAction?.Invoke($"Failed to update worker-vm-list database for virtual machine [{VirtualMachineName}]: [{_RequestedVirtualMachineId}]");
                     }
 
-                    if (!UpdateDBProcessHistory(_DatabaseService, _InnerProcessor, _VirtualMachineEntry, _bHealthCheckCall, _ErrorMessageAction))
-                    {
-                        _ErrorMessageAction?.Invoke($"Failed to update process-history database for virtual machine [{VirtualMachineName}]");
-                    }
-
-                    if (_VirtualMachineEntry.LastKnownProcessStatus == (int)EProcessStatus.Failed)
-                    {
-                        Controller_BatchProcess.Get().BroadcastBatchProcessAction(new Action_BatchProcessFailed()
-                        {
-                            ModelName = _VirtualMachineEntry.ModelName,
-                            RevisionIndex = _VirtualMachineEntry.RevisionIndex,
-                            StatusMessage = _VirtualMachineEntry.LastKnownProcessStatusInfo
-                        }, _ErrorMessageAction);
-                    }
+                    //if (!UpdateDBProcessHistory(_DatabaseService, _InnerProcessor, _VirtualMachineEntry, _bHealthCheckCall, _ErrorMessageAction))
+                    //{
+                    //    _ErrorMessageAction?.Invoke($"Failed to update process-history database for virtual machine [{VirtualMachineName}]");
+                    //}
                 },
                 () =>
                 {
@@ -68,10 +60,10 @@ namespace CADProcessService.Endpoints.Common
             IBDatabaseServiceInterface _DatabaseService,
             WebServiceBaseTimeoutableProcessor _InnerProcessor,
             string _RequestedVirtualMachineId,
-            Action<string> _ErrorMessageAction,
             string VirtualMachineName,
             WorkerVMListDBEntry _VirtualMachineEntry,
-            bool _bHealthCheckCall)
+            bool _bHealthCheckCall,
+            Action<string> _ErrorMessageAction)
         {
             try
             {
@@ -82,13 +74,13 @@ namespace CADProcessService.Endpoints.Common
                 }
 
                 _VirtualMachineEntry.VMStatus = (int)EVMStatus.Stopped;
-                if (_bHealthCheckCall)
+                if (!_bHealthCheckCall)
                 {
-                    _VirtualMachineEntry.LastKnownProcessStatusInfo = "Health check has been called.";
-                }
-                else
-                {
-                    _VirtualMachineEntry.LastKnownProcessStatusInfo = "Stop process has been called.";
+                    if (_VirtualMachineEntry.LastKnownProcessStatus != (int)EProcessStatus.Failed)
+                    {
+                        _VirtualMachineEntry.LastKnownProcessStatus = (int)EProcessStatus.Canceled;
+                        _VirtualMachineEntry.LastKnownProcessStatusInfo = "Stop process has been called.";
+                    }
                 }
 
                 if (!_DatabaseService.UpdateItem(
@@ -102,6 +94,16 @@ namespace CADProcessService.Endpoints.Common
                 {
                     _ErrorMessageAction?.Invoke($"Failed to update worker-vm-list table for [{VirtualMachineName}]");
                     return false;
+                }
+
+                if (_VirtualMachineEntry.LastKnownProcessStatus == (int)EProcessStatus.Failed)
+                {
+                    Controller_BatchProcess.Get().BroadcastBatchProcessAction(new Action_BatchProcessFailed()
+                    {
+                        ModelName = _VirtualMachineEntry.ModelName,
+                        RevisionIndex = _VirtualMachineEntry.RevisionIndex,
+                        StatusMessage = _VirtualMachineEntry.LastKnownProcessStatusInfo
+                    }, _ErrorMessageAction);
                 }
             }
             catch (System.Exception ex)
@@ -131,6 +133,12 @@ namespace CADProcessService.Endpoints.Common
                     return false;
                 }
 
+                if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(_InnerProcessor, ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(), _VirtualMachineEntry.ProcessId, _ErrorMessageAction))
+                {
+                    _ErrorMessageAction?.Invoke($"Failed to update process history db for [{_VirtualMachineEntry.ModelName}/{_VirtualMachineEntry.RevisionIndex}] because atomic db operation has been failed.");
+                    return false;
+                }
+
                 if (!_DatabaseService.GetItem(
                     ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(),
                     ProcessHistoryDBEntry.KEY_NAME_PROCESS_ID,
@@ -144,12 +152,6 @@ namespace CADProcessService.Endpoints.Common
                 }
 
                 var ProcessHistoryObject = JsonConvert.DeserializeObject<ProcessHistoryDBEntry>(ProcessHistoryResponse.ToString());
-
-                if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(_InnerProcessor, ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(), _VirtualMachineEntry.ProcessId, _ErrorMessageAction))
-                {
-                    _ErrorMessageAction?.Invoke($"Failed to update process history db for [{_VirtualMachineEntry.ModelName}/{_VirtualMachineEntry.RevisionIndex}] because atomic db operation has been failed.");
-                    return false;
-                }
 
                 ProcessHistoryObject.ProcessStatus = _VirtualMachineEntry.LastKnownProcessStatus;
                 if (_bHealthCheckCall)
