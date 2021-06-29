@@ -176,7 +176,7 @@ namespace CADFileService.Endpoints
             ),
             _ErrorMessageAction);
 
-            if (!SendStartProcessRequest(_Context, RequestedModelID, RevisionObject, _ErrorMessageAction))
+            if (!SendStartProcessRequest(_Context, RequestedModelID, ModelObject.ModelName, RevisionObject, _ErrorMessageAction))
             {
                 return BWebResponse.InternalError("Start request sending has been failed.");
             }
@@ -187,6 +187,7 @@ namespace CADFileService.Endpoints
         private bool SendStartProcessRequest(
             HttpListenerContext _Context,
             string _ModelID,
+            string _ModelName,
             Revision _RevisionObject,
             Action<string> _ErrorMessageAction)
         {
@@ -203,6 +204,7 @@ namespace CADFileService.Endpoints
                 ["bucketName"] = CadFileStorageBucketName,
                 ["rawFileRelativeUrl"] = _RevisionObject.FileEntry.FileRelativeUrl,
                 ["modelId"] = _ModelID,
+                ["modelName"] = _ModelName,
                 ["modelRevision"] = _RevisionObject.RevisionIndex,
                 ["zipTypeMainAssemblyFileNameIfAny"] = ZipMainAssembly,
                 ["processStep"] = _RevisionObject.FileEntry.CurrentProcessStage,

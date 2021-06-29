@@ -282,6 +282,10 @@ namespace CADProcessService.Endpoints
             try
             {
                 WorkerVMListDBEntry VmEntry = GetAvailableVm(out string _VMID, out string _VMName, _ErrorMessageAction);
+
+                //for reverting back to original vm entry when the vm fails to start.
+                var PreviousVMEntry = JObject.Parse(JsonConvert.SerializeObject(VmEntry));
+
                 VmEntry.CurrentProcessStage = NewDBEntry.ConversionStage;
                 VmEntry.LastKnownProcessStatus = 0;
                 VmEntry.LastKnownProcessStatusInfo = "Init";
@@ -291,17 +295,32 @@ namespace CADProcessService.Endpoints
                 VmEntry.ProcessId = ModelId;
                 VmEntry.RevisionIndex = NewDBEntry.ModelRevision;
 
-                StartVirtualMachine(_VMID, _VMName, VmEntry, () =>
-                {
-                    DatabaseService.UpdateItem(
+                if(!DatabaseService.UpdateItem(
                     WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
                     WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
                     new BPrimitiveType(_VMID),
                     JObject.Parse(JsonConvert.SerializeObject(VmEntry)),
                     out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
                     null,
-                    _ErrorMessageAction);
+                    _ErrorMessageAction))
+                {
+                    _ErrorMessageAction?.Invoke($"StartProcessRequest->Update WorkerVMListDBEntry record before start virtual machine.");
+                }
 
+                StartVirtualMachine(_VMID, _VMName, VmEntry, () =>
+                {
+                    //if starting vm fails, revert back to original vm entry
+                    if (!DatabaseService.UpdateItem(
+                        WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
+                        WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
+                        new BPrimitiveType(_VMID),
+                        PreviousVMEntry,
+                        out JObject _, EBReturnItemBehaviour.DoNotReturn,
+                        null,
+                        _ErrorMessageAction))
+                    {
+                        _ErrorMessageAction?.Invoke($"StartProcessRequest->Update WorkerVMListDBEntry record before start virtual machine.");
+                    }
                 }, _ErrorMessageAction);
             }
             catch (Exception ex)
@@ -408,7 +427,7 @@ namespace CADProcessService.Endpoints
                 {
                     WorkerVMListDBEntry CurrentEntry = VMEntry.ToObject<WorkerVMListDBEntry>();
 
-                    if ((EVMStatus)CurrentEntry.VMStatus == EVMStatus.Available)
+                    if ((EVMStatus)CurrentEntry.VMStatus == EVMStatus.Available || (EVMStatus)CurrentEntry.VMStatus == EVMStatus.Stopped)
                     {
                         _Id = vm.Key;
                         _VmName = vm.Value;

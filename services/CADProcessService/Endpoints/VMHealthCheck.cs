@@ -64,12 +64,7 @@ namespace CADProcessService.Endpoints
                     var CurrentWorkerVM = JsonConvert.DeserializeObject<WorkerVMListDBEntry>(CurrentWorkerVMJObject.ToString());
                     var _RequestedVirtualMachineId = VirtualMachineDictionary.FirstOrDefault(x => x.Value.Equals(CurrentWorkerVM.VMName)).Key;
 
-                    if (CurrentWorkerVM.VMStatus == (int)EVMStatus.Available)
-                    {
-                        continue;
-                    }
-
-                    if (CurrentWorkerVM.LastKnownProcessStatus != (int)EProcessStatus.Processing)
+                    if (CurrentWorkerVM.VMStatus == (int)EVMStatus.Available || CurrentWorkerVM.VMStatus == (int)EVMStatus.NotResponding)
                     {
                         if (!CommonMethods.StopVirtualMachine(
                             VirtualMachineService,

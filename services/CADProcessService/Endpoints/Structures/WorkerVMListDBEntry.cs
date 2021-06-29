@@ -68,7 +68,7 @@ namespace CADProcessService.Endpoints.Structures
         };
 
         [JsonProperty(VM_STATUS_PROPERTY)]
-        public int VMStatus = (int)EVMStatus.Available;
+        public int VMStatus = (int)EVMStatus.Stopped;
 
         [JsonProperty(VM_NAME_PROPERTY)]
         public string VMName { get; set; }

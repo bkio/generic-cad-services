@@ -56,6 +56,7 @@ namespace CADFileService
 
                     new string[] { "DEPLOYMENT_BRANCH_NAME" },
                     new string[] { "DEPLOYMENT_BUILD_NUMBER" },
+                    new string[] { "INTERNAL_CALL_PRIVATE_KEY" },
 
                     new string[] { "REDIS_ENDPOINT" },
                     new string[] { "REDIS_PORT" },
@@ -65,9 +66,7 @@ namespace CADFileService
                     new string[] { "CAD_FILE_STORAGE_BUCKET" },
 
                     new string[] { "AUTH_SERVICE_ENDPOINT" },
-                    new string[] { "CAD_PROCESS_SERVICE_ENDPOINT" },
-
-                    new string[] { "INTERNAL_CALL_PRIVATE_KEY" }
+                    new string[] { "CAD_PROCESS_SERVICE_ENDPOINT" }
                 }))
                 return;
             bool bInitSuccess = true;

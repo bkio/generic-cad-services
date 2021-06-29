@@ -145,7 +145,7 @@ namespace CADFileService.Endpoints
             ),
             _ErrorMessageAction);
 
-            if (!SendStopProcessRequest(_Context, ModelObject.ModelName, RevisionObject.RevisionIndex, _ErrorMessageAction))
+            if (!SendStopProcessRequest(_Context, RequestedModelID, ModelObject.ModelName, RevisionObject.RevisionIndex, _ErrorMessageAction))
             {
                 return BWebResponse.InternalError("Stop request sending has been failed.");
             }
@@ -155,15 +155,17 @@ namespace CADFileService.Endpoints
 
         private bool SendStopProcessRequest(
             HttpListenerContext _Context,
-            string _ModelUniqueName,
-            int RevisionIndex,
+            string _ModelID,
+            string _ModelName,
+            int _RevisionIndex,
             Action<string> _ErrorMessageAction)
         {
             var RequestObject = new JObject()
             {
                 ["processMode"] = (int)EProcessMode.VirtualMachine,
-                ["modelUniqueName"] = _ModelUniqueName,
-                ["revisionIndex"] = RevisionIndex
+                ["modelId"] = _ModelID,
+                ["modelName"] = _ModelName,
+                ["revisionIndex"] = _RevisionIndex
             };
 
             int TryCount = 0;

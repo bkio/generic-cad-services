@@ -27,7 +27,8 @@ namespace CADProcessService.Endpoints
         private readonly Dictionary<string, string> VirtualMachineDictionary;
 
         private string RequestedVirtualMachineId = null;
-        private string RequestedModelUniqueName = null;
+        private string RequestedModelId = null;
+        private string RequestedModelName = null;
         private int RequestedRevisionIndex = -1;
 
         public StopProcessRequest(IBDatabaseServiceInterface _DatabaseService, IBVMServiceInterface _VirtualMachineService, Dictionary<string, string> _VirtualMachineDictionary) : base()
@@ -104,7 +105,7 @@ namespace CADProcessService.Endpoints
                         if (ProcessMode == (int)EProcessMode.VirtualMachine)
                         {
                             if (!ParsedBody.ContainsKey("virtualMachineId") 
-                                && !(ParsedBody.ContainsKey("modelUniqueName") && ParsedBody.ContainsKey("revisionIndex")))
+                                && !(ParsedBody.ContainsKey("modelId") && ParsedBody.ContainsKey("modelName") && ParsedBody.ContainsKey("revisionIndex")))
                             {
                                 return BWebResponse.BadRequest("Request body must contain all necessary fields. If the process mode is selected VirtualMachine, request body has to have virtualMachineId field or (modelUniqueName and revisionIndex fields).");
                             }
@@ -119,15 +120,25 @@ namespace CADProcessService.Endpoints
 
                                 RequestedVirtualMachineId = (string)RequestedVirtualMachineIdToken;
                             }
-                            if (ParsedBody.ContainsKey("modelUniqueName"))
+                            if (ParsedBody.ContainsKey("modelId"))
                             {
-                                var RequestedModelUniqueNameToken = ParsedBody["modelUniqueName"];
-                                if (RequestedModelUniqueNameToken.Type != JTokenType.String)
+                                var RequestedModelIdToken = ParsedBody["modelId"];
+                                if (RequestedModelIdToken.Type != JTokenType.String)
                                 {
                                     return BWebResponse.BadRequest("Request body contains invalid fields.");
                                 }
 
-                                RequestedModelUniqueName = (string)RequestedModelUniqueNameToken;
+                                RequestedModelId = (string)RequestedModelIdToken;
+                            }
+                            if (ParsedBody.ContainsKey("modelName"))
+                            {
+                                var RequestedModelNameToken = ParsedBody["modelName"];
+                                if (RequestedModelNameToken.Type != JTokenType.String)
+                                {
+                                    return BWebResponse.BadRequest("Request body contains invalid fields.");
+                                }
+
+                                RequestedModelName = (string)RequestedModelNameToken;
                             }
                             if (ParsedBody.ContainsKey("revisionIndex"))
                             {
@@ -305,12 +316,12 @@ namespace CADProcessService.Endpoints
                 var CurrentWorkerVM = JsonConvert.DeserializeObject<WorkerVMListDBEntry>(CurrentWorkerVMJObject.ToString());
                 var _RequestedVirtualMachineId = VirtualMachineDictionary.FirstOrDefault(x => x.Value.Equals(CurrentWorkerVM.VMName)).Key;
 
-                if (CurrentWorkerVM.VMStatus == (int)EVMStatus.Available)
+                if (CurrentWorkerVM.VMStatus == (int)EVMStatus.Busy || CurrentWorkerVM.VMStatus == (int)EVMStatus.Stopped)
                 {
                     continue;
                 }
 
-                if (!(CurrentWorkerVM.ModelName.Equals(RequestedModelUniqueName) && CurrentWorkerVM.RevisionIndex == RequestedRevisionIndex))
+                if (!(CurrentWorkerVM.ProcessId.Equals(RequestedModelId) && CurrentWorkerVM.ModelName.Equals(RequestedModelName) && CurrentWorkerVM.RevisionIndex == RequestedRevisionIndex))
                 {
                     continue;
                 }
@@ -337,7 +348,7 @@ namespace CADProcessService.Endpoints
 
             if (!foundAtLeastOneRecord)
             {
-                FailureResponse = BWebResponse.InternalError("Given modelUniqueName and revisionIndex are wrong!");
+                FailureResponse = BWebResponse.InternalError("No worker VM record founded. Given modelId, modelName and revisionIndex are wrong!");
                 return false;
             }
 

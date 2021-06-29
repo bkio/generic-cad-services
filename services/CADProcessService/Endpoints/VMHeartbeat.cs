@@ -91,9 +91,11 @@ namespace CADProcessService.Endpoints
                     {
                         return BWebResponse.StatusOK("The current process is canceled", new JObject()
                         {
+                            ["modelId"] = VirtualMachineEntry.ProcessId,
                             ["modelUniqueName"] = VirtualMachineEntry.ModelName,
                             ["revisionIndex"] = VirtualMachineEntry.RevisionIndex,
-                            ["processStatus"] = VirtualMachineEntry.LastKnownProcessStatus
+                            ["processStatus"] = VirtualMachineEntry.LastKnownProcessStatus,
+                            ["processStatusInfo"] = VirtualMachineEntry.LastKnownProcessStatusInfo
                         });
                     }
                 }

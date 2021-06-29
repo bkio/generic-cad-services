@@ -119,7 +119,7 @@ namespace CADFileService.Endpoints.Structures
             },
             [CUSTOM_PYTHON_SCRIPT_PROPERTY] = (JToken _Parameter) =>
             {
-                return _Parameter.Type == JTokenType.String && ((string)_Parameter).Length > 0;
+                return _Parameter.Type == JTokenType.String;
             },
         };
 
