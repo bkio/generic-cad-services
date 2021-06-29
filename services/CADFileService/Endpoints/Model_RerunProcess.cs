@@ -147,10 +147,14 @@ namespace CADFileService.Endpoints
             {
                 RevisionObject.FileEntry.CurrentProcessStage = (int)EProcessStage.Stage0_FileUpload;
             }
+            else
+            {
+                RevisionObject.FileEntry.CurrentProcessStage = ProcessStage;
+            }
 
             RevisionObject.FileEntry.FileProcessStatus = (int)EFileProcessStatus.Processing;
             RevisionObject.FileEntry.FileProcessStatusInfo = "";
-            RevisionObject.FileEntry.FileRelativeUrl = RevisionObject.FileEntry.GetFileRelativeUrl(RequestedModelID, RevisionObject.RevisionIndex);
+            RevisionObject.FileEntry.FileRelativeUrl = RevisionObject.FileEntry.GetFileRelativeUrl(RequestedModelID, RevisionObject.RevisionIndex, ProcessStage);
             RevisionObject.FileEntry.FileProcessedAtTime = Methods.ToISOString();
             ModelObject.MRVLastUpdateTime = RevisionObject.FileEntry.FileProcessedAtTime;
 
