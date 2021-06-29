@@ -54,6 +54,7 @@ namespace CADProcessService.Endpoints
                 {
                     string Payload = ResponseReader.ReadToEnd();
                     ConversionProgressInfo ProgressInfo = JsonConvert.DeserializeObject<ConversionProgressInfo>(Payload);
+                    _ErrorMessageAction?.Invoke($"NotifyCompleteRequest: OnRequest_Internal-> Received payload is: {Payload}");
 
                     if (!UpdateProcessHistoryRecord(ProgressInfo, _ErrorMessageAction, out BWebServiceResponse FailureResponse))
                     {
@@ -80,7 +81,7 @@ namespace CADProcessService.Endpoints
             _FailureResponse = BWebResponse.InternalError("");
             try
             {
-                if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(), ProgressInfo.ProcessId.ToString(), _ErrorMessageAction))
+                if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(), ProgressInfo.ProcessId, _ErrorMessageAction))
                 {
                     _FailureResponse = BWebResponse.InternalError($"Failed to get access to database record");
                     return false;
@@ -174,7 +175,7 @@ namespace CADProcessService.Endpoints
             }
             finally
             {
-                Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(InnerProcessor, ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(), ProgressInfo.ProcessId.ToString(), _ErrorMessageAction);
+                Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(InnerProcessor, ProcessHistoryDBEntry.DBSERVICE_PROCESS_HISTORY_TABLE(), ProgressInfo.ProcessId, _ErrorMessageAction);
             }
             return true;
         }
@@ -185,7 +186,7 @@ namespace CADProcessService.Endpoints
 
             try
             {
-                if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(), ProgressInfo.ConversionId.ToString(), _ErrorMessageAction))
+                if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(), ProgressInfo.ConversionId, _ErrorMessageAction))
                 {
                     _FailureResponse = BWebResponse.InternalError($"Failed to get access to database record");
                     return false;
@@ -247,7 +248,7 @@ namespace CADProcessService.Endpoints
             }
             finally
             {
-                Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(InnerProcessor, FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(), ProgressInfo.ConversionId.ToString(), _ErrorMessageAction);
+                Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(InnerProcessor, FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(), ProgressInfo.ConversionId, _ErrorMessageAction);
             }
             return true;
         }
@@ -258,7 +259,7 @@ namespace CADProcessService.Endpoints
 
             try
             {
-                if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(), ProgressInfo.VMId.ToString(), _ErrorMessageAction))
+                if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(), ProgressInfo.VMId, _ErrorMessageAction))
                 {
                     _FailureResponse = BWebResponse.InternalError($"Failed to get access to database record");
                     return false;
@@ -276,39 +277,40 @@ namespace CADProcessService.Endpoints
                     {
                         WorkerVMListDBEntry Entry = _VMEntry.ToObject<WorkerVMListDBEntry>();
 
-                        if (ProgressInfo.ProgressDetails.GlobalCurrentStage != Entry.CurrentProcessStage)
-                        {
-                            Entry.VMStatus = (int)EVMStatus.Available;
-                            Entry.ProcessStartDate = DateTime.Now.ToString();
-                            Entry.CurrentProcessStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
-                            if (ProgressInfo.ProcessFailed)
-                            {
-                                Entry.LastKnownProcessStatus = (int)EProcessStatus.Failed;
-                            }
-                            else
-                            {
-                                Entry.LastKnownProcessStatus = (int)EProcessStatus.Completed;
-                            }
-                            Entry.LastKnownProcessStatusInfo = ProgressInfo.Info;
+                        _ErrorMessageAction?.Invoke($"NotifyCompleteRequest: UpdateVMEntryRecord-> 1-Received item: {JsonConvert.SerializeObject(Entry)}");
 
-                            if (!DatabaseService.UpdateItem(
-                                WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
-                                WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
-                                new BPrimitiveType(ProgressInfo.VMId),
-                                JObject.Parse(JsonConvert.SerializeObject(Entry)),
-                                out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
-                                null,
-                                _ErrorMessageAction))
-                            {
-                                _FailureResponse = BWebResponse.Conflict("Failed to update vm entry.");
-                                _ErrorMessageAction?.Invoke($"NotifyCompleteRequest: UpdateVMEntryRecord-> Failed to update vm entry. ProgressInfo.VMId: {ProgressInfo.VMId}");
-                                return false;
-                            }
+                        Entry.VMStatus = (int)EVMStatus.Available;
+                        Entry.ProcessStartDate = DateTime.Now.ToString();
+                        Entry.CurrentProcessStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
+                        if (ProgressInfo.ProcessFailed)
+                        {
+                            Entry.LastKnownProcessStatus = (int)EProcessStatus.Failed;
+                        }
+                        else
+                        {
+                            Entry.LastKnownProcessStatus = (int)EProcessStatus.Completed;
+                        }
+                        Entry.LastKnownProcessStatusInfo = ProgressInfo.Info;
+
+                        _ErrorMessageAction?.Invoke($"NotifyCompleteRequest: UpdateVMEntryRecord-> 2-Updated item: {JsonConvert.SerializeObject(Entry)}");
+
+                        if (!DatabaseService.UpdateItem(
+                            WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
+                            WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
+                            new BPrimitiveType(ProgressInfo.VMId),
+                            JObject.Parse(JsonConvert.SerializeObject(Entry)),
+                            out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
+                            null,
+                            _ErrorMessageAction))
+                        {
+                            _FailureResponse = BWebResponse.Conflict("Failed to update VM entry.");
+                            _ErrorMessageAction?.Invoke($"NotifyCompleteRequest: UpdateVMEntryRecord-> Failed to update vm entry. ProgressInfo.VMId: {ProgressInfo.VMId}");
+                            return false;
                         }
                     }
                     else
                     {
-                        _FailureResponse = BWebResponse.Conflict($"Failed to get vm entry, value is empty.");
+                        _FailureResponse = BWebResponse.Conflict($"Failed to get VM entry, value is empty.");
                         _ErrorMessageAction?.Invoke($"NotifyCompleteRequest: UpdateVMEntryRecord-> Failed to get vm entry, value is empty. ProgressInfo.VMId: {ProgressInfo.VMId}");
                         return false;
                     }
@@ -326,7 +328,7 @@ namespace CADProcessService.Endpoints
             }
             finally
             {
-                Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(InnerProcessor, WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(), ProgressInfo.VMId.ToString(), _ErrorMessageAction);
+                Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(InnerProcessor, WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(), ProgressInfo.VMId, _ErrorMessageAction);
             }
             return true;
         }
