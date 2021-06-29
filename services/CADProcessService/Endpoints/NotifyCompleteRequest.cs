@@ -54,7 +54,6 @@ namespace CADProcessService.Endpoints
                 {
                     string Payload = ResponseReader.ReadToEnd();
                     ConversionProgressInfo ProgressInfo = JsonConvert.DeserializeObject<ConversionProgressInfo>(Payload);
-                    _ErrorMessageAction?.Invoke($"NotifyCompleteRequest: OnRequest_Internal-> Received payload is: {Payload}");
 
                     if (!UpdateProcessHistoryRecord(ProgressInfo, _ErrorMessageAction, out BWebServiceResponse FailureResponse))
                     {
@@ -279,6 +278,8 @@ namespace CADProcessService.Endpoints
 
                         if (ProgressInfo.ProgressDetails.GlobalCurrentStage != Entry.CurrentProcessStage)
                         {
+                            Entry.VMStatus = (int)EVMStatus.Available;
+                            Entry.ProcessStartDate = DateTime.Now.ToString();
                             Entry.CurrentProcessStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
                             if (ProgressInfo.ProcessFailed)
                             {

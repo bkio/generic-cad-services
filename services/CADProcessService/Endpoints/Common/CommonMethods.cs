@@ -84,13 +84,13 @@ namespace CADProcessService.Endpoints.Common
                 }
 
                 if (!_DatabaseService.UpdateItem(
-                    WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
-                    WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
-                    new BPrimitiveType(_RequestedVirtualMachineId),
-                    JObject.Parse(JsonConvert.SerializeObject(_VirtualMachineEntry)),
-                    out JObject _, EBReturnItemBehaviour.DoNotReturn,
-                    _DatabaseService.BuildAttributeNotExistCondition(WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID),
-                    _ErrorMessageAction))
+                        WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
+                        WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
+                        new BPrimitiveType(_RequestedVirtualMachineId),
+                        JObject.Parse(JsonConvert.SerializeObject(_VirtualMachineEntry)),
+                        out JObject _, EBReturnItemBehaviour.DoNotReturn,
+                        null,
+                        _ErrorMessageAction))
                 {
                     _ErrorMessageAction?.Invoke($"Failed to update worker-vm-list table for [{VirtualMachineName}]");
                     return false;
@@ -183,7 +183,7 @@ namespace CADProcessService.Endpoints.Common
                     new BPrimitiveType(_VirtualMachineEntry.ProcessId),
                     JObject.Parse(JsonConvert.SerializeObject(ProcessHistoryObject)),
                     out JObject _, EBReturnItemBehaviour.DoNotReturn,
-                    _DatabaseService.BuildAttributeNotExistCondition(ProcessHistoryDBEntry.KEY_NAME_PROCESS_ID),
+                    null,
                     _ErrorMessageAction))
                 {
                     _ErrorMessageAction?.Invoke($"Failed to update process-history table for [{_VirtualMachineEntry.ModelName}/{_VirtualMachineEntry.RevisionIndex}]");
@@ -228,7 +228,7 @@ namespace CADProcessService.Endpoints.Common
                             new BPrimitiveType(VirtualMachine.Key),
                             JObject.Parse(JsonConvert.SerializeObject(_VirtualMachineEntry)),
                             out JObject _, EBReturnItemBehaviour.DoNotReturn,
-                            _DatabaseService.BuildAttributeNotExistCondition(WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID),
+                            null,
                             _ErrorMessageAction))
                         {
                             _ErrorMessageAction?.Invoke($"InitializeWorkerVMListTable: Failed to update worker-vm-list table for [{VirtualMachine.Value}]");
