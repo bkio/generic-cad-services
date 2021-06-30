@@ -32,7 +32,7 @@ namespace CADFileService.Endpoints.Structures
         public const string GLOBAL_TRANSFORM_OFFSET_PROPERTY = "globalTransformOffset";
         public const string OPTIMIZATION_PRESET_PROPERTY = "optimizationPreset";
         public const string MERGE_FINAL_LEVEL_PROPERTY = "mergeFinalLevel";
-        public const string DETECT_DUPLICATE_MESHES_PROPERTY = "detectDuplicateMeshes";
+        public const string DELETE_DUPLICATES_PROPERTY = "deleteDuplicates";
         public const string CUSTOM_PYTHON_SCRIPT_PROPERTY = "customPythonScript";
 
         //Not properties, but being sent in responses
@@ -58,7 +58,7 @@ namespace CADFileService.Endpoints.Structures
             GLOBAL_TRANSFORM_OFFSET_PROPERTY,
             OPTIMIZATION_PRESET_PROPERTY,
             MERGE_FINAL_LEVEL_PROPERTY,
-            DETECT_DUPLICATE_MESHES_PROPERTY,
+            DELETE_DUPLICATES_PROPERTY,
             CUSTOM_PYTHON_SCRIPT_PROPERTY
         };
 
@@ -113,7 +113,7 @@ namespace CADFileService.Endpoints.Structures
             {
                 return _Parameter.Type == JTokenType.Boolean;
             },
-            [DETECT_DUPLICATE_MESHES_PROPERTY] = (JToken _Parameter) =>
+            [DELETE_DUPLICATES_PROPERTY] = (JToken _Parameter) =>
             {
                 return _Parameter.Type == JTokenType.Boolean;
             },
@@ -174,8 +174,8 @@ namespace CADFileService.Endpoints.Structures
         [JsonProperty(MERGE_FINAL_LEVEL_PROPERTY)]
         public bool bMergeFinalLevel = false;
         
-        [JsonProperty(DETECT_DUPLICATE_MESHES_PROPERTY)]
-        public bool bDetectDuplicateMeshes = false;
+        [JsonProperty(DELETE_DUPLICATES_PROPERTY)]
+        public bool bDeleteDuplicates = false;
 
         [JsonProperty(CUSTOM_PYTHON_SCRIPT_PROPERTY)]
         public string CustomPythonScript = "";
@@ -219,8 +219,8 @@ namespace CADFileService.Endpoints.Structures
                 OptimizationPreset = ContentObject.OptimizationPreset;
             if (_Content.ContainsKey(MERGE_FINAL_LEVEL_PROPERTY))
                 bMergeFinalLevel = ContentObject.bMergeFinalLevel;
-            if (_Content.ContainsKey(DETECT_DUPLICATE_MESHES_PROPERTY))
-                bDetectDuplicateMeshes = ContentObject.bDetectDuplicateMeshes;
+            if (_Content.ContainsKey(DELETE_DUPLICATES_PROPERTY))
+                bDeleteDuplicates = ContentObject.bDeleteDuplicates;
             if (_Content.ContainsKey(CUSTOM_PYTHON_SCRIPT_PROPERTY))
                 CustomPythonScript = ContentObject.CustomPythonScript;
         }

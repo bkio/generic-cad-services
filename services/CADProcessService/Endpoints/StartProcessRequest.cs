@@ -57,7 +57,7 @@ namespace CADProcessService.Endpoints
                 return BWebResponse.MethodNotAllowed("POST methods is accepted. But received request method: " + _Context.Request.HttpMethod);
             }
 
-            var NewDBEntry = new FileConversionDBEntry()
+            var NewFileConversionDBEntry = new FileConversionDBEntry()
             {
                 ConversionStatus = (int)EInternalProcessStage.Queued
             };
@@ -65,7 +65,6 @@ namespace CADProcessService.Endpoints
             string ModelId = null;
             string BucketName = null;
             string RelativeFileName = null;
-            //string ZipMainAssembly = "";
 
             using (var InputStream = _Context.Request.InputStream)
             {
@@ -78,126 +77,109 @@ namespace CADProcessService.Endpoints
                         var ParsedBody = JObject.Parse(ResponseReader.ReadToEnd());
 
                         if (!ParsedBody.ContainsKey("bucketName") ||
-                            !ParsedBody.ContainsKey("rawFileRelativeUrl"))
+                            !ParsedBody.ContainsKey("fileRelativeUrl"))
                         {
                             return BWebResponse.BadRequest("Request body must contain all necessary fields.");
                         }
-                        var BucketNameToken = ParsedBody["bucketName"];
-                        var RawFileRelativeUrlToken = ParsedBody["rawFileRelativeUrl"];
 
-                        if (BucketNameToken.Type != JTokenType.String ||
-                            RawFileRelativeUrlToken.Type != JTokenType.String)
+                        var BucketNameToken = ParsedBody["bucketName"];
+                        var FileRelativeUrlToken = ParsedBody["fileRelativeUrl"];
+                        if ( (BucketNameToken.Type != JTokenType.String && ((string)BucketNameToken).Length > 0) ||
+                            (FileRelativeUrlToken.Type != JTokenType.String && ((string)FileRelativeUrlToken).Length > 0))
                         {
                             return BWebResponse.BadRequest("Request body contains invalid fields.");
                         }
+                        BucketName = (string)BucketNameToken;
+                        RelativeFileName = (string)FileRelativeUrlToken;
 
+                        NewFileConversionDBEntry.BucketName = BucketName;
+                        NewFileConversionDBEntry.QueuedTime = DateTime.UtcNow.ToString();
+
+                        if (ParsedBody.ContainsKey("modelId"))
+                        {
+                            ModelId = (string)ParsedBody["modelId"];
+                        }
                         if (ParsedBody.ContainsKey("modelName"))
                         {
-                            NewDBEntry.ModelName = (string)ParsedBody["modelName"];
+                            NewFileConversionDBEntry.ModelName = (string)ParsedBody["modelName"];
                         }
-
                         if (ParsedBody.ContainsKey("modelRevision"))
                         {
-                            NewDBEntry.ModelRevision = (int)ParsedBody["modelRevision"];
+                            NewFileConversionDBEntry.ModelRevision = (int)ParsedBody["modelRevision"];
                         }
-
                         if (ParsedBody.ContainsKey("zipMainAssemblyFileNameIfAny"))
                         {
-                            NewDBEntry.ZipMainAssemblyFileNameIfAny = (string)ParsedBody["zipMainAssemblyFileNameIfAny"];
+                            NewFileConversionDBEntry.ZipMainAssemblyFileNameIfAny = (string)ParsedBody["zipMainAssemblyFileNameIfAny"];
                         }
-
                         if (ParsedBody.ContainsKey("processStep"))
                         {
-                            NewDBEntry.ConversionStage = (int)ParsedBody["processStep"];
+                            NewFileConversionDBEntry.ConversionStage = (int)ParsedBody["processStep"];
                         }
-
                         if (ParsedBody.ContainsKey("globalScale"))
                         {
-                            NewDBEntry.GlobalScale = (float)ParsedBody["globalScale"];
+                            NewFileConversionDBEntry.GlobalScale = (float)ParsedBody["globalScale"];
                         }
-
                         if (ParsedBody.ContainsKey("globalXOffset"))
                         {
-                            NewDBEntry.GlobalXOffset = (float)ParsedBody["globalXOffset"];
+                            NewFileConversionDBEntry.GlobalXOffset = (float)ParsedBody["globalXOffset"];
                         }
-
                         if (ParsedBody.ContainsKey("globalYOffset"))
                         {
-                            NewDBEntry.GlobalYOffset = (float)ParsedBody["globalYOffset"];
+                            NewFileConversionDBEntry.GlobalYOffset = (float)ParsedBody["globalYOffset"];
                         }
-
                         if (ParsedBody.ContainsKey("globalZOffset"))
                         {
-                            NewDBEntry.GlobalZOffset = (float)ParsedBody["globalZOffset"];
+                            NewFileConversionDBEntry.GlobalZOffset = (float)ParsedBody["globalZOffset"];
                         }
-
-
                         if (ParsedBody.ContainsKey("globalXRotation"))
                         {
-                            NewDBEntry.GlobalXRotation = (float)ParsedBody["globalXRotation"];
+                            NewFileConversionDBEntry.GlobalXRotation = (float)ParsedBody["globalXRotation"];
                         }
-
                         if (ParsedBody.ContainsKey("globalYRotation"))
                         {
-                            NewDBEntry.GlobalYRotation = (float)ParsedBody["globalYRotation"];
+                            NewFileConversionDBEntry.GlobalYRotation = (float)ParsedBody["globalYRotation"];
                         }
-
                         if (ParsedBody.ContainsKey("globalZRotation"))
                         {
-                            NewDBEntry.GlobalZRotation = (float)ParsedBody["globalZRotation"];
+                            NewFileConversionDBEntry.GlobalZRotation = (float)ParsedBody["globalZRotation"];
                         }
-
                         if (ParsedBody.ContainsKey("levelThresholds"))
                         {
-                            NewDBEntry.LevelThresholds = (string)ParsedBody["levelThresholds"];
+                            NewFileConversionDBEntry.LevelThresholds = (string)ParsedBody["levelThresholds"];
                         }
-
                         if (ParsedBody.ContainsKey("lodParameters"))
                         {
-                            NewDBEntry.LodParameters = (string)ParsedBody["lodParameters"];
+                            NewFileConversionDBEntry.LodParameters = (string)ParsedBody["lodParameters"];
                         }
                         if (ParsedBody.ContainsKey("cullingThresholds"))
                         {
-                            NewDBEntry.CullingThresholds = (string)ParsedBody["cullingThresholds"];
+                            NewFileConversionDBEntry.CullingThresholds = (string)ParsedBody["cullingThresholds"];
                         }
                         if (ParsedBody.ContainsKey("filters"))
                         {
-                            NewDBEntry.FilterSettings = (string)ParsedBody["filters"];
+                            NewFileConversionDBEntry.FilterSettings = (string)ParsedBody["filters"];
                         }
                         if (ParsedBody.ContainsKey("deleteDuplicates"))
                         {
-                            NewDBEntry.DeleteDuplicates = (string)ParsedBody["deleteDuplicates"];
+                            NewFileConversionDBEntry.DeleteDuplicates = (string)ParsedBody["deleteDuplicates"];
                         }
                         if (ParsedBody.ContainsKey("customPythonScript"))
                         {
-                            NewDBEntry.CustomPythonScript = (string)ParsedBody["customPythonScript"];
+                            NewFileConversionDBEntry.CustomPythonScript = (string)ParsedBody["customPythonScript"];
                         }
-
                         if (ParsedBody.ContainsKey("mergeFinalLevel"))
                         {
-                            NewDBEntry.MergeFinalLevel = (string)ParsedBody["mergeFinalLevel"];
+                            NewFileConversionDBEntry.MergeFinalLevel = (string)ParsedBody["mergeFinalLevel"];
                         }
-
-                        //If Preset is used then override optimization parameters
                         if (ParsedBody.ContainsKey("optimizationPreset"))
                         {
-                            int presetId = (int)ParsedBody["optimizationPreset"];
-
-                            OptimizationPresetEntry Preset = Presets[presetId];
-                            NewDBEntry.LodParameters = Preset.LodParameters;
-                            NewDBEntry.CullingThresholds = Preset.CullingThresholds;
-                            NewDBEntry.LevelThresholds = Preset.DistanceThresholds;
+                            //If Preset is used then override optimization parameters
+                            int _PresetId = (int)ParsedBody["optimizationPreset"];
+                            OptimizationPresetEntry Preset = Presets[_PresetId];
+                            NewFileConversionDBEntry.LodParameters = Preset.LodParameters;
+                            NewFileConversionDBEntry.CullingThresholds = Preset.CullingThresholds;
+                            NewFileConversionDBEntry.LevelThresholds = Preset.DistanceThresholds;
                         }
-
-                        NewDBEntry.QueuedTime = DateTime.UtcNow.ToString();
-
-                        NewDBEntry.BucketName = (string)BucketNameToken;
-                        var DeploymentBranchName = Resources_DeploymentManager.Get().GetDeploymentBranchName();
-                        //NewConversionID_FromRelativeUrl_UrlEncoded = WebUtility.UrlEncode($"{DeploymentBranchName}/{NewDBEntry.ModelName}/{NewDBEntry.ModelRevision}");
-                        ModelId = (string)ParsedBody["modelId"];
-
-                        BucketName = (string)BucketNameToken;
-                        RelativeFileName = (string)RawFileRelativeUrlToken;
                     }
                     catch (Exception e)
                     {
@@ -207,21 +189,40 @@ namespace CADProcessService.Endpoints
                 }
             }
 
-
-            if (BucketName == null || RelativeFileName == null)
+            if (!UpdateFileConversionEntry(ModelId, NewFileConversionDBEntry, _ErrorMessageAction, out BWebServiceResponse FailureResponse))
             {
-                return BWebResponse.InternalError("StartProcessRequest: No BucketName or FileName");
+                return FailureResponse;
             }
 
-            //BDatabaseAttributeCondition UpdateCondition = DatabaseService.BuildAttributeNotExistCondition(FileConversionDBEntry.KEY_NAME_CONVERSION_ID);
-
-            if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(), ModelId, _ErrorMessageAction))
+            if (!UpdateWorkerVMEntry(ModelId, NewFileConversionDBEntry, _ErrorMessageAction, out FailureResponse))
             {
-                return BWebResponse.InternalError($"StartProcessRequest: Failed to get access to database record");
+                return FailureResponse;
             }
+
+            //if (StartBatchProcess(RelativeFileName, NewFileConversionDBEntry, _ErrorMessageAction, out BWebServiceResponse SuccessResponse, out FailureResponse))
+            //{
+            //    return SuccessResponse;
+            //}
+            //else
+            //{
+            //    return FailureResponse;
+            //}
+
+            return BWebResponse.StatusAccepted("Request has been accepted; process is now being started.");
+        }
+
+        private bool UpdateFileConversionEntry(string ModelId, FileConversionDBEntry _FileConversionEntry, Action<string> _ErrorMessageAction, out BWebServiceResponse _FailureResponse)
+        {
+            _FailureResponse = BWebResponse.InternalError("");
 
             try
             {
+                if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(), ModelId, _ErrorMessageAction))
+                {
+                    _FailureResponse = BWebResponse.InternalError($"StartProcessRequest:UpdateFileConversionEntry-> Failed to get access to database record");
+                    return false;
+                }
+
                 //If a process was completed (success or failure) then allow reprocessing
                 //Only stop if a process is currently busy processing or already queued
                 if (DatabaseService.GetItem(
@@ -236,16 +237,11 @@ namespace CADProcessService.Endpoints
                     {
                         EInternalProcessStage ExistingStatus = (EInternalProcessStage)(int)ConversionObject["conversionStatus"];
 
-                        //if (ExistingStatus == EInternalProcessStage.ProcessFailed || ExistingStatus == EInternalProcessStage.ProcessComplete)
-                        //{
-                        //    UpdateCondition = null;
-
-                        //}
                         if (ExistingStatus == EInternalProcessStage.Processing)
                         {
-                            return BWebResponse.Conflict("StartProcessRequest: File is already being processed/queued.");
+                            _FailureResponse = BWebResponse.Conflict("StartProcessRequest:UpdateFileConversionEntry-> File is already being processed/queued.");
+                            return false;
                         }
-
                     }
                 }
 
@@ -253,162 +249,102 @@ namespace CADProcessService.Endpoints
                     FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
                     FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
                     new BPrimitiveType(ModelId),
-                    JObject.Parse(JsonConvert.SerializeObject(NewDBEntry)),
+                    JObject.Parse(JsonConvert.SerializeObject(_FileConversionEntry)),
                     out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
                     null,
                     _ErrorMessageAction))
                 {
-                    return BWebResponse.Conflict("StartProcessRequest: File is already being processed/queued.");
+                    _FailureResponse = BWebResponse.Conflict("StartProcessRequest:UpdateFileConversionEntry-> DBSERVICE_FILE_CONVERSIONS_TABLE File UpdateItem database error.");
+                    return false;
                 }
             }
             catch (Exception ex)
             {
-                _ErrorMessageAction?.Invoke($"{ex.Message}\n{ex.StackTrace}");
-                return BWebResponse.InternalError($"StartProcessRequest->DBSERVICE_FILE_CONVERSIONS_TABLE: UpdateItem Database Error");
+                _ErrorMessageAction?.Invoke($"StartProcessRequest:UpdateFileConversionEntry-> An error occurred. Error Message: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                _FailureResponse = BWebResponse.InternalError($"StartProcessRequest:UpdateFileConversionEntry->An error occurred.");
+                return false;
             }
             finally
             {
                 Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(InnerProcessor, FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(), ModelId, _ErrorMessageAction);
             }
+            return true;
+        }
 
-
-
-            //Lock to avoid race condition with deallocation
-            if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(), "VMLOCK", _ErrorMessageAction))
-            {
-                return BWebResponse.InternalError($"StartProcessRequest->DBSERVICE_WORKERS_VM_LIST_TABLE: Failed to get access to database lock");
-            }
+        private bool UpdateWorkerVMEntry(string ModelId, FileConversionDBEntry _FileConversionEntry, Action<string> _ErrorMessageAction, out BWebServiceResponse _FailureResponse)
+        {
+            _FailureResponse = BWebResponse.InternalError("");
 
             try
             {
-                WorkerVMListDBEntry VmEntry = GetAvailableVm(out string _VMID, out string _VMName, _ErrorMessageAction);
-
-                //for reverting back to original vm entry when the vm fails to start.
-                var PreviousVMEntry = JObject.Parse(JsonConvert.SerializeObject(VmEntry));
-
-                VmEntry.CurrentProcessStage = NewDBEntry.ConversionStage;
-                VmEntry.LastKnownProcessStatus = 0;
-                VmEntry.LastKnownProcessStatusInfo = "Init";
-                VmEntry.ProcessStartDate = DateTime.Now.ToString();
-                VmEntry.VMStatus = (int)EVMStatus.Busy;
-                VmEntry.ModelName = NewDBEntry.ModelName;
-                VmEntry.ProcessId = ModelId;
-                VmEntry.RevisionIndex = NewDBEntry.ModelRevision;
-
-                if(!DatabaseService.UpdateItem(
-                    WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
-                    WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
-                    new BPrimitiveType(_VMID),
-                    JObject.Parse(JsonConvert.SerializeObject(VmEntry)),
-                    out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
-                    null,
-                    _ErrorMessageAction))
+                if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(), "VMLOCK", _ErrorMessageAction))
                 {
-                    _ErrorMessageAction?.Invoke($"StartProcessRequest->Update WorkerVMListDBEntry record before start virtual machine.");
+                    _FailureResponse = BWebResponse.InternalError($"StartProcessRequest:UpdateWorkerVMEntry->DBSERVICE_WORKERS_VM_LIST_TABLE: Failed to get access to database lock");
+                    return false;
                 }
 
-                StartVirtualMachine(_VMID, _VMName, VmEntry, () =>
+                WorkerVMListDBEntry VmEntry = GetAvailableVm(out string _VMID, out string _VMName, _ErrorMessageAction);
+                if (VmEntry != null)
                 {
-                    //if starting vm fails, revert back to original vm entry
+                    //for reverting back to original vm entry when the vm fails to start.
+                    var PreviousVMEntry = JObject.Parse(JsonConvert.SerializeObject(VmEntry));
+
+                    VmEntry.CurrentProcessStage = _FileConversionEntry.ConversionStage;
+                    VmEntry.LastKnownProcessStatus = 0;
+                    VmEntry.LastKnownProcessStatusInfo = "Init";
+                    VmEntry.ProcessStartDate = Methods.ToISOString();
+                    VmEntry.ProcessEndDate = "";
+                    VmEntry.VMStatus = (int)EVMStatus.Busy;
+                    VmEntry.ModelName = _FileConversionEntry.ModelName;
+                    VmEntry.ProcessId = ModelId;
+                    VmEntry.RevisionIndex = _FileConversionEntry.ModelRevision;
+
                     if (!DatabaseService.UpdateItem(
                         WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
                         WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
                         new BPrimitiveType(_VMID),
-                        PreviousVMEntry,
-                        out JObject _, EBReturnItemBehaviour.DoNotReturn,
+                        JObject.Parse(JsonConvert.SerializeObject(VmEntry)),
+                        out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
                         null,
                         _ErrorMessageAction))
                     {
-                        _ErrorMessageAction?.Invoke($"StartProcessRequest->Update WorkerVMListDBEntry record before start virtual machine.");
+                        _ErrorMessageAction?.Invoke($"StartProcessRequest:UpdateWorkerVMEntry->Update WorkerVMListDBEntry record before start virtual machine.");
                     }
-                }, _ErrorMessageAction);
+
+                    StartVirtualMachine(_VMID, _VMName, VmEntry, () =>
+                    {
+                        _ErrorMessageAction?.Invoke($"StartProcessRequest:UpdateWorkerVMEntry->Virtual Machine starting operation has been failed.");
+                        //if starting vm fails, revert back to original vm entry
+                        if (!DatabaseService.UpdateItem(
+                            WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
+                            WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
+                            new BPrimitiveType(_VMID),
+                            PreviousVMEntry,
+                            out JObject _, EBReturnItemBehaviour.DoNotReturn,
+                            null,
+                            _ErrorMessageAction))
+                        {
+                            _ErrorMessageAction?.Invoke($"StartProcessRequest:UpdateWorkerVMEntry-> VM entry record couldn't revert back after starting virtual machine failed.");
+                        }
+                    }, _ErrorMessageAction);
+                }
+                else
+                {
+                    _ErrorMessageAction?.Invoke($"StartProcessRequest:UpdateWorkerVMEntry->There is no available VM for now.");
+                }
             }
             catch (Exception ex)
             {
-                _ErrorMessageAction?.Invoke($"{ex.Message}\n{ex.StackTrace}");
-                return BWebResponse.InternalError($"StartProcessRequest->GetAvailableVm: Database Error");
+                _ErrorMessageAction?.Invoke($"StartProcessRequest:UpdateWorkerVMEntry-> An error occurred. Error Message: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                _FailureResponse = BWebResponse.InternalError($"StartProcessRequest:UpdateWorkerVMEntry->An error occurred.");
+                return false;
             }
             finally
             {
                 Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(InnerProcessor, WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(), "VMLOCK", _ErrorMessageAction);
             }
 
-            return BWebResponse.StatusAccepted("Request has been accepted; process is now being started.");
-
-            //try
-            //{
-            //    if (BatchProcessingCreationService.Instance.StartBatchProcess(BucketName, RelativeFileName, ZipMainAssembly, out string _PodName, _ErrorMessageAction))
-            //    {
-            //        //Code for initial method of starting optimizer after pixyz completes
-            //        //return BWebResponse.StatusAccepted("Request has been accepted; process is now being started.");
-            //        if (BatchProcessingCreationService.Instance.StartFileOptimizer(BucketName, RelativeFileName, _ErrorMessageAction))
-            //        {
-            //            return BWebResponse.StatusAccepted("Request has been accepted; process is now being started.");
-            //        }
-            //        else
-            //        {
-            //            NewDBEntry.ConversionStatus = (int)EInternalProcessStage.ProcessFailed;
-
-            //            if (!DatabaseService.UpdateItem(
-            //                FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
-            //                FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
-            //                new BPrimitiveType(NewConversionID_FromRelativeUrl_UrlEncoded),
-            //                JObject.Parse(JsonConvert.SerializeObject(NewDBEntry)),
-            //                out JObject _, EBReturnItemBehaviour.DoNotReturn,
-            //                null,
-            //                _ErrorMessageAction))
-            //            {
-            //                return BWebResponse.InternalError("Failed to start the batch process and experienced a Database error");
-            //            }
-
-            //            //Try kill pixyz pod that we have succeeded in creating
-            //            if (!BatchProcessingCreationService.Instance.TryKillPod(_PodName, "cip-batch"))
-            //            {
-            //                return BWebResponse.InternalError("Failed to start the unreal optimizer and failed to kill pixyz pod");
-            //            }
-
-            //            return BWebResponse.InternalError("Failed to start the batch process and experienced a Database error");
-            //        }
-            //    }
-            //    else
-            //    {
-            //        NewDBEntry.ConversionStatus = (int)EInternalProcessStage.ProcessFailed;
-
-            //        if (!DatabaseService.UpdateItem(
-            //            FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
-            //            FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
-            //            new BPrimitiveType(NewConversionID_FromRelativeUrl_UrlEncoded),
-            //            JObject.Parse(JsonConvert.SerializeObject(NewDBEntry)),
-            //            out JObject _, EBReturnItemBehaviour.DoNotReturn,
-            //            null,
-            //            _ErrorMessageAction))
-            //        {
-            //            return BWebResponse.InternalError("Failed to start the batch process and experienced a Database error");
-            //        }
-
-            //        return BWebResponse.InternalError("Failed to start the batch process");
-            //    }
-            //}
-            //catch (Exception ex)
-            //{
-            //    _ErrorMessageAction?.Invoke($"{ex.Message}\n{ex.StackTrace}");
-
-            //    NewDBEntry.ConversionStatus = (int)EInternalProcessStage.ProcessFailed;
-
-            //    if (!DatabaseService.UpdateItem(
-            //        FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
-            //        FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
-            //        new BPrimitiveType(NewConversionID_FromRelativeUrl_UrlEncoded),
-            //        JObject.Parse(JsonConvert.SerializeObject(NewDBEntry)),
-            //        out JObject _, EBReturnItemBehaviour.DoNotReturn,
-            //        null,
-            //        _ErrorMessageAction))
-            //    {
-            //        return BWebResponse.InternalError("Failed to start the batch process and experienced a Database error");
-            //    }
-
-            //    return BWebResponse.InternalError("Failed to start the batch process");
-            //}
+            return true;
         }
 
         public WorkerVMListDBEntry GetAvailableVm(out string _Id, out string _VmName, Action<string> _ErrorMessageAction)
@@ -613,5 +549,104 @@ namespace CADProcessService.Endpoints
             });
         }
 
+        private bool StartBatchProcess(string RelativeFileName, FileConversionDBEntry _FileConversionEntry, Action<string> _ErrorMessageAction, out BWebServiceResponse _SuccessResponse, out BWebServiceResponse _FailureResponse)
+        {
+            _FailureResponse = BWebResponse.InternalError("");
+            _SuccessResponse = BWebResponse.StatusAccepted("");
+
+            var DeploymentBranchName = Resources_DeploymentManager.Get().GetDeploymentBranchName();
+            var NewConversionID_FromRelativeUrl_UrlEncoded = WebUtility.UrlEncode($"{DeploymentBranchName}/{_FileConversionEntry.ModelName}/{_FileConversionEntry.ModelRevision}");
+
+            try
+            {
+                if (BatchProcessingCreationService.Instance.StartBatchProcess(_FileConversionEntry.BucketName, RelativeFileName, _FileConversionEntry.ZipMainAssemblyFileNameIfAny, out string _PodName, _ErrorMessageAction))
+                {
+                    //Code for initial method of starting optimizer after pixyz completes
+                    //return BWebResponse.StatusAccepted("Request has been accepted; process is now being started.");
+                    if (BatchProcessingCreationService.Instance.StartFileOptimizer(_FileConversionEntry.BucketName, RelativeFileName, _ErrorMessageAction))
+                    {
+                        _SuccessResponse = BWebResponse.StatusAccepted("Request has been accepted; process is now being started.");
+                        _ErrorMessageAction?.Invoke($"StartBatchProcess-> Request has been accepted; process is now being started.");
+                        return true;
+                    }
+                    else
+                    {
+                        _FileConversionEntry.ConversionStatus = (int)EInternalProcessStage.ProcessFailed;
+
+                        if (!DatabaseService.UpdateItem(
+                            FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
+                            FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
+                            new BPrimitiveType(NewConversionID_FromRelativeUrl_UrlEncoded),
+                            JObject.Parse(JsonConvert.SerializeObject(_FileConversionEntry)),
+                            out JObject _, EBReturnItemBehaviour.DoNotReturn,
+                            null,
+                            _ErrorMessageAction))
+                        {
+                            _FailureResponse = BWebResponse.InternalError("Failed to start the batch process and experienced a Database error");
+                            _ErrorMessageAction?.Invoke($"StartBatchProcess-> Failed to start the batch process and experienced a Database error");
+                            return false;
+                        }
+
+                        //Try kill pixyz pod that we have succeeded in creating
+                        if (!BatchProcessingCreationService.Instance.TryKillPod(_PodName, "cip-batch"))
+                        {
+                            _FailureResponse = BWebResponse.InternalError("Failed to start the unreal optimizer and failed to kill pixyz pod");
+                            _ErrorMessageAction?.Invoke($"StartBatchProcess-> Failed to start the unreal optimizer and failed to kill pixyz pod");
+                            return false;
+                        }
+
+                        _FailureResponse = BWebResponse.InternalError("Failed to start the batch process and experienced a Database error");
+                        _ErrorMessageAction?.Invoke($"StartBatchProcess-> Failed to start the batch process and experienced a Database error");
+                        return false;
+                    }
+                }
+                else
+                {
+                    _FileConversionEntry.ConversionStatus = (int)EInternalProcessStage.ProcessFailed;
+
+                    if (!DatabaseService.UpdateItem(
+                        FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
+                        FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
+                        new BPrimitiveType(NewConversionID_FromRelativeUrl_UrlEncoded),
+                        JObject.Parse(JsonConvert.SerializeObject(_FileConversionEntry)),
+                        out JObject _, EBReturnItemBehaviour.DoNotReturn,
+                        null,
+                        _ErrorMessageAction))
+                    {
+                        _FailureResponse = BWebResponse.InternalError("Failed to start the batch process and experienced a Database error");
+                        _ErrorMessageAction?.Invoke($"StartBatchProcess-> Failed to start the batch process and experienced a Database error");
+                        return false;
+                    }
+
+                    _FailureResponse = BWebResponse.InternalError("Failed to start the batch process");
+                    _ErrorMessageAction?.Invoke($"StartBatchProcess-> Failed to start the batch process");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                _ErrorMessageAction?.Invoke($"StartBatchProcess-> Error Message: {ex.Message}\n StackTrace: {ex.StackTrace}");
+
+                _FileConversionEntry.ConversionStatus = (int)EInternalProcessStage.ProcessFailed;
+
+                if (!DatabaseService.UpdateItem(
+                    FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
+                    FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
+                    new BPrimitiveType(NewConversionID_FromRelativeUrl_UrlEncoded),
+                    JObject.Parse(JsonConvert.SerializeObject(_FileConversionEntry)),
+                    out JObject _, EBReturnItemBehaviour.DoNotReturn,
+                    null,
+                    _ErrorMessageAction))
+                {
+                    _FailureResponse = BWebResponse.InternalError("Failed to start the batch process and experienced a Database error");
+                    _ErrorMessageAction?.Invoke($"StartBatchProcess-> Failed to start the batch process and experienced a Database error");
+                    return false;
+                }
+
+                _FailureResponse = BWebResponse.InternalError("Failed to start the batch process");
+                _ErrorMessageAction?.Invoke($"StartBatchProcess-> Failed to start the batch process");
+                return false;
+            }
+        }
     }
 }

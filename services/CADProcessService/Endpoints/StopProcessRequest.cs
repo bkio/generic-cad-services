@@ -326,8 +326,6 @@ namespace CADProcessService.Endpoints
                     continue;
                 }
 
-                foundAtLeastOneRecord = true;
-
                 if (!CommonMethods.StopVirtualMachine(
                         VirtualMachineService,
                         DatabaseService,
@@ -344,11 +342,13 @@ namespace CADProcessService.Endpoints
                     }
                     return false;
                 }
+
+                foundAtLeastOneRecord = true;
             }
 
             if (!foundAtLeastOneRecord)
             {
-                FailureResponse = BWebResponse.InternalError("No worker VM record founded. Given modelId, modelName and revisionIndex are wrong!");
+                FailureResponse = BWebResponse.InternalError($"No worker VM record founded. Given modelId: {RequestedModelId}, modelName: {RequestedModelName} and revisionIndex: {RequestedRevisionIndex} are wrong!");
                 return false;
             }
 

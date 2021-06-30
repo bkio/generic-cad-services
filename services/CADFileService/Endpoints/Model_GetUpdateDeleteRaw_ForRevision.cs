@@ -234,7 +234,7 @@ namespace CADFileService
             //    var RequestObject = new JObject()
             //    {
             //        ["bucketName"] = CadFileStorageBucketName,
-            //        ["rawFileRelativeUrl"] = RevisionObject.FileEntry.RawFileRelativeUrl
+            //        ["fileRelativeUrl"] = RevisionObject.FileEntry.FileRelativeUrl
             //    };
 
             //    GetTracingService()?.On_FromServiceToService_Sent(_Context, _ErrorMessageAction);
