@@ -62,10 +62,6 @@ namespace CADProcessService.Endpoints
                 ConversionStatus = (int)EInternalProcessStage.Queued
             };
 
-            string ModelId = null;
-            string BucketName = null;
-            string RelativeFileName = null;
-
             using (var InputStream = _Context.Request.InputStream)
             {
                 var NewObjectJson = new JObject();
@@ -79,22 +75,31 @@ namespace CADProcessService.Endpoints
                         if (!ParsedBody.ContainsKey("bucketName") ||
                             !ParsedBody.ContainsKey("fileRelativeUrl"))
                         {
-                            return BWebResponse.BadRequest("Request body must contain all necessary fields.");
+                            _ErrorMessageAction?.Invoke("StartProcessRequest: Request body must contain all necessary fields.");
+                            return BWebResponse.BadRequest("StartProcessRequest: Request body must contain all necessary fields.");
                         }
 
                         var BucketNameToken = ParsedBody["bucketName"];
                         var FileRelativeUrlToken = ParsedBody["fileRelativeUrl"];
-                        if ( (BucketNameToken.Type != JTokenType.String && ((string)BucketNameToken).Length > 0) ||
-                            (FileRelativeUrlToken.Type != JTokenType.String && ((string)FileRelativeUrlToken).Length > 0))
+                        if (BucketNameToken.Type != JTokenType.String ||
+                            FileRelativeUrlToken.Type != JTokenType.String)
                         {
+                            _ErrorMessageAction?.Invoke("StartProcessRequest: Request body contains invalid fields.");
                             return BWebResponse.BadRequest("Request body contains invalid fields.");
                         }
-                        BucketName = (string)BucketNameToken;
-                        RelativeFileName = (string)FileRelativeUrlToken;
+                        string BucketName = (string)BucketNameToken;
+                        string RelativeFileName = (string)FileRelativeUrlToken;
+
+                        if (BucketName == null || RelativeFileName == null)
+                        {
+                            _ErrorMessageAction?.Invoke("StartProcessRequest: No bucketName or fileRelativeUrl.");
+                            return BWebResponse.InternalError("No bucketName or fileRelativeUrl.");
+                        }
 
                         NewFileConversionDBEntry.BucketName = BucketName;
                         NewFileConversionDBEntry.QueuedTime = DateTime.UtcNow.ToString();
 
+                        string ModelId = null;
                         if (ParsedBody.ContainsKey("modelId"))
                         {
                             ModelId = (string)ParsedBody["modelId"];
@@ -180,6 +185,25 @@ namespace CADProcessService.Endpoints
                             NewFileConversionDBEntry.CullingThresholds = Preset.CullingThresholds;
                             NewFileConversionDBEntry.LevelThresholds = Preset.DistanceThresholds;
                         }
+
+                        if (!UpdateFileConversionEntry(ModelId, NewFileConversionDBEntry, _ErrorMessageAction, out BWebServiceResponse FailureResponse))
+                        {
+                            return FailureResponse;
+                        }
+
+                        if (!UpdateWorkerVMEntry(ModelId, NewFileConversionDBEntry, _ErrorMessageAction, out FailureResponse))
+                        {
+                            return FailureResponse;
+                        }
+
+                        //if (StartBatchProcess(RelativeFileName, NewFileConversionDBEntry, _ErrorMessageAction, out BWebServiceResponse SuccessResponse, out FailureResponse))
+                        //{
+                        //    return SuccessResponse;
+                        //}
+                        //else
+                        //{
+                        //    return FailureResponse;
+                        //}
                     }
                     catch (Exception e)
                     {
@@ -188,25 +212,6 @@ namespace CADProcessService.Endpoints
                     }
                 }
             }
-
-            if (!UpdateFileConversionEntry(ModelId, NewFileConversionDBEntry, _ErrorMessageAction, out BWebServiceResponse FailureResponse))
-            {
-                return FailureResponse;
-            }
-
-            if (!UpdateWorkerVMEntry(ModelId, NewFileConversionDBEntry, _ErrorMessageAction, out FailureResponse))
-            {
-                return FailureResponse;
-            }
-
-            //if (StartBatchProcess(RelativeFileName, NewFileConversionDBEntry, _ErrorMessageAction, out BWebServiceResponse SuccessResponse, out FailureResponse))
-            //{
-            //    return SuccessResponse;
-            //}
-            //else
-            //{
-            //    return FailureResponse;
-            //}
 
             return BWebResponse.StatusAccepted("Request has been accepted; process is now being started.");
         }
