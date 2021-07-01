@@ -310,7 +310,7 @@ namespace CADProcessService.Endpoints
                 var CurrentWorkerVM = JsonConvert.DeserializeObject<WorkerVMListDBEntry>(CurrentWorkerVMJObject.ToString());
                 var _RequestedVirtualMachineId = VirtualMachineDictionary.FirstOrDefault(x => x.Value.Equals(CurrentWorkerVM.VMName)).Key;
 
-                if (CurrentWorkerVM.VMStatus == (int)EVMStatus.Busy || CurrentWorkerVM.VMStatus == (int)EVMStatus.Stopped)
+                if (CurrentWorkerVM.VMStatus == (int)EVMStatus.Stopped)
                 {
                     continue;
                 }

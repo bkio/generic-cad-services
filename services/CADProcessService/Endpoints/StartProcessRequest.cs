@@ -255,7 +255,7 @@ namespace CADProcessService.Endpoints
                     FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
                     new BPrimitiveType(ModelId),
                     JObject.Parse(JsonConvert.SerializeObject(_FileConversionEntry)),
-                    out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
+                    out JObject _, EBReturnItemBehaviour.DoNotReturn,
                     null,
                     _ErrorMessageAction))
                 {
@@ -309,7 +309,7 @@ namespace CADProcessService.Endpoints
                         WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
                         new BPrimitiveType(_VMID),
                         JObject.Parse(JsonConvert.SerializeObject(VmEntry)),
-                        out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
+                        out JObject _, EBReturnItemBehaviour.DoNotReturn,
                         null,
                         _ErrorMessageAction))
                     {

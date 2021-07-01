@@ -117,7 +117,7 @@ namespace CADProcessService.Endpoints
                             ProcessHistoryDBEntry.KEY_NAME_PROCESS_ID,
                             new BPrimitiveType(ProgressInfo.ProcessId.ToString()),
                             JObject.Parse(JsonConvert.SerializeObject(HistoryEntry)),
-                            out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
+                            out JObject _, EBReturnItemBehaviour.DoNotReturn,
                             null,
                             _ErrorMessageAction))
                         {
@@ -157,7 +157,7 @@ namespace CADProcessService.Endpoints
                         ProcessHistoryDBEntry.KEY_NAME_PROCESS_ID,
                         new BPrimitiveType(ProgressInfo.ProcessId.ToString()),
                         JObject.Parse(JsonConvert.SerializeObject(NewEntry)),
-                        out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
+                        out JObject _, EBReturnItemBehaviour.DoNotReturn,
                         null,
                         _ErrorMessageAction))
                     {
@@ -219,7 +219,7 @@ namespace CADProcessService.Endpoints
                             FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
                             new BPrimitiveType(ProgressInfo.ConversionId),
                             JObject.Parse(JsonConvert.SerializeObject(ConversionEntry)),
-                            out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
+                            out JObject _, EBReturnItemBehaviour.DoNotReturn,
                             null,
                             _ErrorMessageAction))
                         {
@@ -291,14 +291,12 @@ namespace CADProcessService.Endpoints
                             Entry.LastKnownProcessStatusInfo = ProgressInfo.Info;
                         }
 
-                        _ErrorMessageAction?.Invoke($"NotifyCompleteRequest: UpdateVMEntryRecord-> Before Updated, Model: [{Entry.ModelName}] - Item: {JsonConvert.SerializeObject(Entry)}");
-
                         if (!DatabaseService.UpdateItem(
                             WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
                             WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
                             new BPrimitiveType(ProgressInfo.VMId),
                             JObject.Parse(JsonConvert.SerializeObject(Entry)),
-                            out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
+                            out JObject _, EBReturnItemBehaviour.DoNotReturn,
                             null,
                             _ErrorMessageAction))
                         {
@@ -306,7 +304,6 @@ namespace CADProcessService.Endpoints
                             _ErrorMessageAction?.Invoke($"NotifyCompleteRequest: UpdateVMEntryRecord-> Failed to update vm entry. ProgressInfo.VMId: {ProgressInfo.VMId}");
                             return false;
                         }
-                        _ErrorMessageAction?.Invoke($"NotifyCompleteRequest: UpdateVMEntryRecord-> After Updated, Model: [{Entry.ModelName}] - Item: {JsonConvert.SerializeObject(_ExistingObject)}");
                     }
                     else
                     {

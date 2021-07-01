@@ -507,7 +507,7 @@ namespace CADProcessService.K8S
                     FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
                     new BPrimitiveType(ConversionId),
                     JObject.Parse(JsonConvert.SerializeObject(NewDBEntry)),
-                    out JObject _, EBReturnItemBehaviour.ReturnAllNew,
+                    out JObject _, EBReturnItemBehaviour.DoNotReturn,
                     null,
                     _ErrorMessageAction);
             }
