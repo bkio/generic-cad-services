@@ -54,6 +54,7 @@ namespace CADProcessService.Endpoints
                 {
                     string Payload = ResponseReader.ReadToEnd();
                     ConversionProgressInfo ProgressInfo = JsonConvert.DeserializeObject<ConversionProgressInfo>(Payload);
+                    _ErrorMessageAction?.Invoke($"NotifyProgressRequest:OnRequest_Internal-> Received payload is: {Payload}");
 
                     if (!UpdateProcessHistoryRecord(ProgressInfo, _ErrorMessageAction, out BWebServiceResponse FailureResponse))
                     {
@@ -276,32 +277,30 @@ namespace CADProcessService.Endpoints
                     {
                         WorkerVMListDBEntry Entry = _VMEntry.ToObject<WorkerVMListDBEntry>();
 
-                        if (ProgressInfo.ProgressDetails.GlobalCurrentStage != Entry.CurrentProcessStage)
+                        Entry.CurrentProcessStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
+                        if (ProgressInfo.ProcessFailed)
                         {
-                            Entry.CurrentProcessStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
-                            if (ProgressInfo.ProcessFailed)
-                            {
-                                Entry.LastKnownProcessStatus = (int)EProcessStatus.Failed;
-                            }
-                            else
-                            {
-                                Entry.LastKnownProcessStatus = (int)EProcessStatus.Processing;
-                            }
+                            Entry.LastKnownProcessStatus = (int)EProcessStatus.Failed;
+                            Entry.LastKnownProcessStatusInfo = ProgressInfo.Error;
+                        }
+                        else
+                        {
+                            Entry.LastKnownProcessStatus = (int)EProcessStatus.Processing;
                             Entry.LastKnownProcessStatusInfo = ProgressInfo.Info;
+                        }
 
-                            if (!DatabaseService.UpdateItem(
-                                WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
-                                WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
-                                new BPrimitiveType(ProgressInfo.VMId),
-                                JObject.Parse(JsonConvert.SerializeObject(Entry)),
-                                out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
-                                null,
-                                _ErrorMessageAction))
-                            {
-                                _FailureResponse = BWebResponse.Conflict("Failed to update vm entry.");
-                                _ErrorMessageAction?.Invoke($"NotifyProcessRequest: UpdateVMEntryRecord-> Failed to update vm entry. ProgressInfo.VMId: {ProgressInfo.VMId}");
-                                return false;
-                            }
+                        if (!DatabaseService.UpdateItem(
+                            WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
+                            WorkerVMListDBEntry.KEY_NAME_VM_UNIQUE_ID,
+                            new BPrimitiveType(ProgressInfo.VMId),
+                            JObject.Parse(JsonConvert.SerializeObject(Entry)),
+                            out JObject _ExistingObject, EBReturnItemBehaviour.DoNotReturn,
+                            null,
+                            _ErrorMessageAction))
+                        {
+                            _FailureResponse = BWebResponse.Conflict("Failed to update vm entry.");
+                            _ErrorMessageAction?.Invoke($"NotifyProcessRequest: UpdateVMEntryRecord-> Failed to update vm entry. ProgressInfo.VMId: {ProgressInfo.VMId}");
+                            return false;
                         }
                     }
                     else

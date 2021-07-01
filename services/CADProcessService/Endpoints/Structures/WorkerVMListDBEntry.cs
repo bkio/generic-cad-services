@@ -23,6 +23,7 @@ namespace CADProcessService.Endpoints.Structures
         public const string MODEL_REVISION_INDEX_PROPERTY = "revisionIndex";
         public const string PROCESS_ID_PROPERTY = "processId";
         public const string PROCESS_START_DATE_PROPERTY = "processStartDate";
+        public const string PROCESS_END_DATE_PROPERTY = "processEndDate";
         public const string LAST_KNOWN_PROCESS_STATUS_PROPERTY = "lastKnownProcessStatus";
         public const string LAST_KNOWN_PROCESS_STATUS_INFO_PROPERTY = "lastKnownProcessStatusInfo";
         public const string CURRENT_PROCESS_STAGE_PROPERTY = "currentProcessStage";
@@ -36,6 +37,7 @@ namespace CADProcessService.Endpoints.Structures
             MODEL_REVISION_INDEX_PROPERTY,
             PROCESS_ID_PROPERTY,
             PROCESS_START_DATE_PROPERTY,
+            PROCESS_END_DATE_PROPERTY,
             LAST_KNOWN_PROCESS_STATUS_PROPERTY,
             LAST_KNOWN_PROCESS_STATUS_INFO_PROPERTY,
             CURRENT_PROCESS_STAGE_PROPERTY
@@ -48,6 +50,7 @@ namespace CADProcessService.Endpoints.Structures
             MODEL_REVISION_INDEX_PROPERTY,
             PROCESS_ID_PROPERTY,
             PROCESS_START_DATE_PROPERTY,
+            PROCESS_END_DATE_PROPERTY,
             LAST_KNOWN_PROCESS_STATUS_PROPERTY,
             LAST_KNOWN_PROCESS_STATUS_INFO_PROPERTY,
             VM_STATUS_PROPERTY,
@@ -61,6 +64,7 @@ namespace CADProcessService.Endpoints.Structures
             MODEL_REVISION_INDEX_PROPERTY,
             PROCESS_ID_PROPERTY,
             PROCESS_START_DATE_PROPERTY,
+            PROCESS_END_DATE_PROPERTY,
             LAST_KNOWN_PROCESS_STATUS_PROPERTY,
             LAST_KNOWN_PROCESS_STATUS_INFO_PROPERTY,
             VM_STATUS_PROPERTY,
@@ -78,6 +82,9 @@ namespace CADProcessService.Endpoints.Structures
 
         [JsonProperty(PROCESS_START_DATE_PROPERTY)]
         public string ProcessStartDate = Methods.ToISOString();
+
+        [JsonProperty(PROCESS_END_DATE_PROPERTY)]
+        public string ProcessEndDate = "";
 
         [JsonProperty(LAST_KNOWN_PROCESS_STATUS_PROPERTY)]
         public int LastKnownProcessStatus = (int)EProcessStatus.Idle;
@@ -110,6 +117,8 @@ namespace CADProcessService.Endpoints.Structures
                 ProcessId = ContentObject.ProcessId;
             if (_Content.ContainsKey(PROCESS_START_DATE_PROPERTY))
                 ProcessStartDate = ContentObject.ProcessStartDate;
+            if (_Content.ContainsKey(PROCESS_END_DATE_PROPERTY))
+                ProcessEndDate = ContentObject.ProcessEndDate;
             if (_Content.ContainsKey(CURRENT_PROCESS_STAGE_PROPERTY))
                 CurrentProcessStage = ContentObject.CurrentProcessStage;
             if (_Content.ContainsKey(LAST_KNOWN_PROCESS_STATUS_INFO_PROPERTY))

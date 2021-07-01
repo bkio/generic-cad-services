@@ -202,7 +202,7 @@ namespace CADFileService.Endpoints
             var RequestObject = new JObject()
             {
                 ["bucketName"] = CadFileStorageBucketName,
-                ["rawFileRelativeUrl"] = _RevisionObject.FileEntry.FileRelativeUrl,
+                ["fileRelativeUrl"] = _RevisionObject.FileEntry.FileRelativeUrl,
                 ["modelId"] = _ModelID,
                 ["modelName"] = _ModelName,
                 ["modelRevision"] = _RevisionObject.RevisionIndex,
@@ -218,7 +218,7 @@ namespace CADFileService.Endpoints
                 ["globalZRotation"] = _RevisionObject.FileEntry.GlobalTransformOffset.RotationOffsetZ,
                 ["optimizationPreset"] = _RevisionObject.FileEntry.OptimizationPreset,
                 ["mergeFinalLevel"] = _RevisionObject.FileEntry.bMergeFinalLevel,
-                ["deleteDuplicates"] = _RevisionObject.FileEntry.bDetectDuplicateMeshes,
+                ["deleteDuplicates"] = _RevisionObject.FileEntry.bDeleteDuplicates,
                 ["customPythonScript"] = _RevisionObject.FileEntry.CustomPythonScript
             };
 

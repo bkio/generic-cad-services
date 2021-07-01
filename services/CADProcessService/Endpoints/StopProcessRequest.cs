@@ -100,9 +100,13 @@ namespace CADProcessService.Endpoints
                             BucketName = (string)BucketNameToken;
                             RelativeFileUrl = (string)FileRelativeUrlToken;
                             ConversionID_FromRelativeUrl_UrlEncoded = WebUtility.UrlEncode((string)FileRelativeUrlToken);
-                        }
 
-                        if (ProcessMode == (int)EProcessMode.VirtualMachine)
+                            if (!ProcessKubernetes(ConversionID_FromRelativeUrl_UrlEncoded, BucketName, RelativeFileUrl, _ErrorMessageAction, out BWebServiceResponse FailureResponse))
+                            {
+                                return FailureResponse;
+                            }
+                        }
+                        else if (ProcessMode == (int)EProcessMode.VirtualMachine)
                         {
                             if (!ParsedBody.ContainsKey("virtualMachineId") 
                                 && !(ParsedBody.ContainsKey("modelId") && ParsedBody.ContainsKey("modelName") && ParsedBody.ContainsKey("revisionIndex")))
@@ -150,6 +154,15 @@ namespace CADProcessService.Endpoints
 
                                 RequestedRevisionIndex = (int)RequestedRevisionIndexToken;
                             }
+
+                            if (!ProcessVirtualMachine(_ErrorMessageAction, out BWebServiceResponse FailureResponse))
+                            {
+                                return FailureResponse;
+                            }
+                        }
+                        else
+                        {
+                            return BWebResponse.BadRequest("Undefined process mode selected. Please check the process mode that you select.");
                         }
                     }
                     catch (Exception e)
@@ -158,25 +171,6 @@ namespace CADProcessService.Endpoints
                         return BWebResponse.BadRequest("Malformed request body. Request must be a valid json form.");
                     }
                 }
-            }
-
-            if (ProcessMode == (int)EProcessMode.Kubernetes)
-            {
-                if (!ProcessKubernetes(ConversionID_FromRelativeUrl_UrlEncoded, BucketName, RelativeFileUrl, _ErrorMessageAction, out BWebServiceResponse FailureResponse))
-                {
-                    return FailureResponse;
-                }
-            }
-            else if (ProcessMode == (int)EProcessMode.VirtualMachine)
-            {
-                if (!ProcessVirtualMachine(_ErrorMessageAction, out BWebServiceResponse FailureResponse))
-                {
-                    return FailureResponse;
-                }
-            }
-            else
-            {
-                return BWebResponse.BadRequest("Undefined process mode selected. Please check the process mode that you select.");
             }
 
             return BWebResponse.StatusAccepted("Request has been accepted; process is now being stopped.");
@@ -326,8 +320,6 @@ namespace CADProcessService.Endpoints
                     continue;
                 }
 
-                foundAtLeastOneRecord = true;
-
                 if (!CommonMethods.StopVirtualMachine(
                         VirtualMachineService,
                         DatabaseService,
@@ -344,11 +336,13 @@ namespace CADProcessService.Endpoints
                     }
                     return false;
                 }
+
+                foundAtLeastOneRecord = true;
             }
 
             if (!foundAtLeastOneRecord)
             {
-                FailureResponse = BWebResponse.InternalError("No worker VM record founded. Given modelId, modelName and revisionIndex are wrong!");
+                FailureResponse = BWebResponse.InternalError($"No worker VM record founded. Given modelId: {RequestedModelId}, modelName: {RequestedModelName} and revisionIndex: {RequestedRevisionIndex} are wrong!");
                 return false;
             }
 

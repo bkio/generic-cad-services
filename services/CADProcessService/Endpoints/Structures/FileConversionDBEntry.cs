@@ -8,10 +8,10 @@ namespace CADProcessService.Endpoints.Structures
 {
     public enum EInternalProcessStage
     {
-        Queued,
-        Processing,
-        ProcessFailed,
-        ProcessComplete
+        Queued = 0,
+        Processing = 1,
+        ProcessFailed = 2,
+        ProcessComplete = 3
     }
 
     //DB Table entry

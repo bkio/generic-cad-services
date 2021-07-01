@@ -277,22 +277,21 @@ namespace CADProcessService.Endpoints
                     {
                         WorkerVMListDBEntry Entry = _VMEntry.ToObject<WorkerVMListDBEntry>();
 
-                        _ErrorMessageAction?.Invoke($"NotifyCompleteRequest: UpdateVMEntryRecord-> 1-Received item: {JsonConvert.SerializeObject(Entry)}");
-
                         Entry.VMStatus = (int)EVMStatus.Available;
-                        Entry.ProcessStartDate = DateTime.Now.ToString();
+                        Entry.ProcessEndDate = Methods.ToISOString();
                         Entry.CurrentProcessStage = ProgressInfo.ProgressDetails.GlobalCurrentStage;
                         if (ProgressInfo.ProcessFailed)
                         {
                             Entry.LastKnownProcessStatus = (int)EProcessStatus.Failed;
+                            Entry.LastKnownProcessStatusInfo = ProgressInfo.Error;
                         }
                         else
                         {
                             Entry.LastKnownProcessStatus = (int)EProcessStatus.Completed;
+                            Entry.LastKnownProcessStatusInfo = ProgressInfo.Info;
                         }
-                        Entry.LastKnownProcessStatusInfo = ProgressInfo.Info;
 
-                        _ErrorMessageAction?.Invoke($"NotifyCompleteRequest: UpdateVMEntryRecord-> 2-Updated item: {JsonConvert.SerializeObject(Entry)}");
+                        _ErrorMessageAction?.Invoke($"NotifyCompleteRequest: UpdateVMEntryRecord-> Before Updated, Model: [{Entry.ModelName}] - Item: {JsonConvert.SerializeObject(Entry)}");
 
                         if (!DatabaseService.UpdateItem(
                             WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(),
@@ -307,6 +306,7 @@ namespace CADProcessService.Endpoints
                             _ErrorMessageAction?.Invoke($"NotifyCompleteRequest: UpdateVMEntryRecord-> Failed to update vm entry. ProgressInfo.VMId: {ProgressInfo.VMId}");
                             return false;
                         }
+                        _ErrorMessageAction?.Invoke($"NotifyCompleteRequest: UpdateVMEntryRecord-> After Updated, Model: [{Entry.ModelName}] - Item: {JsonConvert.SerializeObject(_ExistingObject)}");
                     }
                     else
                     {

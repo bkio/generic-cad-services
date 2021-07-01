@@ -122,32 +122,35 @@ namespace CADFileService.Endpoints
                 return BWebResponse.StatusAccepted("File process has been already failed or canceled.");
             }
 
-            RevisionObject.FileEntry.FileProcessStatus = (int)EFileProcessStatus.ProcessCanceled;
-            RevisionObject.FileEntry.FileProcessStatusInfo = "Process has been canceled by the user";
-            RevisionObject.FileEntry.FileProcessedAtTime = Methods.ToISOString();
-            ModelObject.MRVLastUpdateTime = RevisionObject.FileEntry.FileProcessedAtTime;
-
-            Controller_DeliveryEnsurer.Get().DB_UpdateItem_FireAndForget(
-                _Context,
-                ModelDBEntry.DBSERVICE_MODELS_TABLE(),
-                ModelDBEntry.KEY_NAME_MODEL_ID,
-                new BPrimitiveType(RequestedModelID),
-                JObject.Parse(JsonConvert.SerializeObject(ModelObject)));
-
-            Controller_ModelActions.Get().BroadcastModelAction(new Action_ModelRevisionFileEntryUpdated
-            (
-                RequestedModelID,
-                RequestedRevisionIndex,
-                ModelObject.ModelOwnerUserID,
-                ModelObject.ModelSharedWithUserIDs,
-                AuthorizedUser.UserID,
-                JObject.Parse(JsonConvert.SerializeObject(RevisionObject.FileEntry))
-            ),
-            _ErrorMessageAction);
-
             if (!SendStopProcessRequest(_Context, RequestedModelID, ModelObject.ModelName, RevisionObject.RevisionIndex, _ErrorMessageAction))
             {
                 return BWebResponse.InternalError("Stop request sending has been failed.");
+            }
+            else
+            {
+                //If stop request returns true, update the record.
+                RevisionObject.FileEntry.FileProcessStatus = (int)EFileProcessStatus.ProcessCanceled;
+                RevisionObject.FileEntry.FileProcessStatusInfo = "Process has been canceled by the user";
+                RevisionObject.FileEntry.FileProcessedAtTime = Methods.ToISOString();
+                ModelObject.MRVLastUpdateTime = RevisionObject.FileEntry.FileProcessedAtTime;
+
+                Controller_DeliveryEnsurer.Get().DB_UpdateItem_FireAndForget(
+                    _Context,
+                    ModelDBEntry.DBSERVICE_MODELS_TABLE(),
+                    ModelDBEntry.KEY_NAME_MODEL_ID,
+                    new BPrimitiveType(RequestedModelID),
+                    JObject.Parse(JsonConvert.SerializeObject(ModelObject)));
+
+                Controller_ModelActions.Get().BroadcastModelAction(new Action_ModelRevisionFileEntryUpdated
+                (
+                    RequestedModelID,
+                    RequestedRevisionIndex,
+                    ModelObject.ModelOwnerUserID,
+                    ModelObject.ModelSharedWithUserIDs,
+                    AuthorizedUser.UserID,
+                    JObject.Parse(JsonConvert.SerializeObject(RevisionObject.FileEntry))
+                ),
+                _ErrorMessageAction);
             }
 
             return BWebResponse.StatusAccepted("Stop request has been sent.");
