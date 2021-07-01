@@ -24,17 +24,19 @@ namespace CADProcessService.Endpoints
     {
         private readonly IBDatabaseServiceInterface DatabaseService;
         private readonly IBVMServiceInterface VirtualMachineService;
+        private readonly IBFileServiceInterface FileService;
         private readonly Dictionary<string, string> VirtualMachineDictionary;
         private readonly string CadProcessServiceUrl;
         private readonly Dictionary<int, OptimizationPresetEntry> Presets = new Dictionary<int, OptimizationPresetEntry>();
 
-        public StartProcessRequest(IBDatabaseServiceInterface _DatabaseService, IBVMServiceInterface _VirtualMachineService, Dictionary<string, string> _VirtualMachineDictionary, string _CadProcessServiceUrl) : base()
+        public StartProcessRequest(IBDatabaseServiceInterface _DatabaseService, IBVMServiceInterface _VirtualMachineService, IBFileServiceInterface _FileService, Dictionary<string, string> _VirtualMachineDictionary, string _CadProcessServiceUrl) : base()
         {
             CreateDefaultPresets();
             DatabaseService = _DatabaseService;
             VirtualMachineService = _VirtualMachineService;
             VirtualMachineDictionary = _VirtualMachineDictionary;
             CadProcessServiceUrl = _CadProcessServiceUrl;
+            FileService = _FileService;
         }
 
         public override BWebServiceResponse OnRequest_Interruptable_DeliveryEnsurerUser(HttpListenerContext _Context, Action<string> _ErrorMessageAction = null)
@@ -279,7 +281,6 @@ namespace CADProcessService.Endpoints
         private bool UpdateWorkerVMEntry(string ModelId, FileConversionDBEntry _FileConversionEntry, Action<string> _ErrorMessageAction, out BWebServiceResponse _FailureResponse)
         {
             _FailureResponse = BWebResponse.InternalError("");
-
             try
             {
                 if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(InnerProcessor, WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(), "VMLOCK", _ErrorMessageAction))
@@ -316,7 +317,9 @@ namespace CADProcessService.Endpoints
                         _ErrorMessageAction?.Invoke($"StartProcessRequest:UpdateWorkerVMEntry->Update WorkerVMListDBEntry record before start virtual machine.");
                     }
 
-                    StartVirtualMachine(_VMID, _VMName, VmEntry, () =>
+                string _appletUrl = GetAppletDownloadUrls("pipeline-services", _ErrorMessageAction);
+
+                StartVirtualMachine(_VMID, _VMName, _appletUrl, VmEntry, () =>
                     {
                         _ErrorMessageAction?.Invoke($"StartProcessRequest:UpdateWorkerVMEntry->Virtual Machine starting operation has been failed.");
                         //if starting vm fails, revert back to original vm entry
@@ -368,7 +371,7 @@ namespace CADProcessService.Endpoints
                 {
                     WorkerVMListDBEntry CurrentEntry = VMEntry.ToObject<WorkerVMListDBEntry>();
 
-                    if ((EVMStatus)CurrentEntry.VMStatus == EVMStatus.Available || (EVMStatus)CurrentEntry.VMStatus == EVMStatus.Stopped)
+                    if ((EVMStatus)CurrentEntry.VMStatus == EVMStatus.Available || (EVMStatus)CurrentEntry.VMStatus == EVMStatus.Busy)
                     {
                         _Id = vm.Key;
                         _VmName = vm.Value;
@@ -381,11 +384,11 @@ namespace CADProcessService.Endpoints
             return null;
         }
 
-        private void RunCommandOnVirtualMachine(WorkerVMListDBEntry _VirtualMachineEntry, string _VirtualMachineName, string _VirtualMachineId, Action<string> _ErrorMessageAction)
+        private void RunCommandOnVirtualMachine(WorkerVMListDBEntry _VirtualMachineEntry, string _VirtualMachineName, string _VirtualMachineId, string _AppletDownloadUrl, Action<string> _ErrorMessageAction)
         {
             VirtualMachineService.RunCommand(new string[] { _VirtualMachineName }, EBVMOSType.Windows,
                 new string[] {
-                    $"Start-Process \"cmd.exe\" \"/c C:\\Applet\\LaunchUpdater.bat {_VirtualMachineId} {CadProcessServiceUrl}\"",
+                    $"Start-Process \"cmd.exe\" \"/c C:\\Applet\\LaunchUpdater.bat {_VirtualMachineId} {CadProcessServiceUrl} {_AppletDownloadUrl}\"",
                 },
                 () =>
                 {
@@ -398,7 +401,7 @@ namespace CADProcessService.Endpoints
             );
         }
 
-        private void StartVirtualMachine(string _VirtualMachineId, string _VirtualMachineName, WorkerVMListDBEntry _VirtualMachineEntry, System.Action VMStartFailureAction, Action<string> _ErrorMessageAction)
+        private void StartVirtualMachine(string _VirtualMachineId, string _VirtualMachineName, string _AppletDownloadUrl, WorkerVMListDBEntry _VirtualMachineEntry, System.Action VMStartFailureAction, Action<string> _ErrorMessageAction)
         {
             if (_VirtualMachineEntry != null)
             {
@@ -408,7 +411,7 @@ namespace CADProcessService.Endpoints
 
                     if (VMStatus == EBVMInstanceStatus.Running)
                     {
-                        RunCommandOnVirtualMachine(_VirtualMachineEntry, _VirtualMachineName, _VirtualMachineId, _ErrorMessageAction);
+                        RunCommandOnVirtualMachine(_VirtualMachineEntry, _VirtualMachineName, _VirtualMachineId, _AppletDownloadUrl, _ErrorMessageAction);
                     }
                     else
                     {
@@ -416,7 +419,7 @@ namespace CADProcessService.Endpoints
                         () =>
                         {
                             _ErrorMessageAction?.Invoke($"Virtual Machine has been started. VM Name: [{_VirtualMachineName}] - Model Name: [{_VirtualMachineEntry.ModelName}] - Revision Index: [{_VirtualMachineEntry.RevisionIndex}]");
-                            RunCommandOnVirtualMachine(_VirtualMachineEntry, _VirtualMachineName, _VirtualMachineId, _ErrorMessageAction);
+                            RunCommandOnVirtualMachine(_VirtualMachineEntry, _VirtualMachineName, _VirtualMachineId, _AppletDownloadUrl, _ErrorMessageAction);
                         },
                         () =>
                         {
@@ -439,74 +442,23 @@ namespace CADProcessService.Endpoints
             }
         }
 
-        private void TestVMStart(Action<string> _ErrorMessageAction)
+        private string GetAppletDownloadUrls(string _Bucket, Action<string> _ErrorMessageAction)
         {
-            ManualResetEvent Wait = new ManualResetEvent(false);
-            string _VirtualMachineName = "cip-vm-f027aa53-2";
+            FileService.CreateSignedURLForDownload(out string _CogsConverterDownloadUrl, _Bucket, $"development/CogsConverter.zip", 180, _ErrorMessageAction);
+            FileService.CreateSignedURLForDownload(out string _ModelFilterDownloadUrl, _Bucket, $"development/ModelFilter.zip", 180, _ErrorMessageAction);
+            FileService.CreateSignedURLForDownload(out string _NavisworksExtractorDownloadUrl, _Bucket, $"development/NavisworksExtractor.zip", 180, _ErrorMessageAction);
+            FileService.CreateSignedURLForDownload(out string _OrchestratorDownloadUrl, _Bucket, $"development/Orchestrator.zip", 180, _ErrorMessageAction);
+            FileService.CreateSignedURLForDownload(out string _PixyzDownloadUrl, _Bucket, $"development/Pixyz.zip", 180, _ErrorMessageAction);
 
-            
-                if (VirtualMachineService.GetInstanceStatus(_VirtualMachineName, out EBVMInstanceStatus VMStatus, _ErrorMessageAction))
-                {
-                    _ErrorMessageAction?.Invoke($"VM Status has been received. Name: [{_VirtualMachineName}] - Status: [{VMStatus.ToString()}]");
+            Dictionary<string, string> DownloadObj = new Dictionary<string, string>();
 
-                    if (VMStatus == EBVMInstanceStatus.Running)
-                    {
-                        _ErrorMessageAction?.Invoke($"Virtual Machine has been started. Name: [{_VirtualMachineName}]");
-                        VirtualMachineService.RunCommand(new string[] { _VirtualMachineName }, EBVMOSType.Windows,
-                        new string[] {
-                                    $"Start-Process \"cmd.exe\" \"/c C:\\Applet\\LaunchUpdater.bat 03598d72-251c-4a61-90a1-8493c46e7419 https://api-cip-dev.kognitwin.com/f027aa53/\"",
-                                    //$"Start-Process \"cmd.exe\" \"/c C:\\Applet\\Test.bat {_VirtualMachineName} {CadProcessServiceUrl}\"",
-                                },
-                        () =>
-                        {
-                            _ErrorMessageAction?.Invoke($"Command has been executed. Name: [{_VirtualMachineName}]");
-                            Wait.Set();
-                        },
-                        () =>
-                        {
-                            _ErrorMessageAction?.Invoke($"Command execution has been failed. Name: [{_VirtualMachineName}]");
-                            Wait.Set();
-                        }
-                    );
-                }
-                    else
-                    {
-                        VirtualMachineService.StartInstances(new string[] { _VirtualMachineName },
-                        () =>
-                        {
-                            _ErrorMessageAction?.Invoke($"Virtual Machine has been started. Name: [{_VirtualMachineName}]");
-                            VirtualMachineService.RunCommand(new string[] { _VirtualMachineName }, EBVMOSType.Windows,
-                                new string[] {
-                                    $"Start-Process \"cmd.exe\" \"/c C:\\Applet\\LaunchUpdater.bat 03598d72-251c-4a61-90a1-8493c46e7419 {CadProcessServiceUrl}\"",
-                                    //$"Start-Process \"cmd.exe\" \"/c C:\\Applet\\Test.bat {_VirtualMachineName} {CadProcessServiceUrl}\"",
-                                },
-                                () =>
-                                {
-                                    _ErrorMessageAction?.Invoke($"Command has been executed. Name: [{_VirtualMachineName}]");
-                                    Wait.Set();
-                                },
-                                () =>
-                                {
-                                    _ErrorMessageAction?.Invoke($"Command execution has been failed. Name: [{_VirtualMachineName}]");
-                                    Wait.Set();
-                                }
-                            );
-                        },
-                        () =>
-                        {
-                            _ErrorMessageAction?.Invoke($"Virtual Machine starting has been failed. Name: [{_VirtualMachineName}]");
-                            
-                        },
-                            _ErrorMessageAction
-                        );
-                    }
-                }
-                else
-                {
-                    _ErrorMessageAction?.Invoke($"VM Status receiving has been failed. Name: [{_VirtualMachineName}]");
-                }
-            
-            Wait.WaitOne();
+            DownloadObj[_CogsConverterDownloadUrl] = "C:/Applet/Downloads";
+            DownloadObj[_ModelFilterDownloadUrl] = "C:/Applet/Downloads";
+            DownloadObj[_NavisworksExtractorDownloadUrl] = "C:/Applet/Downloads";
+            DownloadObj[_OrchestratorDownloadUrl] = "C:/Applet/Downloads";
+            DownloadObj[_PixyzDownloadUrl] = "C:/Applet/Downloads";
+
+            return JsonConvert.SerializeObject(DownloadObj);
         }
 
         private void CreateDefaultPresets()
