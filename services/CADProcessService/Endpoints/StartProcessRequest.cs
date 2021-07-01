@@ -388,7 +388,7 @@ namespace CADProcessService.Endpoints
         {
             VirtualMachineService.RunCommand(new string[] { _VirtualMachineName }, EBVMOSType.Windows,
                 new string[] {
-                    $"Start-Process \"cmd.exe\" \"/c C:\\Applet\\LaunchUpdater.bat {_VirtualMachineId} {CadProcessServiceUrl} {_AppletDownloadUrl}\"",
+                    $"Start-Process \"cmd.exe\" \"/c C:\\Applet\\LaunchUpdater.bat {_VirtualMachineId} {CadProcessServiceUrl}\"",
                 },
                 () =>
                 {
