@@ -371,7 +371,7 @@ namespace CADProcessService.Endpoints
                 {
                     WorkerVMListDBEntry CurrentEntry = VMEntry.ToObject<WorkerVMListDBEntry>();
 
-                    if ((EVMStatus)CurrentEntry.VMStatus == EVMStatus.Available || (EVMStatus)CurrentEntry.VMStatus == EVMStatus.Busy)
+                    if ((EVMStatus)CurrentEntry.VMStatus == EVMStatus.Available || (EVMStatus)CurrentEntry.VMStatus == EVMStatus.Stopped)
                     {
                         _Id = vm.Key;
                         _VmName = vm.Value;
