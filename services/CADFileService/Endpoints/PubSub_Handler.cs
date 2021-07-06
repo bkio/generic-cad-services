@@ -568,7 +568,32 @@ namespace CADFileService.Endpoints
                             RevisionObject.FileEntry.FileProcessStatus = (int)EFileProcessStatus.Processing;
                         }
                         RevisionObject.FileEntry.FileProcessStatusInfo = "";
-                        RevisionObject.FileEntry.CurrentProcessStage = StageNumber;
+                        var _Stage = (EProcessStage)StageNumber;
+                        var _CurrentStage = StageNumber;
+                        switch (_Stage)
+                        {
+                            case EProcessStage.Stage0_FileUpload:
+                                _CurrentStage = (int) EProcessStage.Stage1_PullingData;
+                                break;
+                            case EProcessStage.Stage1_PullingData:
+                                _CurrentStage = (int)EProcessStage.Stage2_ExtractingGeometryInfo;
+                                break;
+                            case EProcessStage.Stage2_ExtractingGeometryInfo:
+                                _CurrentStage = (int)EProcessStage.Stage3_OptimizingModel;
+                                break;
+                            case EProcessStage.Stage3_OptimizingModel:
+                                _CurrentStage = (int)EProcessStage.Stage4_FilteringModel;
+                                break;
+                            case EProcessStage.Stage4_FilteringModel:
+                                _CurrentStage = (int)EProcessStage.Stage5_CustomPlatformConvertion;
+                                break;
+                            //case EProcessStage.Stage5_CustomPlatformConvertion:
+                            //    _CurrentStage = (int)EProcessStage.Stage6_UnrealEngineConvertion;
+                            //    break;
+                            default:
+                                break;
+                        }
+                        RevisionObject.FileEntry.CurrentProcessStage = _CurrentStage;
                         RevisionObject.FileEntry.FileProcessedAtTime = Methods.ToISOString();
                         ModelObject.MRVLastUpdateTime = RevisionObject.FileEntry.FileProcessedAtTime;
 

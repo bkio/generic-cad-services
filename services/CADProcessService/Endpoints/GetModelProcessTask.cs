@@ -76,13 +76,13 @@ namespace CADProcessService.Endpoints
                             Entry.ConversionStatus = (int)EInternalProcessStage.Processing;
 
                             if (!DatabaseService.UpdateItem(
-                            FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
-                            FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
-                            new BPrimitiveType(Key),
-                            JObject.Parse(JsonConvert.SerializeObject(Entry)),
-                            out JObject _, EBReturnItemBehaviour.DoNotReturn,
-                            null,
-                            _ErrorMessageAction))
+                                FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
+                                FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
+                                new BPrimitiveType(Key),
+                                JObject.Parse(JsonConvert.SerializeObject(Entry)),
+                                out JObject _, EBReturnItemBehaviour.DoNotReturn,
+                                null,
+                                _ErrorMessageAction))
                             {
                                 Response = BWebResponse.InternalError("Experienced a Database error");
                             }

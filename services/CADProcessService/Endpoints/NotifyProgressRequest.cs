@@ -54,7 +54,11 @@ namespace CADProcessService.Endpoints
                 {
                     string Payload = ResponseReader.ReadToEnd();
                     ConversionProgressInfo ProgressInfo = JsonConvert.DeserializeObject<ConversionProgressInfo>(Payload);
-                    _ErrorMessageAction?.Invoke($"NotifyProgressRequest:OnRequest_Internal-> Received payload is: {Payload}");
+                    
+                    if(ProgressInfo.ProcessFailed)
+                    {
+                        _ErrorMessageAction?.Invoke($"NotifyProgressRequest:OnRequest_Internal-> Received failed process info: {Payload}");
+                    }
 
                     if (!UpdateProcessHistoryRecord(ProgressInfo, _ErrorMessageAction, out BWebServiceResponse FailureResponse))
                     {

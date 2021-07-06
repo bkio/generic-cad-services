@@ -317,9 +317,9 @@ namespace CADProcessService.Endpoints
                         _ErrorMessageAction?.Invoke($"StartProcessRequest:UpdateWorkerVMEntry->Update WorkerVMListDBEntry record before start virtual machine.");
                     }
 
-                string _appletUrl = GetAppletDownloadUrls("pipeline-services", _ErrorMessageAction);
+                    string _appletUrl = GetAppletDownloadUrls("pipeline-services", _ErrorMessageAction);
 
-                StartVirtualMachine(_VMID, _VMName, _appletUrl, VmEntry, () =>
+                    StartVirtualMachine(_VMID, _VMName, _appletUrl, VmEntry, () =>
                     {
                         _ErrorMessageAction?.Invoke($"StartProcessRequest:UpdateWorkerVMEntry->Virtual Machine starting operation has been failed.");
                         //if starting vm fails, revert back to original vm entry
@@ -338,7 +338,7 @@ namespace CADProcessService.Endpoints
                 }
                 else
                 {
-                    _ErrorMessageAction?.Invoke($"StartProcessRequest:UpdateWorkerVMEntry->There is no available VM for now.");
+                    _ErrorMessageAction?.Invoke($"StartProcessRequest:UpdateWorkerVMEntry->There is no available VM for {_FileConversionEntry.ModelName}. Task is queued.");
                 }
             }
             catch (Exception ex)
@@ -407,7 +407,7 @@ namespace CADProcessService.Endpoints
             {
                 if (VirtualMachineService.GetInstanceStatus(_VirtualMachineName, out EBVMInstanceStatus VMStatus, _ErrorMessageAction))
                 {
-                    _ErrorMessageAction?.Invoke($"VM Status has been received. VM Name: [{_VirtualMachineName}] - Model Name: [{_VirtualMachineEntry.ModelName}] - Revision Index: [{_VirtualMachineEntry.RevisionIndex}] - Status: [{VMStatus.ToString()}]");
+                    _ErrorMessageAction?.Invoke($"VM Start request has been received. VM Name: [{_VirtualMachineName}] - Model Name: [{_VirtualMachineEntry.ModelName}] - Revision Index: [{_VirtualMachineEntry.RevisionIndex}] - Status: [{VMStatus.ToString()}]");
 
                     if (VMStatus == EBVMInstanceStatus.Running)
                     {
