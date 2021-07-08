@@ -32,24 +32,29 @@ namespace CADProcessService.Endpoints.Common
             if (!_VirtualMachineService.StopInstances(new string[] { VirtualMachineName },
                 () =>
                 {
-                    _ErrorMessageAction?.Invoke($"VirtualMachineService.StopInstances: OnComplete-> Virtual machine [{VirtualMachineName}]: [{_RequestedVirtualMachineId}] stopped.");
+                    _ErrorMessageAction?.Invoke($"StopVirtualMachine: OnCompleted-> Virtual machine [{VirtualMachineName}]: [{_RequestedVirtualMachineId}] stopped.");
 
                     if (!UpdateDBVirtualMachineAvailability(_DatabaseService, _InnerProcessor, _RequestedVirtualMachineId, VirtualMachineName, _VirtualMachineEntry, _bHealthCheckCall, _ErrorMessageAction))
                     {
-                        _ErrorMessageAction?.Invoke($"Failed to update worker-vm-list database for virtual machine [{VirtualMachineName}]: [{_RequestedVirtualMachineId}]");
+                        _ErrorMessageAction?.Invoke($"StopVirtualMachine: Failed to update worker-vm-list table for virtual machine [{VirtualMachineName}]: [{_RequestedVirtualMachineId}]");
+                    }
+
+                    if (!UpdateFileConversionEntry(_DatabaseService, _InnerProcessor, _VirtualMachineEntry.ProcessId, _ErrorMessageAction))
+                    {
+                        _ErrorMessageAction?.Invoke($"StopVirtualMachine: Failed to update file-conversion table for virtual machine [{VirtualMachineName}]");
                     }
 
                     //if (!UpdateDBProcessHistory(_DatabaseService, _InnerProcessor, _VirtualMachineEntry, _bHealthCheckCall, _ErrorMessageAction))
                     //{
-                    //    _ErrorMessageAction?.Invoke($"Failed to update process-history database for virtual machine [{VirtualMachineName}]");
+                    //    _ErrorMessageAction?.Invoke($"StopVirtualMachine: Failed to update process-history table for virtual machine [{VirtualMachineName}]");
                     //}
                 },
                 () =>
                 {
-                    _ErrorMessageAction?.Invoke($"Failed to stop virtual machine [{VirtualMachineName}]");
+                    _ErrorMessageAction?.Invoke($"StopVirtualMachine: OnFailure-> Failed to stop virtual machine [{VirtualMachineName}]");
                 }, _ErrorMessageAction))
             {
-                _FailureResponse = BWebResponse.InternalError($"Failed to stop virtual machine [{VirtualMachineName}]");
+                _FailureResponse = BWebResponse.InternalError($"StopVirtualMachine: Failed to stop virtual machine [{VirtualMachineName}]");
                 return false;
             }
 
@@ -69,7 +74,7 @@ namespace CADProcessService.Endpoints.Common
             {
                 if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(_InnerProcessor, WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(), _RequestedVirtualMachineId, _ErrorMessageAction))
                 {
-                    _ErrorMessageAction?.Invoke($"Failed to update db for [{VirtualMachineName}] because atomic db operation has been failed.");
+                    _ErrorMessageAction?.Invoke($"StopVirtualMachine:UpdateDBVirtualMachineAvailability-> Failed to update db for [{VirtualMachineName}] because atomic db operation has been failed.");
                     return false;
                 }
 
@@ -92,7 +97,7 @@ namespace CADProcessService.Endpoints.Common
                         null,
                         _ErrorMessageAction))
                 {
-                    _ErrorMessageAction?.Invoke($"Failed to update worker-vm-list table for [{VirtualMachineName}]");
+                    _ErrorMessageAction?.Invoke($"StopVirtualMachine:UpdateDBVirtualMachineAvailability-> Failed to update worker-vm-list table for [{VirtualMachineName}]");
                     return false;
                 }
 
@@ -108,12 +113,75 @@ namespace CADProcessService.Endpoints.Common
             }
             catch (System.Exception ex)
             {
-                _ErrorMessageAction?.Invoke($"Failed to update worker-vm-list table for [{VirtualMachineName}]. Error: {ex.Message}. Trace: {ex.StackTrace}");
+                _ErrorMessageAction?.Invoke($"StopVirtualMachine:UpdateDBVirtualMachineAvailability-> Failed to update worker-vm-list table for [{VirtualMachineName}]. Error: {ex.Message}. Trace: {ex.StackTrace}");
                 return false;
             }
             finally
             {
                 Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(_InnerProcessor, WorkerVMListDBEntry.DBSERVICE_WORKERS_VM_LIST_TABLE(), _RequestedVirtualMachineId, _ErrorMessageAction);
+            }
+            return true;
+        }
+
+        private static bool UpdateFileConversionEntry(
+            IBDatabaseServiceInterface _DatabaseService,
+            WebServiceBaseTimeoutableProcessor _InnerProcessor, 
+            string ModelId,
+            Action<string> _ErrorMessageAction)
+        {
+            try
+            {
+                if (!Controller_AtomicDBOperation.Get().GetClearanceForDBOperation(_InnerProcessor, FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(), ModelId, _ErrorMessageAction))
+                {
+                    _ErrorMessageAction?.Invoke($"StopVirtualMachine:UpdateFileConversionEntry-> Failed to get access to database record");
+                    return false;
+                }
+
+                //If a process was completed (success or failure) then allow reprocessing
+                //Only stop if a process is currently busy processing or already queued
+                if (!_DatabaseService.GetItem(
+                    FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
+                    FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
+                    new BPrimitiveType(ModelId),
+                    FileConversionDBEntry.Properties,
+                    out JObject ConversionObject
+                    ))
+                {
+                    _ErrorMessageAction?.Invoke($"StopVirtualMachine:UpdateFileConversionEntry-> Failed to get record from db. ModelId: {ModelId}");
+                    return false;
+                }
+
+                if (ConversionObject != null && ConversionObject.ContainsKey("conversionStatus"))
+                {
+                    FileConversionDBEntry _FileConversionEntry = ConversionObject.ToObject<FileConversionDBEntry>();
+
+                    if (_FileConversionEntry.ConversionStatus == (int)EInternalProcessStage.Processing)
+                    {
+                        _FileConversionEntry.ConversionStatus = (int)EInternalProcessStage.Queued;
+                    }
+
+                    if (!_DatabaseService.UpdateItem(
+                        FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(),
+                        FileConversionDBEntry.KEY_NAME_CONVERSION_ID,
+                        new BPrimitiveType(ModelId),
+                        JObject.Parse(JsonConvert.SerializeObject(_FileConversionEntry)),
+                        out JObject _, EBReturnItemBehaviour.DoNotReturn,
+                        null,
+                        _ErrorMessageAction))
+                    {
+                        _ErrorMessageAction?.Invoke("StopVirtualMachine:UpdateFileConversionEntry-> DBSERVICE_FILE_CONVERSIONS_TABLE File UpdateItem database error.");
+                        return false;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _ErrorMessageAction?.Invoke($"StopVirtualMachine:UpdateFileConversionEntry-> An error occurred. Error Message: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                return false;
+            }
+            finally
+            {
+                Controller_AtomicDBOperation.Get().SetClearanceForDBOperationForOthers(_InnerProcessor, FileConversionDBEntry.DBSERVICE_FILE_CONVERSIONS_TABLE(), ModelId, _ErrorMessageAction);
             }
             return true;
         }

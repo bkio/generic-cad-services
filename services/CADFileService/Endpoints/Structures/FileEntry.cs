@@ -41,7 +41,7 @@ namespace CADFileService.Endpoints.Structures
         public const string FILE_UPLOAD_CONTENT_TYPE_PROPERTY = "fileUploadContentType";
         public const string FILE_DOWNLOAD_UPLOAD_EXPIRY_MINUTES_PROPERTY = "expiryMinutes";
 
-        public const int EXPIRY_MINUTES = 5;
+        public const int EXPIRY_MINUTES = 30;
         public const string FILE_UPLOAD_CONTENT_TYPE = "application/octet-stream";
 
         //Update info call can change these fields.
