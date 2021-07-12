@@ -9,6 +9,7 @@ using CADProcessService.K8S;
 using ServiceUtilities.All;
 using ServiceUtilities.Process.Procedure;
 using Newtonsoft.Json.Linq;
+using ServiceUtilities;
 
 namespace CADProcessService.Endpoints
 {
@@ -19,14 +20,13 @@ namespace CADProcessService.Endpoints
 
         private readonly IBFileServiceInterface FileService;
         private readonly string CadFileStorageBucketName;
-        private readonly string BranchName;
+
         public GetSignedUploadUrlRequest(
             IBFileServiceInterface _FileService, 
-            string _CadFileStorageBucketName, string _BranchName) : base()
+            string _CadFileStorageBucketName) : base()
         {
             FileService = _FileService;
             CadFileStorageBucketName = _CadFileStorageBucketName;
-            BranchName = _BranchName;
         }
         protected override BWebServiceResponse OnRequestPP(HttpListenerContext _Context, Action<string> _ErrorMessageAction = null)
         {
@@ -107,7 +107,8 @@ namespace CADProcessService.Endpoints
                 //int FilenameStripLength = RawStrippedPath.LastIndexOf('/');
                 //RawStrippedPath = RawStrippedPath.Substring(0, FilenameStripLength);
 
-                if (!FileService.CreateSignedURLForUpload(out string SignedUploadUrl, CadFileStorageBucketName, $"{BranchName}/{modelName}/{Revision}/stages/{FileTypeStageStr}/{Filename}.zip", UPLOAD_CONTENT_TYPE, UPLOAD_URL_VALIDITY_MINUTES, _ErrorMessageAction))
+                var DeploymentBranchName = Resources_DeploymentManager.Get().GetDeploymentBranchNameEscapedLoweredWithUnderscore();
+                if (!FileService.CreateSignedURLForUpload(out string SignedUploadUrl, CadFileStorageBucketName, $"{DeploymentBranchName}/{modelName}/{Revision}/stages/{FileTypeStageStr}/{Filename}.zip", UPLOAD_CONTENT_TYPE, UPLOAD_URL_VALIDITY_MINUTES, _ErrorMessageAction))
                 {
                     return BWebResponse.InternalError("Failed to create Upload Url");
                 }

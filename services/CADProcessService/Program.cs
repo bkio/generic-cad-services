@@ -101,8 +101,6 @@ namespace CADProcessService
             bInitSuccess &= ServInit.WithVMService();
             if (!bInitSuccess) return;
 
-            string Branch = ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BRANCH_NAME"];
-
             Resources_DeploymentManager.Get().SetDeploymentBranchNameAndBuildNumber(ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BRANCH_NAME"], ServInit.RequiredEnvironmentVariables["DEPLOYMENT_BUILD_NUMBER"]);
 
             Manager_PubSubService.Get().Setup(ServInit.PubSubService);
@@ -200,11 +198,11 @@ namespace CADProcessService
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/vm_health_check*" }, () => new InternalCalls.VMHealthCheck(ServInit.DatabaseService, ServInit.VMService, VirtualMachineDictionary, InternalCallPrivateKey)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/stop" }, () => new StopProcessRequest(ServInit.DatabaseService, ServInit.VMService, VirtualMachineDictionary)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/job-complete/*" }, () => new BatchJobCompleteRequest(ServInit.DatabaseService, ServInit.FileService, ServInit.MemoryService)),
-                new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/fetch_task/*" }, () => new GetModelProcessTask(ServInit.FileService,ServInit.DatabaseService, ServInit.MemoryService, CadFileStorageBucketName, Branch)),
-                new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/get_signed_upload_url_for_unreal_file/*" }, () => new GetSignedUploadUrlRequest(ServInit.FileService, CadFileStorageBucketName, Branch)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/fetch_task/*" }, () => new GetModelProcessTask(ServInit.FileService,ServInit.DatabaseService)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/get_signed_upload_url_for_unreal_file/*" }, () => new GetSignedUploadUrlRequest(ServInit.FileService, CadFileStorageBucketName)),
                 new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/get_file_optimizer_parameters/*" }, () => new GetOptimizerParametersRequest(ServInit.DatabaseService)),
-                new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/notify-progress/*" }, () => new NotifyProgressRequest(ServInit.MemoryService, ServInit.DatabaseService, ServInit.PubSubService)),
-                new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/notify-complete/*" }, () => new NotifyCompleteRequest(ServInit.MemoryService, ServInit.DatabaseService, ServInit.PubSubService))
+                new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/notify-progress/*" }, () => new NotifyProgressRequest(ServInit.DatabaseService)),
+                new BWebPrefixStructure(new string[] { RootPath + "3d/process/internal/notify-complete/*" }, () => new NotifyCompleteRequest(ServInit.DatabaseService))
             };
 
             var BWebService = new BWebService(WebServiceEndpoints.ToArray(), ServInit.ServerPort/*, ServInit.TracingService*/);

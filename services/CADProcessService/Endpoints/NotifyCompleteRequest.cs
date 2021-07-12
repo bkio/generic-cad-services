@@ -1,4 +1,6 @@
-﻿using BCloudServiceUtilities;
+﻿/// MIT License, Copyright Burak Kara, burak@burak.io, https://en.wikipedia.org/wiki/MIT_License
+
+using BCloudServiceUtilities;
 using BCommonUtilities;
 using BWebServiceUtilities;
 using CADProcessService.Endpoints.Structures;
@@ -12,21 +14,16 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using System.Text;
 
 namespace CADProcessService.Endpoints
 {
     public class NotifyCompleteRequest : WebServiceBaseTimeoutableDeliveryEnsurerUser
     {
         private readonly IBDatabaseServiceInterface DatabaseService;
-        private readonly IBMemoryServiceInterface MemoryService;
-        private readonly IBPubSubServiceInterface PubSubService;
 
-        public NotifyCompleteRequest(IBMemoryServiceInterface _MemoryService, IBDatabaseServiceInterface _DatabaseService, IBPubSubServiceInterface _PubSubService) : base()
+        public NotifyCompleteRequest(IBDatabaseServiceInterface _DatabaseService) : base()
         {
-            MemoryService = _MemoryService;
             DatabaseService = _DatabaseService;
-            PubSubService = _PubSubService;
         }
 
         public override BWebServiceResponse OnRequest_Interruptable_DeliveryEnsurerUser(HttpListenerContext _Context, Action<string> _ErrorMessageAction = null)

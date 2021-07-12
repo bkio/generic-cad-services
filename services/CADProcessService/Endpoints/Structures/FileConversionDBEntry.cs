@@ -2,7 +2,6 @@
 
 using ServiceUtilities;
 using Newtonsoft.Json;
-using System;
 
 namespace CADProcessService.Endpoints.Structures
 {
