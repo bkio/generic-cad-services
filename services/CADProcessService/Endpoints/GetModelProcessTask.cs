@@ -44,6 +44,8 @@ namespace CADProcessService.Endpoints
         {
             var RequestedVirtualMachineId = RestfulUrlParameters["fetch_task"];
 
+            _ErrorMessageAction?.Invoke($"GetModelProcessTask:UpdateFileConversionEntry-> Received GetNewTask Request: {RequestedVirtualMachineId}");
+
             BWebServiceResponse Response = BWebResponse.NotFound("No task was found to process");
 
             if (!DatabaseService.GetItem(
@@ -100,6 +102,7 @@ namespace CADProcessService.Endpoints
                                     {
                                         Response = UpdateFileConversionEntry(Entry, _ModelId, _ErrorMessageAction);
                                         UpdateWorkerVMEntry(RequestedVirtualMachineId, _ModelId, VirtualMachineEntry, Entry, _ErrorMessageAction);
+                                        break;
                                     }
                                 }
                             }
@@ -146,37 +149,36 @@ namespace CADProcessService.Endpoints
                 null,
                 _ErrorMessageAction))
             {
+                _ErrorMessageAction?.Invoke($"GetModelProcessTask:UpdateFileConversionEntry-> Experienced a Database error.");
                 return BWebResponse.InternalError("Experienced a Database error");
             }
-            else
-            {
-                ModelProcessTask Task = new ModelProcessTask();
 
-                Task.CullingThresholds = _FileConvertionEntry.CullingThresholds;
-                Task.GlobalScale = _FileConvertionEntry.GlobalScale;
-                Task.GlobalXOffset = _FileConvertionEntry.GlobalXOffset;
-                Task.GlobalXRotation = _FileConvertionEntry.GlobalXRotation;
-                Task.GlobalYOffset = _FileConvertionEntry.GlobalYOffset;
-                Task.GlobalYRotation = _FileConvertionEntry.GlobalYRotation;
-                Task.GlobalZOffset = _FileConvertionEntry.GlobalZOffset;
-                Task.GlobalZRotation = _FileConvertionEntry.GlobalZRotation;
-                Task.LevelThresholds = _FileConvertionEntry.LevelThresholds;
-                Task.LodParameters = _FileConvertionEntry.LodParameters;
-                Task.ModelName = _FileConvertionEntry.ModelName;
-                Task.ModelRevision = _FileConvertionEntry.ModelRevision;
-                Task.ProcessStep = _FileConvertionEntry.ConversionStage;
-                Task.ConversionId = _ModelId;
-                Task.ZipMainAssemblyFileNameIfAny = _FileConvertionEntry.ZipMainAssemblyFileNameIfAny;
-                Task.CustomPythonScript = _FileConvertionEntry.CustomPythonScript;
+            ModelProcessTask Task = new ModelProcessTask();
+            Task.CullingThresholds = _FileConvertionEntry.CullingThresholds;
+            Task.GlobalScale = _FileConvertionEntry.GlobalScale;
+            Task.GlobalXOffset = _FileConvertionEntry.GlobalXOffset;
+            Task.GlobalXRotation = _FileConvertionEntry.GlobalXRotation;
+            Task.GlobalYOffset = _FileConvertionEntry.GlobalYOffset;
+            Task.GlobalYRotation = _FileConvertionEntry.GlobalYRotation;
+            Task.GlobalZOffset = _FileConvertionEntry.GlobalZOffset;
+            Task.GlobalZRotation = _FileConvertionEntry.GlobalZRotation;
+            Task.LevelThresholds = _FileConvertionEntry.LevelThresholds;
+            Task.LodParameters = _FileConvertionEntry.LodParameters;
+            Task.ModelName = _FileConvertionEntry.ModelName;
+            Task.ModelRevision = _FileConvertionEntry.ModelRevision;
+            Task.ProcessStep = _FileConvertionEntry.ConversionStage;
+            Task.ConversionId = _ModelId;
+            Task.ZipMainAssemblyFileNameIfAny = _FileConvertionEntry.ZipMainAssemblyFileNameIfAny;
+            Task.CustomPythonScript = _FileConvertionEntry.CustomPythonScript;
+            Task.Filters = _FileConvertionEntry.FilterSettings;
 
-                Task.Filters = _FileConvertionEntry.FilterSettings;
+            var DeploymentBranchName = Resources_DeploymentManager.Get().GetDeploymentBranchNameEscapedLoweredWithUnderscore();
+            FileService.CreateSignedURLForDownload(out string _StageDownloadUrl, _FileConvertionEntry.BucketName, $"{DeploymentBranchName}/{_ModelId}/{_FileConvertionEntry.ModelRevision}/stages/{_FileConvertionEntry.ConversionStage}/files.zip", 180, _ErrorMessageAction);
+            Task.StageDownloadUrl = _StageDownloadUrl;
 
-                var DeploymentBranchName = Resources_DeploymentManager.Get().GetDeploymentBranchNameEscapedLoweredWithUnderscore();
-                FileService.CreateSignedURLForDownload(out string _StageDownloadUrl, _FileConvertionEntry.BucketName, $"{DeploymentBranchName}/{_ModelId}/{_FileConvertionEntry.ModelRevision}/stages/{_FileConvertionEntry.ConversionStage}/files.zip", 180, _ErrorMessageAction);
-
-                Task.StageDownloadUrl = _StageDownloadUrl;
-                return new BWebServiceResponse(200, new BStringOrStream(JsonConvert.SerializeObject(Task)));
-            }
+            string TaskAsString = JsonConvert.SerializeObject(Task);
+            _ErrorMessageAction?.Invoke($"GetModelProcessTask:UpdateFileConversionEntry-> Returned task: {TaskAsString}");
+            return new BWebServiceResponse(200, new BStringOrStream(TaskAsString));
         }
 
         private bool UpdateWorkerVMEntry(
