@@ -162,9 +162,13 @@ namespace CADProcessService.Endpoints
                         {
                             NewFileConversionDBEntry.CullingThresholds = (string)ParsedBody["cullingThresholds"];
                         }
-                        if (ParsedBody.ContainsKey("filters"))
+                        if (ParsedBody.ContainsKey("layers"))
                         {
-                            NewFileConversionDBEntry.FilterSettings = (string)ParsedBody["filters"];
+                            NewFileConversionDBEntry.Layers = (string)ParsedBody["layers"];
+                        }
+                        if (ParsedBody.ContainsKey("mergingParts"))
+                        {
+                            NewFileConversionDBEntry.MergingParts = (string)ParsedBody["mergingParts"];
                         }
                         if (ParsedBody.ContainsKey("deleteDuplicates"))
                         {

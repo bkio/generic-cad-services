@@ -2,12 +2,6 @@
 
 namespace CADProcessService.Endpoints.Structures
 {
-    public class FilterInfo
-    {
-        public int FilterType { get; set; }
-        public string FilterDefinition { get; set; }
-        public string FilterName { get; set; }
-    }
     public class ModelProcessTask
     {
         public string ConversionId { get; set; }
@@ -31,7 +25,7 @@ namespace CADProcessService.Endpoints.Structures
         public string LevelThresholds { get; set; }
         public string LodParameters { get; set; }
         public string CullingThresholds { get; set; }
-        //public List<FilterInfo> Filters { get; set; }
-        public string Filters { get; set; }
+        public string Layers { get; set; }
+        public string MergingParts { get; set; }
     }
 }

@@ -29,6 +29,7 @@ namespace CADFileService.Endpoints.Structures
         public const string DATA_SOURCE_PROPERTY = "dataSource";
 
         public const string LAYERS_PROPERTY = "layers";
+        public const string MERGING_PARTS_PROPERTY = "mergingParts";
         public const string GLOBAL_TRANSFORM_OFFSET_PROPERTY = "globalTransformOffset";
         public const string OPTIMIZATION_PRESET_PROPERTY = "optimizationPreset";
         public const string MERGE_FINAL_LEVEL_PROPERTY = "mergeFinalLevel";
@@ -55,6 +56,7 @@ namespace CADFileService.Endpoints.Structures
             DATA_SOURCE_PROPERTY,
             CURRENT_PROCESS_STAGE_PROPERTY,
             LAYERS_PROPERTY,
+            MERGING_PARTS_PROPERTY,
             GLOBAL_TRANSFORM_OFFSET_PROPERTY,
             OPTIMIZATION_PRESET_PROPERTY,
             MERGE_FINAL_LEVEL_PROPERTY,
@@ -99,6 +101,12 @@ namespace CADFileService.Endpoints.Structures
                 if (!(_Parameter is JArray)) return false;
                 foreach (var Cur in _Parameter) if (Cur.Type != JTokenType.Object) return false;
                 return true;
+            },
+            [MERGING_PARTS_PROPERTY] = (JToken _Parameter) =>
+            {
+                  if (!(_Parameter is JArray)) return false;
+                  foreach (var Cur in _Parameter) if (Cur.Type != JTokenType.Object) return false;
+                  return true;
             },
             [GLOBAL_TRANSFORM_OFFSET_PROPERTY] = (JToken _Parameter) =>
             {
@@ -164,6 +172,9 @@ namespace CADFileService.Endpoints.Structures
 
         [JsonProperty(LAYERS_PROPERTY)]
         public List<LayerFilter> Layers = new List<LayerFilter>();
+        
+        [JsonProperty(MERGING_PARTS_PROPERTY)]
+        public List<GenericFilter> MergingParts = new List<GenericFilter>();
 
         [JsonProperty(GLOBAL_TRANSFORM_OFFSET_PROPERTY)]
         public TransformOffset GlobalTransformOffset = new TransformOffset();
@@ -213,6 +224,8 @@ namespace CADFileService.Endpoints.Structures
                 CurrentProcessStage = ContentObject.CurrentProcessStage;
             if (_Content.ContainsKey(LAYERS_PROPERTY))
                 Layers = ContentObject.Layers;
+            if (_Content.ContainsKey(MERGING_PARTS_PROPERTY))
+                MergingParts = ContentObject.MergingParts;
             if (_Content.ContainsKey(GLOBAL_TRANSFORM_OFFSET_PROPERTY))
                 GlobalTransformOffset = ContentObject.GlobalTransformOffset;
             if (_Content.ContainsKey(OPTIMIZATION_PRESET_PROPERTY))

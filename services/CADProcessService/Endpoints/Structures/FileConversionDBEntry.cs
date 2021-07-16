@@ -41,7 +41,8 @@ namespace CADProcessService.Endpoints.Structures
         public const string LEVEL_THRESHOLDS_PROPERTY = "levelThresholds";
         public const string LOD_PARAMETERS_PROPERTY = "lodParameters";
         public const string CULLNG_THRESHOLDS_PROPERTY = "cullingThresholds";
-        public const string FILTER_SETTINGS_PROPERTY = "filterSettings";
+        public const string LAYERS_PROPERTY = "layers";
+        public const string MERGING_PARTS_PROPERTY = "mergingParts";
         public const string DELETE_DUPLICATES_PROPERTY = "deleteDuplicates";
         public const string MERGE_FINAL_LEVEL_PROPERTY = "mergeFinalLevel";
         public const string CUSTOM_PYTHON_SCRIPT_PROPERTY = "customPythonScript";
@@ -68,39 +69,51 @@ namespace CADProcessService.Endpoints.Structures
 
         [JsonProperty(MODEL_NAME_PROPERTY)]
         public string ModelName { get; set; }
+        
         [JsonProperty(MODEL_REVISION_PROPERTY)]
         public int ModelRevision { get; set; }
 
         [JsonProperty(CONVERSION_STAGE_PROPERTY)]
         public int ConversionStage = 0;
+        
         [JsonProperty(ZIP_ASSEMBLY_FILENAME_PROPERTY)]
         public string ZipMainAssemblyFileNameIfAny { get; set; }
 
-
         [JsonProperty(GLOBAL_SCALE_PROPERTY)]
         public float GlobalScale = 0.01f;
+        
         [JsonProperty(GLOBAL_X_OFFSET_PROPERTY)]
         public float GlobalXOffset { get; set; }
+        
         [JsonProperty(GLOBAL_Y_OFFSET_PROPERTY)]
         public float GlobalYOffset { get; set; }
+        
         [JsonProperty(GLOBAL_Z_OFFSET_PROPERTY)]
         public float GlobalZOffset { get; set; }
 
         [JsonProperty(GLOBAL_X_ROTATION_PROPERTY)]
         public float GlobalXRotation { get; set; }
+        
         [JsonProperty(GLOBAL_Y_ROTATION_PROPERTY)]
         public float GlobalYRotation { get; set; }
+        
         [JsonProperty(GLOBAL_Z_ROTATION_PROPERTY)]
         public float GlobalZRotation { get; set; }
 
         [JsonProperty(LEVEL_THRESHOLDS_PROPERTY)]
         public string LevelThresholds { get; set; }
+        
         [JsonProperty(LOD_PARAMETERS_PROPERTY)]
         public string LodParameters { get; set; }
+        
         [JsonProperty(CULLNG_THRESHOLDS_PROPERTY)]
         public string CullingThresholds { get; set; }
-        [JsonProperty(FILTER_SETTINGS_PROPERTY)]
-        public string FilterSettings { get; set; }
+
+        [JsonProperty(LAYERS_PROPERTY)]
+        public string Layers { get; set; }
+
+        [JsonProperty(MERGING_PARTS_PROPERTY)]
+        public string MergingParts { get; set; }
 
         [JsonProperty(DELETE_DUPLICATES_PROPERTY)]
         public string DeleteDuplicates { get; set; }

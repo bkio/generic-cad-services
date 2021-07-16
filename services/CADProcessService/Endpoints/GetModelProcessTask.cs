@@ -170,7 +170,8 @@ namespace CADProcessService.Endpoints
             Task.ConversionId = _ModelId;
             Task.ZipMainAssemblyFileNameIfAny = _FileConvertionEntry.ZipMainAssemblyFileNameIfAny;
             Task.CustomPythonScript = _FileConvertionEntry.CustomPythonScript;
-            Task.Filters = _FileConvertionEntry.FilterSettings;
+            Task.Layers = _FileConvertionEntry.Layers;
+            Task.MergingParts = _FileConvertionEntry.MergingParts;
 
             var DeploymentBranchName = Resources_DeploymentManager.Get().GetDeploymentBranchNameEscapedLoweredWithUnderscore();
             FileService.CreateSignedURLForDownload(out string _StageDownloadUrl, _FileConvertionEntry.BucketName, $"{DeploymentBranchName}/{_ModelId}/{_FileConvertionEntry.ModelRevision}/stages/{_FileConvertionEntry.ConversionStage}/files.zip", 180, _ErrorMessageAction);
